@@ -1,17 +1,19 @@
 banner: |
     █████  ███  ████  █   █  ███  ████
-      █   █   █ █    █ █   █   █  █    
+      █   █   █ █   █ █   █   █  █    
       █   █████ ████  █   █   █   ███ 
     █ █   █   █ █  █   █ █    █      █
      ██   █   █ █   █   █    ███  ████
-# 版本: v2.0-Full-Rules-US-Only
-# 状态: 完整规则链条已恢复，出口统一指向 [Proxy] 组
-# 更新: 2026 年 1 月 30 日
+# 地址: https://github.com/Jarv1s0/Proxy_Script
+# 版本: v2.1
+# 更新: 2026 年 2 月 3 日
 
 # ==================== 核心配置 ====================
+# 基础配置
 mode: rule
 port: 7890
 socks-port: 7891
+redir-port: 7892
 mixed-port: 7893
 tproxy-port: 7895
 ipv6: false
@@ -19,14 +21,18 @@ allow-lan: true
 unified-delay: true
 tcp-concurrent: true
 log-level: warning
+bind-address: '*'
 find-process-mode: 'always'
-global-client-fingerprint: chrome
+keep-alive-interval: 15
+keep-alive-idle: 600
 
-# TUN模式
+# TUN模式配置
 tun:
   enable: true
   stack: mixed
-  dns-hijack: ["any:53", "tcp://any:53"]
+  dns-hijack:
+    - "any:53"
+    - "tcp://any:53"
   auto-route: true
   auto-redirect: true
   auto-detect-interface: true
@@ -37,10 +43,28 @@ dns:
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-  default-nameserver: [119.29.29.29, 223.5.5.5]
+  # 解析上游 DoH/DoT 的起始 DNS
+  default-nameserver:
+    - tls://223.5.5.5
+    - tls://223.6.6.6
+  # 代理路径用的国外上游（仅对需代理的非直连规则集域名）
   nameserver:
-    - https://dns.alidns.com/dns-query
-    - https://doh.pub/dns-query
+    - "https://cloudflare-dns.com/dns-query"
+    - "https://dns.google/dns-query"
+  # 直连路径专用上游（国内 DoH）
+  direct-nameserver:
+    - "https://dns.alidns.com/dns-query"
+    - "https://doh.pub/dns-query"
+  # 解析代理服务器的域名，防循环用国内
+  proxy-server-nameserver:
+    - "https://dns.alidns.com/dns-query"
+    - "https://doh.pub/dns-query"
+  # 配置查询访问域名使用的服务器
+  nameserver-policy:
+    # 直连类规则集匹配的域名绑定国内上游，首跳即国内，不触发国外→国内回切
+    "rule-set:Direct,Private,China,fakeip-filter":
+      - "https://dns.alidns.com/dns-query"
+      - "https://doh.pub/dns-query"
   fake-ip-filter:
     - rule-set:Direct
     - rule-set:Private
