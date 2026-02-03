@@ -41,6 +41,7 @@ tun:
 dns:
   enable: true
   ipv6: false
+  respect-rules: true
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   # 解析上游 DoH/DoT 的起始 DNS

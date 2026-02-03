@@ -40,6 +40,7 @@ tun:
 # DNS配置
 dns:
   enable: true
+  respect-rules: true
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
@@ -70,7 +71,6 @@ dns:
     - rule-set:Private
     - rule-set:China
     - rule-set:fakeip-filter
-
 
 # 管理面板配置
 external-ui-url: https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip
