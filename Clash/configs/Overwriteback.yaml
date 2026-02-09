@@ -140,13 +140,6 @@ sniffer:
     - "Mijia Cloud"
     - "+.push.apple.com"
 
-# 面板设置
-external-controller: 127.0.0.1:9090
-secret: ""
-external-ui: "./ui"
-external-ui-name: zashboard
-external-ui-url: "https://github.com/Zephyruso/zashboard/archive/refs/heads/gh-pages.zip"
-
 # 锚点定义
 UrlTest: &UrlTest { type: url-test, interval: 300, tolerance: 200, url: 'https://www.gstatic.com/generate_204', hidden: true, include-all: true }
 # Select 锚点，用于手动选择地区节点

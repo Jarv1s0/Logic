@@ -29,7 +29,7 @@ keep-alive-idle: 600
 # TUN模式配置
 tun:
   enable: true
-  stack: mixed
+  stack: gvisor
   dns-hijack:
     - "any:53"
     - "tcp://any:53"

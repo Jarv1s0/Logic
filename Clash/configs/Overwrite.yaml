@@ -29,7 +29,7 @@ keep-alive-idle: 600
 # TUN模式配置
 tun:
   enable: true
-  stack: mixed
+  stack: gvisor
   dns-hijack:
     - "any:53"
     - "tcp://any:53"
@@ -71,14 +71,7 @@ dns:
     - rule-set:Private
     - rule-set:China
     - rule-set:fakeip-filter
-
-# 管理面板配置
-external-ui-url: https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip
-external-ui-name: zashboard
-external-ui: ui
-external-controller: 127.0.0.1:9090
-secret: ''  
-
+  
 # 实验性功能
 experimental:
   quic-go-disable-gso: true  
