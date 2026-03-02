@@ -178,22 +178,21 @@ rules:
   - PROCESS-NAME,language_server_windows_x64.exe,AI # Antigravity
   - PROCESS-NAME,Antigravity.exe,AI # Antigravity 
   # 拦截规则
-  - DST-PORT,853,REJECT  # 阻断 DoT 探测，强制系统降级使用 53 端口进入 hijack 接管
   - RULE-SET,Tracking,REJECT
   - RULE-SET,Advertising,REJECT
-  - AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((GEOIP,CN)))),REJECT  # 阻止海外 QUIC  
+  - OR,((AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((GEOIP,CN))))),(DST-PORT,853)),REJECT # 拦截海外 QUIC 流量及全域 DoT 流量
   # 域名规则
   - RULE-SET,Private,DIRECT
   - RULE-SET,Direct,DIRECT
   - RULE-SET,SteamCN,DIRECT
   - RULE-SET,Download,DIRECT
   - RULE-SET,AppleCN,DIRECT
-  - RULE-SET,Microsoft,DIRECT
   - RULE-SET,AI,AI
   - RULE-SET,GitHub,GitHub
   - RULE-SET,Telegram,Telegram
   - RULE-SET,Games,Games
   - RULE-SET,YouTube,YouTube
+  - RULE-SET,Microsoft,DIRECT
   - RULE-SET,Google,Google
   - RULE-SET,GoogleCN,Google
   - RULE-SET,GFW,Proxy

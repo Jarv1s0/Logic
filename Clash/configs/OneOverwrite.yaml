@@ -115,11 +115,10 @@ rules:
   - PROCESS-NAME,language_server_windows_x64.exe,Proxy
   - PROCESS-NAME,Antigravity.exe,Proxy 
 
-  # 2. 拦截
-  - DST-PORT,853,REJECT 
+  # 2. 拦截 
   - RULE-SET,Tracking,REJECT
   - RULE-SET,Advertising,REJECT
-  - AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((GEOIP,CN)))),REJECT 
+  - OR,((AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((GEOIP,CN))))),(DST-PORT,853)),REJECT
 
   # 3. 域名分流 (全部指向 Proxy 或 DIRECT)
   - RULE-SET,Private,DIRECT
