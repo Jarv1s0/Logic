@@ -5,8 +5,8 @@ banner: |
     █ █   █   █ █  █   █ █    █      █
      ██   █   █ █   █   █    ███  ████
 # 地址: https://github.com/Jarv1s0/Proxy_Script
-# 版本: v2.2.1
-# 更新: 2026 年 3 月 2 日
+# 版本: v2.1
+# 更新: 2026 年 2 月 24 日
 
 # ==================== 核心配置 ====================
 # 基础配置
@@ -173,12 +173,18 @@ rule-providers:
 rules:
   # 1. 优先处理特定域名关键字 (DomainSet/Keyword)
   - DOMAIN-KEYWORD,1ytsub,DIRECT
-  - DOMAIN-KEYWORD,jarv1s,Proxy
+  - DOMAIN-KEYWORD,jarv1s,DIRECT
   - PROCESS-NAME,dota2.exe,DIRECT
   - PROCESS-NAME,language_server_windows_x64.exe,AI # Antigravity
   - PROCESS-NAME,Antigravity.exe,AI # Antigravity 
+  
+    # 指定公共 DNS IP 走代理（不再依靠底层 MATCH）
+  - IP-CIDR,1.0.0.1/32,Proxy,no-resolve
+  - IP-CIDR,1.1.1.1/32,Proxy,no-resolve
+  - IP-CIDR,8.8.8.8/32,Proxy,no-resolve
+  
   # 拦截规则
-  - DST-PORT,853,REJECT  # 阻断 DoT 探测，强制系统降级使用 53 端口进入 hijack 接管
+  - DST-PORT,853,REJECT  # 阻断 DoT 探测
   - RULE-SET,Tracking,REJECT
   - RULE-SET,Advertising,REJECT
   - AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((GEOIP,CN)))),REJECT  # 阻止海外 QUIC  
@@ -207,4 +213,5 @@ rules:
   - RULE-SET,GoogleIP,Google,no-resolve
   - RULE-SET,ProxyIP,Proxy,no-resolve
   - RULE-SET,ChinaIP,DIRECT
+  #兜底
   - MATCH,Proxy

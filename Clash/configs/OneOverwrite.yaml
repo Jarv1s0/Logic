@@ -116,6 +116,7 @@ rules:
   - PROCESS-NAME,Antigravity.exe,Proxy 
 
   # 2. 拦截
+  - DST-PORT,853,REJECT 
   - RULE-SET,Tracking,REJECT
   - RULE-SET,Advertising,REJECT
   - AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((GEOIP,CN)))),REJECT 
