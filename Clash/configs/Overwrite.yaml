@@ -5,8 +5,8 @@ banner: |
     █ █   █   █ █  █   █ █    █      █
      ██   █   █ █   █   █    ███  ████
 # 地址: https://github.com/Jarv1s0/Proxy_Script
-# 版本: v2.1
-# 更新: 2026 年 2 月 3 日
+# 版本: v2.2.1
+# 更新: 2026 年 3 月 2 日
 
 # ==================== 核心配置 ====================
 # 基础配置
@@ -150,12 +150,14 @@ rule-providers:
   AI:             {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/ai.mrs} 
   GitHub:         {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/GitHub.mrs}    
   Telegram:       {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Telegram.mrs}
-  GamesCN:        {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/games-cn.mrs} 
+  SteamCN:        {<<: *BehaviorDN, url: https://raw.githubusercontent.com/Jarv1s0/RuleList/refs/heads/release/SteamCN.mrs} 
   Games:          {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/games.mrs}
   YouTube:        {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/youtube.mrs}
   AppleCN:        {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AppleCN.mrs}
+  GoogleCN:       {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/google-cn.mrs}
   Google:         {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Google.mrs}
-  MicrosoftCN:    {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/microsoft-cn.mrs}  
+  MicrosoftCN:    {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/microsoft-cn.mrs}
+  GFW:          {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/gfw.mrs}    
   Proxy:          {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Proxy.mrs}
   China:          {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/cn.mrs}
   # IP规则
@@ -176,13 +178,14 @@ rules:
   - PROCESS-NAME,language_server_windows_x64.exe,AI # Antigravity
   - PROCESS-NAME,Antigravity.exe,AI # Antigravity 
   # 拦截规则
+  - DST-PORT,853,REJECT  # 阻断 DoT 探测，强制系统降级使用 53 端口进入 hijack 接管
   - RULE-SET,Tracking,REJECT
   - RULE-SET,Advertising,REJECT
   - AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((GEOIP,CN)))),REJECT  # 阻止海外 QUIC  
   # 域名规则
   - RULE-SET,Private,DIRECT
   - RULE-SET,Direct,DIRECT
-  - RULE-SET,GamesCN,DIRECT
+  - RULE-SET,SteamCN,DIRECT
   - RULE-SET,Download,DIRECT
   - RULE-SET,AppleCN,DIRECT
   - RULE-SET,MicrosoftCN,DIRECT
@@ -192,7 +195,8 @@ rules:
   - RULE-SET,Games,Games
   - RULE-SET,YouTube,YouTube
   - RULE-SET,Google,Google
-
+  - RULE-SET,GoogleCN,Google
+  - RULE-SET,GFW,Proxy
   - RULE-SET,Proxy,Proxy
   - RULE-SET,China,DIRECT
   # IP规则
