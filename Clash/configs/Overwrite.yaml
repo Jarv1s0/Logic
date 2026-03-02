@@ -147,7 +147,7 @@ rule-providers:
   Private:        {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/private.mrs}
   Download:       {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Download.mrs}
   fakeip-filter:  {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/fakeip-filter.mrs}
-  AI:             {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/ai.mrs} 
+  AI:             {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AI.mrs} 
   GitHub:         {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/GitHub.mrs}    
   Telegram:       {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Telegram.mrs}
   SteamCN:        {<<: *BehaviorDN, url: https://raw.githubusercontent.com/Jarv1s0/RuleList/refs/heads/release/SteamCN.mrs} 
@@ -156,10 +156,10 @@ rule-providers:
   AppleCN:        {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AppleCN.mrs}
   GoogleCN:       {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/google-cn.mrs}
   Google:         {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Google.mrs}
-  MicrosoftCN:    {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/microsoft-cn.mrs}
-  GFW:          {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/gfw.mrs}    
+  Microsoft:      {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Microsoft.mrs}
+  GFW:            {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/gfw.mrs}    
   Proxy:          {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Proxy.mrs}
-  China:          {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/cn.mrs}
+  China:          {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/China.mrs}
   # IP规则
   AdvertisingIP:  {<<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Advertising.mrs}
   PrivateIP:      {<<: *BehaviorIP, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/privateip.mrs}
@@ -167,7 +167,7 @@ rule-providers:
   TelegramIP:     {<<: *BehaviorIP, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/telegramip.mrs}   
   GoogleIP:       {<<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Google.mrs}  
   ProxyIP:        {<<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Proxy.mrs} 
-  ChinaIP:        {<<: *BehaviorIP, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/cnip.mrs}
+  ChinaIP:        {<<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/China.mrs}
   
 # ==================== 规则路由 ====================  
 rules:
@@ -188,7 +188,7 @@ rules:
   - RULE-SET,SteamCN,DIRECT
   - RULE-SET,Download,DIRECT
   - RULE-SET,AppleCN,DIRECT
-  - RULE-SET,MicrosoftCN,DIRECT
+  - RULE-SET,Microsoft,DIRECT
   - RULE-SET,AI,AI
   - RULE-SET,GitHub,GitHub
   - RULE-SET,Telegram,Telegram
