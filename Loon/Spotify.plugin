@@ -1,0 +1,18 @@
+[General]
+# 强制指定 UA 降低服务端风控校验频率
+network-header-specialize = ^https?:\/\/spclient\.wg\.spotify\.com\/.* header-replace User-Agent "Spotify/9.1.14 iOS/18.0"
+
+[Rewrite]
+# 屏蔽导致掉线的关键验证接口与广告逻辑
+^https?:\/\/spclient\.wg\.spotify\.com\/ad-logic\/.* reject-200
+^https?:\/\/spclient\.wg\.spotify\.com\/ads\/.* reject-200
+^https?:\/\/spclient\.wg\.spotify\.com\/v1\/ad\/.* reject-200
+^https?:\/\/spclient\.wg\.spotify\.com\/track-verification\/.* reject
+^https?:\/\/spclient\.wg\.spotify\.com\/playlist-sync\/.* reject
+
+[Script]
+# 引用指定的 GitHub 仓库脚本
+Spotify_Premium = type=http-response,pattern=^https?:\/\/spclient\.wg\.spotify\.com\/(bootstrap\/v1\/bootstrap|user-v1\/user|track-view\/v1\/queries),requires-body=1,binary-body-mode=0,script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/refs/heads/master/Loon/Scripts/Spotify.js
+
+[MITM]
+hostname = spclient.wg.spotify.com
