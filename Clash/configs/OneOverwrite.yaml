@@ -1,12 +1,6 @@
-banner: |
-    █████  ███  ████  █   █  ███  ████
-      █   █   █ █   █ █   █   █  █    
-      █   █████ ████  █   █   █   ███ 
-    █ █   █   █ █  █   █ █    █      █
-     ██   █   █ █   █   █    ███  ████
 # 地址: https://github.com/Jarv1s0/Proxy_Script
-# 版本: v2.1
-# 更新: 2026 年 2 月 3 日
+# 版本: v2.2.1
+# 更新: 2026 年 3 月 13 日
 
 # ==================== 核心配置 ====================
 # 基础配置
@@ -89,7 +83,7 @@ rule-providers:
   AI:            {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/ai.mrs} 
   GitHub:        {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/GitHub.mrs}    
   Telegram:      {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Telegram.mrs}
-  GamesCN:       {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/games-cn.mrs} 
+  GamesCN:       {<<: *BehaviorDN, url: https://github.com/Jarv1s0/RuleList/raw/main/rules/SteamCN.mrs} 
   Games:         {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/games.mrs}
   YouTube:       {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/youtube.mrs}
   AppleCN:       {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AppleCN.mrs}
