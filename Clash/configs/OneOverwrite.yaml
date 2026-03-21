@@ -40,8 +40,8 @@ dns:
   fake-ip-range: 198.18.0.1/16
   # 解析上游 DoH/DoT 的起始 DNS
   default-nameserver:
-    - tls://223.5.5.5
-    - tls://223.6.6.6
+    - 223.5.5.5
+    - 223.6.6.6
   # 代理路径用的国外上游（仅对需代理的非直连规则集域名）
   nameserver:
     - "https://1.1.1.1/dns-query"
