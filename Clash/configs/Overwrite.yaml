@@ -32,7 +32,7 @@ tun:
   auto-detect-interface: true
     
 # DNS配置
-dns:
+dns!:
   enable: true
   respect-rules: true
   ipv6: false
