@@ -38,30 +38,49 @@ dns!:
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-  # 解析上游 DoH/DoT 的起始 DNS
+
+  # 解析上游 DoH/DoT 自身域名时使用的起始 DNS，避免 bootstrap 失败
   default-nameserver:
     - 223.5.5.5
     - 223.6.6.6
-  # 代理路径用的国外上游（仅对需代理的非直连规则集域名）
+
+  # 代理路径默认使用的国外上游（用于非直连域名）
   nameserver:
     - "https://1.1.1.1/dns-query"
     - "https://8.8.8.8/dns-query"
+
   # 直连路径专用上游（国内 DoH）
   direct-nameserver:
     - "https://dns.alidns.com/dns-query"
     - "https://doh.pub/dns-query"
-  # 解析代理服务器的域名，防循环用国内
+
+  # 让 direct-nameserver 也遵循 nameserver-policy，避免规则意图与实际解析路径不一致
+  direct-nameserver-follow-policy: true
+
+  # 解析代理服务器自身域名时使用国内 DNS，防止代理 DNS 循环依赖
   proxy-server-nameserver:
     - "https://dns.alidns.com/dns-query"
     - "https://doh.pub/dns-query"
-  # 配置查询访问域名使用的服务器
+
+  # 按规则集指定查询访问域名时使用的 DNS
   nameserver-policy:
-    # 直连类规则集匹配的域名绑定国内上游，首跳即国内，不触发国外→国内回切
-    "rule-set:Direct,Private,China,fakeip-filter":
+    # 私有域名固定走国内 DNS
+    "rule-set:Private":
       - "https://dns.alidns.com/dns-query"
       - "https://doh.pub/dns-query"
+
+    # 中国大陆域名固定走国内 DNS
+    "rule-set:China":
+      - "https://dns.alidns.com/dns-query"
+      - "https://doh.pub/dns-query"
+
+    # fake-ip 过滤列表中的域名固定走国内 DNS，避免误映射
+    "rule-set:fakeip-filter":
+      - "https://dns.alidns.com/dns-query"
+      - "https://doh.pub/dns-query"
+
+  # 以下域名不使用 fake-ip，返回真实 IP
   fake-ip-filter:
-    - rule-set:Direct
     - rule-set:Private
     - rule-set:China
     - rule-set:fakeip-filter
@@ -137,11 +156,10 @@ rule-providers:
   # 域名规则
   Tracking:       {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Tracking.mrs}
   Advertising:    {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Advertising.mrs} 
-  Direct:         {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Direct.mrs}
   Private:        {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/private.mrs}
   Download:       {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Download.mrs}
   fakeip-filter:  {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/fakeip-filter.mrs}
-  AI:             {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AI.mrs} 
+  AI:             {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/ai.mrs} 
   GitHub:         {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/GitHub.mrs}    
   Telegram:       {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Telegram.mrs}
   SteamCN:        {<<: *BehaviorDN, url: https://github.com/Jarv1s0/RuleList/raw/main/rules/SteamCN.mrs} 
@@ -150,12 +168,11 @@ rule-providers:
   AppleCN:        {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AppleCN.mrs}
   GoogleCN:       {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/google-cn.mrs}
   Google:         {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Google.mrs}
-  Microsoft:      {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Microsoft.mrs}
+  MicrosoftCN:    {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/microsoft-cn.mrs}
   GFW:            {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/gfw.mrs}    
   Proxy:          {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Proxy.mrs}
-  China:          {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/China.mrs}
+  China:          {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/cn.mrs}
   # IP规则
-  AdvertisingIP:  {<<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Advertising.mrs}
   PrivateIP:      {<<: *BehaviorIP, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/privateip.mrs}
   AIIP:           {<<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/AI.mrs}
   TelegramIP:     {<<: *BehaviorIP, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/telegramip.mrs}   
@@ -177,7 +194,6 @@ rules:
   - OR,((AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((GEOIP,CN))))),(DST-PORT,853)),REJECT # 拦截海外 QUIC 流量及全域 DoT 流量
   # 域名规则
   - RULE-SET,Private,DIRECT
-  - RULE-SET,Direct,DIRECT
   - RULE-SET,SteamCN,DIRECT
   - RULE-SET,Download,DIRECT
   - RULE-SET,AppleCN,DIRECT
@@ -186,14 +202,13 @@ rules:
   - RULE-SET,Telegram,Telegram
   - RULE-SET,Games,Games
   - RULE-SET,YouTube,YouTube
-  - RULE-SET,Microsoft,DIRECT
+  - RULE-SET,MicrosoftCN,DIRECT
   - RULE-SET,Google,Google
   - RULE-SET,GoogleCN,Google
   - RULE-SET,GFW,Proxy
   - RULE-SET,Proxy,Proxy
   - RULE-SET,China,DIRECT
   # IP规则
-  - RULE-SET,AdvertisingIP,REJECT,no-resolve
   - RULE-SET,PrivateIP,DIRECT,no-resolve
   - RULE-SET,AIIP,AI,no-resolve
   - RULE-SET,TelegramIP,Telegram,no-resolve
