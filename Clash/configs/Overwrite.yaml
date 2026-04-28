@@ -182,12 +182,6 @@ rule-providers:
   
 # ==================== 规则路由 ====================  
 rules:
-  # 1. 优先处理特定域名关键字 (DomainSet/Keyword)
-  - DOMAIN-KEYWORD,1ytsub,DIRECT
-  - DOMAIN-KEYWORD,jarv1s,Proxy
-  - PROCESS-NAME,dota2.exe,DIRECT
-  - PROCESS-NAME,language_server_windows_x64.exe,AI # Antigravity
-  - PROCESS-NAME,Antigravity.exe,AI # Antigravity 
   # 拦截规则
   - RULE-SET,Tracking,REJECT
   - RULE-SET,Advertising,REJECT
