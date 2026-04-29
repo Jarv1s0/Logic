@@ -1,9 +1,8 @@
 # 地址: https://github.com/Jarv1s0/Proxy_Script
-# 版本: v2.2.2
-# 更新: 2026 年 3 月 21 日
+# 版本: v4.0.0
+# 更新: 2026 年 4 月 29 日
 
 # ==================== 核心配置 ====================
-# 基础配置
 mode: rule
 port: 7890
 socks-port: 7891
@@ -20,7 +19,7 @@ find-process-mode: 'always'
 keep-alive-interval: 15
 keep-alive-idle: 600
 
-# TUN模式配置
+# ==================== TUN 模式 ====================
 tun:
   enable: true
   stack: gvisor
@@ -30,8 +29,8 @@ tun:
   auto-route: true
   auto-redirect: true
   auto-detect-interface: true
-    
-# DNS配置
+
+# ==================== DNS 配置 ====================
 dns!:
   enable: true
   respect-rules: true
@@ -39,62 +38,52 @@ dns!:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
 
-  # 解析上游 DoH/DoT 自身域名时使用的起始 DNS，避免 bootstrap 失败
   default-nameserver:
     - 223.5.5.5
     - 223.6.6.6
 
-  # 代理路径默认使用的国外上游（用于非直连域名）
   nameserver:
     - "https://1.1.1.1/dns-query"
     - "https://8.8.8.8/dns-query"
 
-  # 直连路径专用上游（国内 DoH）
   direct-nameserver:
     - "https://dns.alidns.com/dns-query"
     - "https://doh.pub/dns-query"
 
-  # 让 direct-nameserver 也遵循 nameserver-policy，避免规则意图与实际解析路径不一致
   direct-nameserver-follow-policy: true
 
-  # 解析代理服务器自身域名时使用国内 DNS，防止代理 DNS 循环依赖
   proxy-server-nameserver:
     - "https://dns.alidns.com/dns-query"
     - "https://doh.pub/dns-query"
 
-  # 按规则集指定查询访问域名时使用的 DNS
   nameserver-policy:
-    # 私有域名固定走国内 DNS
     "rule-set:Private":
       - "https://dns.alidns.com/dns-query"
       - "https://doh.pub/dns-query"
 
-    # 中国大陆域名固定走国内 DNS
     "rule-set:China":
       - "https://dns.alidns.com/dns-query"
       - "https://doh.pub/dns-query"
 
-    # fake-ip 过滤列表中的域名固定走国内 DNS，避免误映射
     "rule-set:fakeip-filter":
       - "https://dns.alidns.com/dns-query"
       - "https://doh.pub/dns-query"
 
-  # 以下域名不使用 fake-ip，返回真实 IP
   fake-ip-filter:
     - rule-set:Private
     - rule-set:China
     - rule-set:fakeip-filter
-  
-# 实验性功能
+
+# ==================== 实验性功能 ====================
 experimental:
-  quic-go-disable-gso: true  
-  
-# 配置存储
+  quic-go-disable-gso: true
+
+# ==================== 配置存储 ====================
 profile:
   store-selected: true
   store-fake-ip: true
 
-# 流量嗅探
+# ==================== 流量嗅探 ====================
 sniffer:
   enable: true
   sniff:
@@ -108,33 +97,30 @@ sniffer:
   skip-domain:
     - "Mijia Cloud"
     - "+.push.apple.com"
-    
- # ==================== 锚点配置 ====================   
-# 锚点定义
-UrlTest: &UrlTest {type: url-test, interval: 200, lazy: true, url: 'https://www.google.com/generate_204', hidden: true, include-all: true }
+
+# ==================== 锚点配置 ====================
+UrlTest: &UrlTest { type: url-test, interval: 200, lazy: true, url: 'https://www.google.com/generate_204', hidden: true, include-all: true }
 Select: &Select { type: select, hidden: false, include-all: true }
-Global_settings: { exclude_regex: &global_exclude "AHK|排除1|排除2|5x|剩余流量|过期|回国|群|官网|客服|订阅|流量" }
-# 地理位置匹配锚点
+Global_settings: { exclude_regex: &global_exclude "(?i)AHK|排除1|排除2|5x|倍率|剩余流量|过期|回国|群|官网|客服|订阅|流量|套餐|到期|Expire|Traffic|频道|邀请|TG|测试|Test" }
+
 filters:
   - &FilterHK '(?i)(?:港|香港|🇭🇰|\bHK\b|\bHKG\b|Hong\s*Kong)'
-  - &FilterSG '(?i)(?:坡|新加坡|狮城|🇸🇬|\bSG\b|\bSGP\b|\bSIN\b|\bXSP\b|Singapore)'
-  - &FilterJP '(?i)(?:日|日本|东京|大阪|🇯🇵|\bJP\b|\bJPN\b|\bJapan\b|\bTokyo\b|\bOsaka\b|\bNRT\b|\bHND\b|\bKIX\b|\bCTS\b|\bFUK\b)'
-  - &FilterKR '(?i)(?:韩|韓|韩国|韓國|首尔|首爾|🇰🇷|\bKR\b|\bKOR\b|\bKorea\b|\bSeoul\b|\bICN\b)'
-  - &FilterUS '(?i)(?:美|美国|美國|🇺🇸|\bUS\b|\bUSA\b|\bUnited\s*States\b|\bAmerica\b|\bSJC\b|\bJFK\b|\bLAX\b|\bORD\b|\bSFO\b|\bSEA\b|\bIAD\b|\bEWR\b)'
   - &FilterTW '(?i)(?:台|臺|台湾|台灣|🇹🇼|\bTW\b|\bTWN\b|\bTaiwan\b|\bTaipei\b|\bTPE\b|\bTSA\b|\bKHH\b)'
-  - &FilterEU '(?i)(?:德|德国|德國|法|法国|法國|英|英国|英國|意|意大利|荷|荷兰|荷蘭|瑞|瑞士|瑞典|欧洲|歐洲|🇪🇺|\bEU\b|\bEUR\b|\bEurope\b|\bDE\b|\bDEU\b|\bGermany\b|\bFRA\b|\bFR\b|\bFRA\b|\bFrance\b|\bCDG\b|\bUK\b|\bGB\b|\bGBR\b|\bUnited\s*Kingdom\b|\bLHR\b|\bIT\b|\bITA\b|\bItaly\b|\bNL\b|\bNLD\b|\bNetherlands\b|\bAMS\b|\bCH\b|\bCHE\b|\bSwitzerland\b|\bSE\b|\bSWE\b|\bSweden\b)'
+  - &FilterJP '(?i)(?:日|日本|东京|大阪|🇯🇵|\bJP\b|\bJPN\b|\bJapan\b|\bTokyo\b|\bOsaka\b|\bNRT\b|\bHND\b|\bKIX\b|\bCTS\b|\bFUK\b)'
+  - &FilterSG '(?i)(?:坡|新加坡|狮城|🇸🇬|\bSG\b|\bSGP\b|\bSIN\b|\bXSP\b|Singapore)'
+  - &FilterUS '(?i)(?:美|美国|美國|🇺🇸|\bUS\b|\bUSA\b|\bUnited\s*States\b|\bAmerica\b|\bSJC\b|\bJFK\b|\bLAX\b|\bORD\b|\bSFO\b|\bSEA\b|\bIAD\b|\bEWR\b)'
+  - &FilterKR '(?i)(?:韩|韓|韩国|韓國|首尔|首爾|🇰🇷|\bKR\b|\bKOR\b|\bKorea\b|\bSeoul\b|\bICN\b)'
 
 # ==================== 代理策略组 ====================
-#代理组
 proxy-groups:
   # --- 顶层业务分组 ---
-  - { name: Proxy, type: select, proxies: [香港, 台湾, 日本, 新加坡, 美国, 韩国, 欧盟, ALL, DIRECT], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Rocket.png }
-  - { name: YouTube, type: select, proxies: [美国, 香港, 台湾, 日本, 新加坡, 韩国, 欧盟], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/YouTube.png }
-  - { name: AI, type: select, proxies: [美国, 新加坡, 日本, 欧盟], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/AI.png }
+  - { name: Proxy, type: select, proxies: [香港, 台湾, 日本, 新加坡, 美国, 韩国, ALL, DIRECT], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Rocket.png }
+  - { name: YouTube, type: select, proxies: [美国, 香港, 台湾, 日本, 新加坡, 韩国], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/YouTube.png }
+  - { name: AI, type: select, proxies: [美国, 新加坡, 日本, 香港, 台湾], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/AI.png }
   - { name: Games, type: select, proxies: [香港, 台湾, 日本, 新加坡, 美国, DIRECT], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Steam.png }
-  - { name: Google, type: select, proxies: [美国, 香港, 台湾, 日本, 新加坡, 韩国, 欧盟], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Google_Search.png } 
-  - { name: GitHub, type: select, proxies: [香港, 台湾, 日本, 新加坡, 美国, 韩国, 欧盟], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/GitHub.png }
-  - { name: Telegram, type: select, proxies: [香港, 台湾, 日本, 新加坡, 美国, 韩国, 欧盟], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Telegram.png }
+  - { name: Google, type: select, proxies: [美国, 香港, 台湾, 日本, 新加坡, 韩国], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Google_Search.png }
+  - { name: GitHub, type: select, proxies: [香港, 台湾, 日本, 新加坡, 美国, 韩国], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/GitHub.png }
+  - { name: Telegram, type: select, proxies: [香港, 台湾, 日本, 新加坡, 美国, 韩国], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Telegram.png }
 
   # --- 底层地区筛选组 ---
   - { name: 香港, <<: *UrlTest, filter: *FilterHK, exclude-filter: *global_exclude, icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Hong_Kong.png }
@@ -143,49 +129,48 @@ proxy-groups:
   - { name: 新加坡, <<: *UrlTest, filter: *FilterSG, exclude-filter: *global_exclude, icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Singapore.png }
   - { name: 韩国, <<: *UrlTest, filter: *FilterKR, exclude-filter: *global_exclude, icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Korea.png }
   - { name: 美国, <<: *Select, filter: *FilterUS, exclude-filter: *global_exclude, icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/United_States.png }
-  - { name: 欧盟, <<: *UrlTest, filter: *FilterEU, exclude-filter: *global_exclude, icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/European_Union.png } 
   - { name: ALL, type: select, include-all: true, exclude-filter: *global_exclude, icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Global.png }
 
 # ==================== 规则集 ====================
-# 规则集行为模板
-BehaviorDN: &BehaviorDN {type: http, behavior: domain, format: mrs, interval: 86400, proxy: Proxy}
-BehaviorIP: &BehaviorIP {type: http, behavior: ipcidr, format: mrs, interval: 86400, proxy: Proxy}
+BehaviorDN: &BehaviorDN { type: http, behavior: domain, format: mrs, interval: 86400, proxy: Proxy }
+BehaviorIP: &BehaviorIP { type: http, behavior: ipcidr, format: mrs, interval: 86400, proxy: Proxy }
 
-# 规则提供者
-rule-providers:  
+rule-providers:
   # 域名规则
-  Tracking:       {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Tracking.mrs}
-  Advertising:    {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Advertising.mrs} 
-  Private:        {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/private.mrs}
-  Download:       {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Download.mrs}
-  fakeip-filter:  {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/fakeip-filter.mrs}
-  AI:             {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/ai.mrs} 
-  GitHub:         {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/GitHub.mrs}    
-  Telegram:       {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Telegram.mrs}
-  SteamCN:        {<<: *BehaviorDN, url: https://github.com/Jarv1s0/RuleList/raw/main/rules/SteamCN.mrs} 
-  Games:          {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/games.mrs}
-  YouTube:        {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/youtube.mrs}
-  AppleCN:        {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AppleCN.mrs}
-  GoogleCN:       {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/google-cn.mrs}
-  Google:         {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Google.mrs}
-  MicrosoftCN:    {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/microsoft-cn.mrs}
-  GFW:            {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/gfw.mrs}    
-  Proxy:          {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Proxy.mrs}
-  China:          {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/cn.mrs}
+  Tracking:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Tracking.mrs }
+  Advertising:    { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Advertising.mrs }
+  Private:        { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/private.mrs }
+  Download:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Download.mrs }
+  fakeip-filter:  { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/fakeip-filter.mrs }
+  AI:             { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/ai.mrs }
+  GitHub:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/GitHub.mrs }
+  Telegram:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Telegram.mrs }
+  SteamCN:        { <<: *BehaviorDN, url: https://github.com/Jarv1s0/RuleList/raw/main/rules/SteamCN.mrs }
+  Games:          { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/games.mrs }
+  YouTube:        { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/youtube.mrs }
+  AppleCN:        { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AppleCN.mrs }
+  GoogleCN:       { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/google-cn.mrs }
+  Google:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Google.mrs }
+  MicrosoftCN:    { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/microsoft-cn.mrs }
+  GFW:            { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/gfw.mrs }
+  Proxy:          { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Proxy.mrs }
+  China:          { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/cn.mrs }
+
   # IP规则
-  PrivateIP:      {<<: *BehaviorIP, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/privateip.mrs}
-  AIIP:           {<<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/AI.mrs}
-  TelegramIP:     {<<: *BehaviorIP, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/telegramip.mrs}   
-  GoogleIP:       {<<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Google.mrs}  
-  ProxyIP:        {<<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Proxy.mrs} 
-  ChinaIP:        {<<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/China.mrs}
-  
-# ==================== 规则路由 ====================  
+  PrivateIP:      { <<: *BehaviorIP, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/privateip.mrs }
+  AIIP:           { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/AI.mrs }
+  TelegramIP:     { <<: *BehaviorIP, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/telegramip.mrs }
+  GoogleIP:       { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Google.mrs }
+  ProxyIP:        { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Proxy.mrs }
+  ChinaIP:        { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/China.mrs }
+
+# ==================== 规则路由 ====================
 rules:
   # 拦截规则
   - RULE-SET,Tracking,REJECT
   - RULE-SET,Advertising,REJECT
-  - OR,((AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((GEOIP,CN))))),(DST-PORT,853)),REJECT # 拦截海外 QUIC 流量及全域 DoT 流量
+  - OR,((AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((GEOIP,CN))))),(DST-PORT,853)),REJECT
+
   # 域名规则
   - RULE-SET,Private,DIRECT
   - RULE-SET,SteamCN,DIRECT
@@ -202,6 +187,7 @@ rules:
   - RULE-SET,GFW,Proxy
   - RULE-SET,Proxy,Proxy
   - RULE-SET,China,DIRECT
+
   # IP规则
   - RULE-SET,PrivateIP,DIRECT,no-resolve
   - RULE-SET,AIIP,AI,no-resolve
@@ -209,4 +195,6 @@ rules:
   - RULE-SET,GoogleIP,Google,no-resolve
   - RULE-SET,ProxyIP,Proxy,no-resolve
   - RULE-SET,ChinaIP,DIRECT
+
+  # 兜底规则
   - MATCH,Proxy
