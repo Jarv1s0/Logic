@@ -145,7 +145,7 @@ rule-providers:
   AI:             { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/ai.mrs }
   GitHub:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/GitHub.mrs }
   Telegram:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Telegram.mrs }
-  SteamCN:        { <<: *BehaviorDN, url: https://github.com/Jarv1s0/RuleList/raw/main/rules/SteamCN.mrs }
+  SteamCN:        { <<: *BehaviorDN, url: https://github.com/Jarv1s0/RuleList/raw/release/rules/SteamCN.mrs }
   Games:          { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/games.mrs }
   YouTube:        { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/youtube.mrs }
   AppleCN:        { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AppleCN.mrs }
