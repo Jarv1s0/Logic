@@ -99,7 +99,7 @@ sniffer:
     - "+.push.apple.com"
 
 # ==================== 锚点配置 ====================
-UrlTest: &UrlTest { type: url-test, interval: 200, lazy: true, url: 'https://www.google.com/generate_204', hidden: true, include-all: true }
+UrlTest: &UrlTest { type: url-test, interval: 300, tolerance: 100, lazy: true, url: 'https://cp.cloudflare.com/generate_204', hidden: true, include-all: true, max-failed-times: 3 }
 Select: &Select { type: select, hidden: false, include-all: true }
 Global_settings: { exclude_regex: &global_exclude "(?i)AHK|排除1|排除2|5x|倍率|剩余流量|过期|回国|群|官网|客服|订阅|流量|套餐|到期|Expire|Traffic|频道|邀请|TG|测试|Test" }
 
