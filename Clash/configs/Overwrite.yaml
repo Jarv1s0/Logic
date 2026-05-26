@@ -59,10 +59,6 @@ dns:
     - rule-set:Private
     - rule-set:China
     - rule-set:fakeip-filter
-    - +.miwifi.com
-    - +.docker.io
-    - +.market.xiaomi.com
-    - +.push.apple.com
 
 # ==================== 实验性功能 ====================
 experimental:
