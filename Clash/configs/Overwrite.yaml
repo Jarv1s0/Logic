@@ -31,7 +31,7 @@ tun:
   auto-detect-interface: true
 
 # ==================== DNS 配置 ====================
-dns!:
+dns:
   enable: true
   respect-rules: true
   ipv6: false
@@ -50,29 +50,18 @@ dns!:
     - "https://dns.alidns.com/dns-query"
     - "https://doh.pub/dns-query"
 
-  direct-nameserver-follow-policy: true
-
   proxy-server-nameserver:
     - "https://dns.alidns.com/dns-query"
     - "https://doh.pub/dns-query"
 
-  nameserver-policy:
-    "rule-set:Private":
-      - "https://dns.alidns.com/dns-query"
-      - "https://doh.pub/dns-query"
-
-    "rule-set:China":
-      - "https://dns.alidns.com/dns-query"
-      - "https://doh.pub/dns-query"
-
-    "rule-set:fakeip-filter":
-      - "https://dns.alidns.com/dns-query"
-      - "https://doh.pub/dns-query"
-
   fake-ip-filter:
+    - rule-set:Direct
     - rule-set:Private
     - rule-set:China
-    - rule-set:fakeip-filter
+    - +.miwifi.com
+    - +.docker.io
+    - +.market.xiaomi.com
+    - +.push.apple.com
 
 # ==================== 实验性功能 ====================
 experimental:
@@ -132,16 +121,16 @@ proxy-groups:
   - { name: ALL, type: select, include-all: true, exclude-filter: *global_exclude, icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Global.png }
 
 # ==================== 规则集 ====================
-BehaviorDN: &BehaviorDN { type: http, behavior: domain, format: mrs, interval: 86400, proxy: Proxy }
-BehaviorIP: &BehaviorIP { type: http, behavior: ipcidr, format: mrs, interval: 86400, proxy: Proxy }
+BehaviorDN: &BehaviorDN { type: http, behavior: domain, format: mrs, interval: 86400 }
+BehaviorIP: &BehaviorIP { type: http, behavior: ipcidr, format: mrs, interval: 86400 }
 
 rule-providers:
   # 域名规则
   Tracking:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Tracking.mrs }
   Advertising:    { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Advertising.mrs }
+  Direct:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Direct.mrs }
   Private:        { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/private.mrs }
   Download:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Download.mrs }
-  fakeip-filter:  { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/fakeip-filter.mrs }
   AI:             { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/ai.mrs }
   GitHub:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/GitHub.mrs }
   Telegram:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Telegram.mrs }
@@ -182,8 +171,8 @@ rules:
   - RULE-SET,Games,Games
   - RULE-SET,YouTube,YouTube
   - RULE-SET,MicrosoftCN,DIRECT
+  - RULE-SET,GoogleCN,DIRECT
   - RULE-SET,Google,Google
-  - RULE-SET,GoogleCN,Google
   - RULE-SET,GFW,Proxy
   - RULE-SET,Proxy,Proxy
   - RULE-SET,China,DIRECT
@@ -194,7 +183,7 @@ rules:
   - RULE-SET,TelegramIP,Telegram,no-resolve
   - RULE-SET,GoogleIP,Google,no-resolve
   - RULE-SET,ProxyIP,Proxy,no-resolve
-  - RULE-SET,ChinaIP,DIRECT
+  - RULE-SET,ChinaIP,DIRECT,no-resolve
 
   # 兜底规则
   - MATCH,Proxy
