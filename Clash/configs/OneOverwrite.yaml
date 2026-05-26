@@ -1,9 +1,8 @@
 # 地址: https://github.com/Jarv1s0/Proxy_Script
-# 版本: v3.0.0
-# 更新: 2026 年 4 月 8 日
+# 版本: v4.0.0
+# 更新: 2026 年 5 月 26 日
 
 # ==================== 核心配置 ====================
-# 基础配置
 mode: rule
 port: 7890
 socks-port: 7891
@@ -20,7 +19,7 @@ find-process-mode: 'always'
 keep-alive-interval: 15
 keep-alive-idle: 600
 
-# TUN模式配置
+# ==================== TUN 模式 ====================
 tun:
   enable: true
   stack: gvisor
@@ -31,7 +30,7 @@ tun:
   auto-redirect: true
   auto-detect-interface: true
 
-# DNS配置
+# ==================== DNS 配置 ====================
 dns:
   enable: true
   respect-rules: true
@@ -55,7 +54,6 @@ dns:
     - "https://dns.alidns.com/dns-query"
     - "https://doh.pub/dns-query"
 
-  # 以下域名不使用 fake-ip，返回真实 IP
   fake-ip-filter:
     - rule-set:Direct
     - rule-set:Private
@@ -65,63 +63,63 @@ dns:
     - +.market.xiaomi.com
     - +.push.apple.com
 
-
 # ==================== 代理策略组 ====================
 proxy-groups:
-- { name: Proxy, type: select, include-all: true }
-# ==================== 规则集定义 (全量保留) ====================
-BehaviorDN: &BehaviorDN {type: http, behavior: domain, format: mrs, interval: 86400}
-BehaviorIP: &BehaviorIP {type: http, behavior: ipcidr, format: mrs, interval: 86400}
+  - { name: Proxy, type: select, include-all: true }
+
+# ==================== 规则集 ====================
+BehaviorDN: &BehaviorDN { type: http, behavior: domain, format: mrs, interval: 86400 }
+BehaviorIP: &BehaviorIP { type: http, behavior: ipcidr, format: mrs, interval: 86400 }
 
 rule-providers:
   # 域名规则
-  Tracking:       {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Tracking.mrs}
-  Advertising:    {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Advertising.mrs}
-  Direct:         {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Direct.mrs}
-  Private:        {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/private.mrs}
-  Download:       {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Download.mrs}
-  AI:             {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/ai.mrs}
-  GitHub:         {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/GitHub.mrs}
-  Telegram:       {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Telegram.mrs}
+  Tracking:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Tracking.mrs }
+  Advertising:    { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Advertising.mrs }
+  Direct:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Direct.mrs }
+  Private:        { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/private.mrs }
+  Download:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Download.mrs }
+  AI:             { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/ai.mrs }
+  GitHub:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/GitHub.mrs }
+  Telegram:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Telegram.mrs }
   SteamCN:        { <<: *BehaviorDN, url: https://github.com/Jarv1s0/RuleList/raw/release/rules/SteamCN.mrs }
-  Games:          {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/games.mrs}
-  YouTube:        {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/youtube.mrs}
-  AppleCN:        {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AppleCN.mrs}
-  GoogleCN:       {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/google-cn.mrs}
-  Google:         {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Google.mrs}
-  MicrosoftCN:    {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/microsoft-cn.mrs}
-  GFW:            {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/gfw.mrs}
-  Proxy:          {<<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Proxy.mrs}
-  China:          {<<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/cn.mrs}
-  # IP规则
-  PrivateIP:      {<<: *BehaviorIP, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/privateip.mrs}
-  AIIP:           {<<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/AI.mrs}
-  TelegramIP:     {<<: *BehaviorIP, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/telegramip.mrs}
-  GoogleIP:       {<<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Google.mrs}
-  ProxyIP:        {<<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Proxy.mrs}
-  ChinaIP:        {<<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/China.mrs}
+  Games:          { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/games.mrs }
+  YouTube:        { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/youtube.mrs }
+  AppleCN:        { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AppleCN.mrs }
+  GoogleCN:       { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/google-cn.mrs }
+  Google:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Google.mrs }
+  MicrosoftCN:    { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/microsoft-cn.mrs }
+  GFW:            { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/gfw.mrs }
+  Proxy:          { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Proxy.mrs }
+  China:          { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/cn.mrs }
 
-# ==================== 规则路由 (全量指向 Proxy) ====================
+  # IP规则
+  PrivateIP:      { <<: *BehaviorIP, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/privateip.mrs }
+  AIIP:           { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/AI.mrs }
+  TelegramIP:     { <<: *BehaviorIP, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/telegramip.mrs }
+  GoogleIP:       { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Google.mrs }
+  ProxyIP:        { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Proxy.mrs }
+  ChinaIP:        { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/China.mrs }
+
+# ==================== 规则路由 ====================
 rules:
-  # 1. 优先自定义规则
+  # 自定义规则
   - DOMAIN-KEYWORD,1ytsub,DIRECT
   - DOMAIN-KEYWORD,jarv1s,Proxy
   - PROCESS-NAME,dota2.exe,DIRECT
   - PROCESS-NAME,language_server_windows_x64.exe,Proxy
   - PROCESS-NAME,Antigravity.exe,Proxy
 
-  # 2. 拦截
+  # 拦截规则
   - RULE-SET,Tracking,REJECT
   - RULE-SET,Advertising,REJECT
   - OR,((AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((GEOIP,CN))))),(DST-PORT,853)),REJECT
 
-  # 3. 域名分流 (全部指向 Proxy 或 DIRECT)
+  # 域名规则
   - RULE-SET,Private,DIRECT
   - RULE-SET,SteamCN,DIRECT
   - RULE-SET,Download,DIRECT
   - RULE-SET,AppleCN,DIRECT
   - RULE-SET,MicrosoftCN,DIRECT
-
   - RULE-SET,AI,Proxy
   - RULE-SET,GitHub,Proxy
   - RULE-SET,Telegram,Proxy
@@ -133,7 +131,7 @@ rules:
   - RULE-SET,Proxy,Proxy
   - RULE-SET,China,DIRECT
 
-  # 4. IP 规则分流 (全部指向 Proxy 或 DIRECT)
+  # IP规则
   - RULE-SET,PrivateIP,DIRECT,no-resolve
   - RULE-SET,AIIP,Proxy,no-resolve
   - RULE-SET,TelegramIP,Proxy,no-resolve
@@ -141,5 +139,5 @@ rules:
   - RULE-SET,ProxyIP,Proxy,no-resolve
   - RULE-SET,ChinaIP,DIRECT,no-resolve
 
-  # 5. 兜底
+  # 兜底规则
   - MATCH,Proxy
