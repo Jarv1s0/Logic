@@ -162,6 +162,7 @@ rules:
 
   # 域名规则
   - RULE-SET,Private,DIRECT
+  - RULE-SET,Direct,DIRECT
   - RULE-SET,SteamCN,DIRECT
   - RULE-SET,Download,DIRECT
   - RULE-SET,AppleCN,DIRECT
