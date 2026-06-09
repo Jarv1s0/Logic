@@ -1,6 +1,6 @@
 # 地址: https://github.com/Jarv1s0/Proxy_Script
-# 版本: v4.0.1
-# 更新: 2026 年 6 月 9 日
+# 版本: v4.0.0
+# 更新: 2026 年 5 月 26 日
 
 # ==================== 核心配置 ====================
 mode: rule
@@ -62,7 +62,7 @@ dns:
 
 # ==================== 代理策略组 ====================
 proxy-groups:
-  - { name: Proxy, type: select, include-all: true, empty-fallback: DIRECT }
+  - { name: Proxy, type: select, include-all: true }
 
 # ==================== 规则集 ====================
 BehaviorDN: &BehaviorDN { type: http, behavior: domain, format: mrs, interval: 86400 }

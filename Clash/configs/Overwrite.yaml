@@ -1,6 +1,6 @@
 # 地址: https://github.com/Jarv1s0/Proxy_Script
-# 版本: v4.0.1
-# 更新: 2026 年 6 月 9 日
+# 版本: v4.0.0
+# 更新: 2026 年 5 月 26 日
 
 # ==================== 核心配置 ====================
 mode: rule
@@ -85,8 +85,8 @@ sniffer:
     - "+.push.apple.com"
 
 # ==================== 锚点配置 ====================
-UrlTest: &UrlTest { type: url-test, interval: 300, tolerance: 100, lazy: true, url: 'https://cp.cloudflare.com/generate_204', hidden: true, include-all: true, empty-fallback: ALL, max-failed-times: 3 }
-Select: &Select { type: select, hidden: false, include-all: true, empty-fallback: ALL }
+UrlTest: &UrlTest { type: url-test, interval: 300, tolerance: 100, lazy: true, url: 'https://cp.cloudflare.com/generate_204', hidden: true, include-all: true, max-failed-times: 3 }
+Select: &Select { type: select, hidden: false, include-all: true }
 Global_settings: { exclude_regex: &global_exclude "(?i)AHK|排除1|排除2|5x|倍率|剩余流量|过期|回国|群|官网|客服|订阅|流量|套餐|到期|Expire|Traffic|频道|邀请|TG|测试|Test" }
 
 filters:
@@ -115,7 +115,7 @@ proxy-groups:
   - { name: 新加坡, <<: *UrlTest, filter: *FilterSG, exclude-filter: *global_exclude, icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Singapore.png }
   - { name: 韩国, <<: *UrlTest, filter: *FilterKR, exclude-filter: *global_exclude, icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Korea.png }
   - { name: 美国, <<: *Select, filter: *FilterUS, exclude-filter: *global_exclude, icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/United_States.png }
-  - { name: ALL, type: select, include-all: true, exclude-filter: *global_exclude, empty-fallback: DIRECT, icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Global.png }
+  - { name: ALL, type: select, include-all: true, exclude-filter: *global_exclude, icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Global.png }
 
 # ==================== 规则集 ====================
 BehaviorDN: &BehaviorDN { type: http, behavior: domain, format: mrs, interval: 86400 }
