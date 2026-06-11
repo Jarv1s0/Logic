@@ -156,7 +156,7 @@ rules:
   # 拦截规则
   - RULE-SET,Tracking,REJECT
   - RULE-SET,Advertising,REJECT
-  - OR,((AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((GEOIP,CN))))),(DST-PORT,853)),REJECT
+  #- OR,((AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((GEOIP,CN))))),(DST-PORT,853)),REJECT
 
   # 域名规则
   - RULE-SET,Private,DIRECT
