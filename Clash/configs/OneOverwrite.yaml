@@ -10,7 +10,7 @@ redir-port: 7892
 mixed-port: 7893
 tproxy-port: 7895
 ipv6: false
-allow-lan: true
+allow-lan: false
 unified-delay: true
 tcp-concurrent: true
 log-level: warning
@@ -43,8 +43,8 @@ dns:
     - 223.6.6.6
 
   nameserver:
-    - "https://1.1.1.1/dns-query"
-    - "https://8.8.8.8/dns-query"
+    - "https://dns.alidns.com/dns-query"
+    - "https://doh.pub/dns-query"
 
   direct-nameserver:
     - "https://dns.alidns.com/dns-query"

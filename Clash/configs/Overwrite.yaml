@@ -10,7 +10,7 @@ redir-port: 7892
 mixed-port: 7893
 tproxy-port: 7895
 ipv6: false
-allow-lan: true
+allow-lan: false
 unified-delay: true
 tcp-concurrent: true
 log-level: warning
@@ -43,8 +43,8 @@ dns:
     - 223.6.6.6
 
   nameserver:
-    - "https://1.1.1.1/dns-query"
-    - "https://8.8.8.8/dns-query"
+    - "https://dns.alidns.com/dns-query"
+    - "https://doh.pub/dns-query"
 
   direct-nameserver:
     - "https://dns.alidns.com/dns-query"
@@ -85,7 +85,7 @@ sniffer:
     - "+.push.apple.com"
 
 # ==================== 锚点配置 ====================
-UrlTest: &UrlTest { type: url-test, interval: 300, tolerance: 100, lazy: true, url: 'https://cp.cloudflare.com/generate_204', hidden: true, include-all: true, max-failed-times: 3 }
+UrlTest: &UrlTest { type: url-test, interval: 300, tolerance: 50, lazy: true, url: 'https://www.gstatic.com/generate_204', empty-fallback: REJECT, hidden: true, include-all: true, max-failed-times: 3 }
 Select: &Select { type: select, hidden: false, include-all: true }
 Global_settings: { exclude_regex: &global_exclude "(?i)AHK|排除1|排除2|5x|倍率|剩余流量|过期|回国|群|官网|客服|订阅|流量|套餐|到期|Expire|Traffic|频道|邀请|TG|测试|Test" }
 
@@ -100,13 +100,14 @@ filters:
 # ==================== 代理策略组 ====================
 proxy-groups:
   # --- 顶层业务分组 ---
-  - { name: Proxy, type: select, proxies: [香港, 台湾, 日本, 新加坡, 美国, 韩国, ALL, DIRECT], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Rocket.png }
+  - { name: Proxy, type: select, proxies: [Fallback, ALL, 香港, 台湾, 日本, 新加坡, 美国, 韩国, DIRECT], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Rocket.png }
   - { name: YouTube, type: select, proxies: [美国, 香港, 台湾, 日本, 新加坡, 韩国], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/YouTube.png }
   - { name: AI, type: select, proxies: [美国, 新加坡, 日本, 香港, 台湾], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/AI.png }
   - { name: Games, type: select, proxies: [香港, 台湾, 日本, 新加坡, 美国, DIRECT], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Steam.png }
   - { name: Google, type: select, proxies: [美国, 香港, 台湾, 日本, 新加坡, 韩国], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Google_Search.png }
   - { name: GitHub, type: select, proxies: [香港, 台湾, 日本, 新加坡, 美国, 韩国], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/GitHub.png }
   - { name: Telegram, type: select, proxies: [香港, 台湾, 日本, 新加坡, 美国, 韩国], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Telegram.png }
+  - { name: Fallback, type: fallback, url: 'https://www.gstatic.com/generate_204', interval: 300, proxies: [美国, 日本, 新加坡, 韩国, 香港, 台湾], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/ULB.png }
 
   # --- 底层地区筛选组 ---
   - { name: 香港, <<: *UrlTest, filter: *FilterHK, exclude-filter: *global_exclude, icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Hong_Kong.png }
