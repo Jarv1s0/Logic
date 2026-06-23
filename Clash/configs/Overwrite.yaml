@@ -58,6 +58,7 @@ dns:
     - rule-set:Direct
     - rule-set:Private
     - rule-set:China
+    - rule-set:fakeip-filter
 
 # ==================== 实验性功能 ====================
 experimental:
@@ -128,6 +129,7 @@ rule-providers:
   Direct:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Direct.mrs }
   Private:        { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Private.mrs }
   Download:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Download.mrs }
+  fakeip-filter:  { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/fakeip-filter.mrs }
   AI:             { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AI.mrs }
   GitHub:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/GitHub.mrs }
   Telegram:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Telegram.mrs }
