@@ -101,10 +101,10 @@ filters:
 proxy-groups:
   # --- 顶层业务分组 ---
   - { name: Proxy, type: select, proxies: [Fallback, 香港, 台湾, 日本, 新加坡, 美国, 韩国, DIRECT], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Rocket.png }
+  - { name: Google, type: select, proxies: [美国, 香港, 台湾, 日本, 新加坡, 韩国], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Google_Search.png }
   - { name: YouTube, type: select, proxies: [美国, 香港, 台湾, 日本, 新加坡, 韩国], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/YouTube.png }
   - { name: AI, type: select, proxies: [美国, 新加坡, 日本, 香港, 台湾], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/AI.png }
   - { name: Games, type: select, proxies: [香港, 台湾, 日本, 新加坡, 美国, DIRECT], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Steam.png }
-  - { name: Google, type: select, proxies: [美国, 香港, 台湾, 日本, 新加坡, 韩国], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Google_Search.png }
   - { name: GitHub, type: select, proxies: [香港, 台湾, 日本, 新加坡, 美国, 韩国], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/GitHub.png }
   - { name: Telegram, type: select, proxies: [香港, 台湾, 日本, 新加坡, 美国, 韩国], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/Telegram.png }
   - { name: Fallback, type: fallback, url: 'https://www.gstatic.com/generate_204', interval: 300, hidden: true, proxies: [香港, 新加坡, 日本, 台湾, 美国], icon: https://cdn.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/ULB.png }
