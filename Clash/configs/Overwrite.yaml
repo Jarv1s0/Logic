@@ -94,7 +94,7 @@ filters:
   - &FilterTW '(?i)(?:台|臺|台湾|台灣|🇹🇼|\bTW\b|\bTWN\b|\bTaiwan\b|\bTaipei\b|\bTPE\b|\bTSA\b|\bKHH\b)'
   - &FilterJP '(?i)(?:日|日本|东京|大阪|🇯🇵|\bJP\b|\bJPN\b|\bJapan\b|\bTokyo\b|\bOsaka\b|\bNRT\b|\bHND\b|\bKIX\b|\bCTS\b|\bFUK\b)'
   - &FilterSG '(?i)(?:坡|新加坡|狮城|🇸🇬|\bSG\b|\bSGP\b|\bSIN\b|\bXSP\b|Singapore)'
-  - &FilterUS '(?i)(?:美|美国|美國|🇺🇸|\bUS\b|\bUSA\b|\bUnited\s*States\b|\bAmerica\b|\bSJC\b|\bJFK\b|\bLAX\b|\bORD\b|\bSFO\b|\bSEA\b|\bIAD\b|\bEWR\b)'
+  - &FilterUS '(?i)(?:美国|美國|美东|美東|美西|美中|美南|美港|美日|中美|美专|美專|🇺🇸|\bUS\b|\bUSA\b|\bUnited\s*States\b|\bAmerica\b|\bSJC\b|\bJFK\b|\bLAX\b|\bORD\b|\bSFO\b|\bSEA\b|\bIAD\b|\bEWR\b)'
   - &FilterKR '(?i)(?:韩|韓|韩国|韓國|首尔|首爾|🇰🇷|\bKR\b|\bKOR\b|\bKorea\b|\bSeoul\b|\bICN\b)'
 
 # ==================== 代理策略组 ====================
@@ -156,7 +156,6 @@ rules:
   # 拦截规则
   - RULE-SET,Tracking,REJECT
   - RULE-SET,Advertising,REJECT
-  - OR,((AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((GEOIP,CN))))),(DST-PORT,853)),REJECT
 
   # 域名规则
   - RULE-SET,Private,DIRECT
