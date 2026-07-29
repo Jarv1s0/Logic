@@ -23,15 +23,22 @@ const ALWAYS_DISABLED_PROPERTIES = new Map([
   ["ios-feature-ondemandtrial\u0000enable_call_trials_facade", false],
 ]);
 
-function readVarint(bytes, offset) {
+function readVarint(bytes, offset, requireSafeInteger = true) {
   let value = 0;
-  let shift = 0;
+  let multiplier = 1;
 
-  while (offset < bytes.length && shift <= 49) {
+  for (let count = 0; count < 10 && offset < bytes.length; count++) {
     const byte = bytes[offset++];
-    value += (byte & 0x7f) * 2 ** shift;
-    if ((byte & 0x80) === 0) return { value, offset };
-    shift += 7;
+    if (count === 9 && byte > 1) throw new Error("Invalid protobuf varint");
+
+    value += (byte & 0x7f) * multiplier;
+    if ((byte & 0x80) === 0) {
+      if (requireSafeInteger && !Number.isSafeInteger(value)) {
+        throw new Error("Protobuf varint exceeds safe integer range");
+      }
+      return { value, offset };
+    }
+    multiplier *= 128;
   }
 
   throw new Error("Invalid protobuf varint");
@@ -71,7 +78,7 @@ function concatBytes(parts) {
 function skipFieldValue(bytes, offset, wireType, fieldNumber) {
   switch (wireType) {
     case 0:
-      return readVarint(bytes, offset).offset;
+      return readVarint(bytes, offset, false).offset;
     case 1:
       return offset + 8;
     case 2: {
@@ -119,7 +126,7 @@ function parseMessage(bytes) {
 
     switch (wireType) {
       case 0: {
-        const parsed = readVarint(bytes, offset);
+        const parsed = readVarint(bytes, offset, false);
         value = parsed.value;
         offset = parsed.offset;
         break;
@@ -250,28 +257,45 @@ function encodeUtf8(value) {
 function decodeUtf8(bytes) {
   let result = "";
 
+  function continuation(index) {
+    if (index >= bytes.length || (bytes[index] & 0xc0) !== 0x80) {
+      throw new Error("Invalid UTF-8 string");
+    }
+    return bytes[index] & 0x3f;
+  }
+
   for (let index = 0; index < bytes.length; index++) {
     const first = bytes[index];
 
     if (first < 0x80) {
       result += String.fromCharCode(first);
-    } else if ((first & 0xe0) === 0xc0) {
-      const code = ((first & 0x1f) << 6) | (bytes[++index] & 0x3f);
+    } else if (first >= 0xc2 && first <= 0xdf) {
+      const code = ((first & 0x1f) << 6) | continuation(++index);
       result += String.fromCharCode(code);
-    } else if ((first & 0xf0) === 0xe0) {
+    } else if (first >= 0xe0 && first <= 0xef) {
+      const second = continuation(++index);
+      if ((first === 0xe0 && second < 0x20) || (first === 0xed && second >= 0x20)) {
+        throw new Error("Invalid UTF-8 string");
+      }
       const code =
         ((first & 0x0f) << 12) |
-        ((bytes[++index] & 0x3f) << 6) |
-        (bytes[++index] & 0x3f);
+        (second << 6) |
+        continuation(++index);
       result += String.fromCharCode(code);
-    } else {
+    } else if (first >= 0xf0 && first <= 0xf4) {
+      const second = continuation(++index);
+      if ((first === 0xf0 && second < 0x10) || (first === 0xf4 && second >= 0x10)) {
+        throw new Error("Invalid UTF-8 string");
+      }
       let code =
         ((first & 7) << 18) |
-        ((bytes[++index] & 0x3f) << 12) |
-        ((bytes[++index] & 0x3f) << 6) |
-        (bytes[++index] & 0x3f);
+        (second << 12) |
+        (continuation(++index) << 6) |
+        continuation(++index);
       code -= 0x10000;
       result += String.fromCharCode(0xd800 + (code >> 10), 0xdc00 + (code & 0x3ff));
+    } else {
+      throw new Error("Invalid UTF-8 string");
     }
   }
 
