@@ -8,6 +8,10 @@
 #!icon=https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/Spotify.png
 #!date=2026-07-29 00:00:00
 
+[Argument]
+tab=switch, true, tag=移除侧边栏套餐入口, desc=控制是否隐藏 Spotify 侧边栏中的套餐入口
+useractivity=switch, true, tag=启用 Apple 设备接力, desc=控制是否允许通过 UserActivity 在 Apple 设备之间接力
+
 [Rewrite]
 # 屏蔽 Pendragon 推广内容。
 ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/pendragon\/ reject-dict
@@ -20,7 +24,7 @@
 
 [Script]
 # 固定到本仓库中已经审查的脚本 commit，避免后续更新静默改变执行代码。
-http-response ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/d9345e5b3bb647bc328b4be5e914f02b48368981/Loon/Script/Spotify.Crack.Dev.js, requires-body=true, binary-body-mode=true, timeout=5, tag=Spotify-Protobuf
+http-response ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/ef42d8155719f8104e8a63a43335e49285da5b42/Loon/Script/Spotify.Crack.Dev.js, requires-body=true, binary-body-mode=true, timeout=5, argument=[{tab},{useractivity}], tag=Spotify-Protobuf
 
 [MitM]
 hostname= *-spclient.spotify.com, spclient.wg.spotify.com
