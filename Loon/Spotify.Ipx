@@ -1,1 +1,26 @@
+#!name=Spotify去广告（增强版）
+#!desc=基于 001ProMax 版本，修复 customize 因 ETag 缓存返回 304、脚本无法处理的问题。首次启用后请重新登录 Spotify。
+#!openUrl=https://apps.apple.com/app/id324684580
+#!author=app2smile, 001ProMax, Codex Fix
+#!tag=去广告
+#!loon_version=3.2.4(787)
+#!homepage=https://github.com/001ProMax/Surge
+#!icon=https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/Spotify.png
+#!date=2026-07-29 00:00:00
 
+[Rewrite]
+# 屏蔽 Pendragon 推广内容。
+^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/pendragon\/ reject-dict
+
+# 使用 iPad 歌手页布局，恢复歌手列表展示。
+^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/artistview\/v1\/artist\/(.*)&platform=iphone header https://spclient.wg.spotify.com/artistview/v1/artist/$1&platform=ipad
+
+# 强制 Spotify 返回完整 Protobuf 正文，避免 304 空响应绕过脚本。
+^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ header-del if-none-match
+
+[Script]
+# 锁定到已审查的 commit，避免 main 分支更新后静默改变执行代码。
+http-response ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ script-path=https://raw.githubusercontent.com/001ProMax/Surge/2e3eb28d163d5e5de4d2f2532fe71eba22666634/Script/Spotify.Crack.Dev.js, requires-body=true, binary-body-mode=true, timeout=5, tag=Spotify-Protobuf
+
+[MitM]
+hostname= *-spclient.spotify.com, spclient.wg.spotify.com
