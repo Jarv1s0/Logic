@@ -1,1 +1,517 @@
-function e(e,t){let i=e.success;if(void 0!==i){k(t,10);let e=a();(function(e,t){let i=e.resolveSuccess;if(void 0!==i){k(t,10);let e=a();(function(e,t){let i=e.configuration;if(void 0!==i){k(t,10);let e=a();(function(e,t){let i=e.configurationAssignmentId;void 0!==i&&(k(t,10),m(t,i));let l=e.fetchTimeMillis;void 0!==l&&(k(t,16),w(t,l));let s=e.assignedValues;if(void 0!==s)for(let e of s){k(t,26);let i=a();(function(e,t){let i=e.boolValue;if(void 0!==i){k(t,26);let e=a();(function(e,t){let i=e.value;void 0!==i&&(k(t,8),V(t,+!!i))})(i,e),k(t,e.limit),h(t,e),o(e)}let l=e.intValue;if(void 0!==l){k(t,34);let e=a();(function(e,t){var i;let l=e.value;void 0!==l&&(k(t,8),w(t,{low:i=0|l,high:i>>31,unsigned:i>=0}))})(l,e),k(t,e.limit),h(t,e),o(e)}let s=e.enumValue;if(void 0!==s){k(t,42);let e=a();(function(e,t){let i=e.value;void 0!==i&&(k(t,10),m(t,i))})(s,e),k(t,e.limit),h(t,e),o(e)}let r=e.propertyId;if(void 0!==r){k(t,10);let e=a();(function(e,t){let i=e.scope;void 0!==i&&(k(t,10),m(t,i));let l=e.name;void 0!==l&&(k(t,18),m(t,l))})(r,e),k(t,e.limit),h(t,e),o(e)}})(e,i),k(t,i.limit),h(t,i),o(i)}})(i,e),k(t,e.limit),h(t,e),o(e)}})(i,e),k(t,e.limit),h(t,e),o(e)}let l=e.accountAttributesSuccess;if(void 0!==l){k(t,26);let e=a();(function(e,t){let i=e.accountAttributes;if(void 0!==i)for(let e in i){let l=a(),s=i[e];k(l,10),m(l,e),k(l,18);let r=a();(function(e,t){let i=e.boolValue;void 0!==i&&(k(t,16),V(t,+!!i));let l=e.longValue;void 0!==l&&(k(t,24),w(t,l));let s=e.stringValue;void 0!==s&&(k(t,34),m(t,s))})(s,r),k(l,r.limit),h(l,r),o(r),k(t,10),k(t,l.offset),h(t,l),o(l)}})(l,e),k(t,e.limit),h(t,e),o(e)}let s=e.fetchTimeMillis;void 0!==s&&(k(t,40),w(t,s))})(i,e),k(t,e.limit),h(t,e),o(e)}}function t(e){let t={};e:for(;!c(e);){let s=g(e);switch(s>>>3){case 0:break e;case 1:{let s=i(e);t.success=function(e){let t={};e:for(;!c(e);){let s=g(e);switch(s>>>3){case 0:break e;case 1:{let s=i(e);t.resolveSuccess=function(e){let t={};e:for(;!c(e);){let s=g(e);switch(s>>>3){case 0:break e;case 1:{let s=i(e);t.configuration=function(e){let t={};e:for(;!c(e);){let s=g(e);switch(s>>>3){case 0:break e;case 1:t.configurationAssignmentId=d(e,g(e));break;case 2:t.fetchTimeMillis=y(e,!1);break;case 3:{let s=i(e);(t.assignedValues||(t.assignedValues=[])).push(function(e){let t={};e:for(;!c(e);){let s=g(e);switch(s>>>3){case 0:break e;case 3:{let s=i(e);t.boolValue=function(e){let t={};e:for(;!c(e);){let i=g(e);switch(i>>>3){case 0:break e;case 1:t.value=!!p(e);break;default:l(e,7&i)}}return t}(e),e.limit=s;break}case 4:{let s=i(e);t.intValue=function(e){let t={};e:for(;!c(e);){let i=g(e);switch(i>>>3){case 0:break e;case 1:t.value=g(e);break;default:l(e,7&i)}}return t}(e),e.limit=s;break}case 5:{let s=i(e);t.enumValue=function(e){let t={};e:for(;!c(e);){let i=g(e);switch(i>>>3){case 0:break e;case 1:t.value=d(e,g(e));break;default:l(e,7&i)}}return t}(e),e.limit=s;break}case 1:{let s=i(e);t.propertyId=function(e){let t={};e:for(;!c(e);){let i=g(e);switch(i>>>3){case 0:break e;case 1:t.scope=d(e,g(e));break;case 2:t.name=d(e,g(e));break;default:l(e,7&i)}}return t}(e),e.limit=s;break}default:l(e,7&s)}}return t}(e)),e.limit=s;break}default:l(e,7&s)}}return t}(e),e.limit=s;break}default:l(e,7&s)}}return t}(e),e.limit=s;break}case 3:{let s=i(e);t.accountAttributesSuccess=function(e){let t={};e:for(;!c(e);){let s=g(e);switch(s>>>3){case 0:break e;case 1:{let s,a,o=t.accountAttributes||(t.accountAttributes={}),r=i(e);t:for(;!c(e);){let t=g(e);switch(t>>>3){case 0:break t;case 1:s=d(e,g(e));break;case 2:{let t=i(e);a=function(e){let t={};e:for(;!c(e);){let i=g(e);switch(i>>>3){case 0:break e;case 2:t.boolValue=!!p(e);break;case 3:t.longValue=y(e,!1);break;case 4:t.stringValue=d(e,g(e));break;default:l(e,7&i)}}return t}(e),e.limit=t;break}default:l(e,7&t)}}if(void 0===s||void 0===a)throw Error("Invalid data for map: accountAttributes");o[s]=a,e.limit=r;break}default:l(e,7&s)}}return t}(e),e.limit=s;break}case 5:t.fetchTimeMillis=y(e,!1);break;default:l(e,7&s)}}return t}(e),e.limit=s;break}default:l(e,7&s)}}return t}function i(e){let t=g(e),i=e.limit;return e.limit=e.offset+t,i}function l(e,t){switch(t){case 0:for(;128&p(e););break;case 2:u(e,g(e));break;case 5:u(e,4);break;case 1:u(e,8);break;default:throw Error("Unimplemented type: "+t)}}new Uint8Array(new Float32Array(1).buffer),new Uint8Array(new Float64Array(1).buffer);let s=[];function a(){let e=s.pop();return e?(e.offset=e.limit=0,e):{bytes:new Uint8Array(64),offset:0,limit:0}}function o(e){s.push(e)}function r(e){return{bytes:e,offset:0,limit:e.length}}function n(e){let t=e.bytes,i=e.limit;return t.length===i?t:t.subarray(0,i)}function u(e,t){if(e.offset+t>e.limit)throw Error("Skip past limit");e.offset+=t}function c(e){return e.offset>=e.limit}function f(e,t){let i=e.bytes,l=e.offset,s=e.limit,a=l+t;if(a>i.length){let t=new Uint8Array(2*a);t.set(i),e.bytes=t}return e.offset=a,a>s&&(e.limit=a),l}function b(e,t){let i=e.offset;if(i+t>e.limit)throw Error("Read past limit");return e.offset+=t,i}function d(e,t){let i=b(e,t),l=String.fromCharCode,s=e.bytes,a="";for(let e=0;e<t;e++){let o=s[e+i],r,n,u,c;(128&o)==0?a+=l(o):(224&o)==192?e+1>=t||(192&(r=s[e+i+1]))!=128||(c=(31&o)<<6|63&r)<128?a+="�":(a+=l(c),e++):(240&o)==224?e+2>=t||(((r=s[e+i+1])|(n=s[e+i+2])<<8)&49344)!=32896||(c=(15&o)<<12|(63&r)<<6|63&n)<2048||c>=55296&&c<=57343?a+="�":(a+=l(c),e+=2):(248&o)==240?e+3>=t?a+="�":(r=s[e+i+1],((r|(n=s[e+i+2])<<8|(u=s[e+i+3])<<16)&0xc0c0c0)!=8421504||(c=(7&o)<<18|(63&r)<<12|(63&n)<<6|63&u)<65536||c>1114111?a+="�":(c-=65536,a+=l((c>>10)+55296,(1023&c)+56320),e+=3)):a+="�"}return a}function m(e,t){let i=t.length,l=0;for(let e=0;e<i;e++){let s=t.charCodeAt(e);s>=55296&&s<=56319&&e+1<i&&(s=(s<<10)+t.charCodeAt(++e)-0x35fdc00),l+=s<128?1:s<2048?2:s<65536?3:4}k(e,l);let s=f(e,l),a=e.bytes;for(let e=0;e<i;e++){let l=t.charCodeAt(e);l>=55296&&l<=56319&&e+1<i&&(l=(l<<10)+t.charCodeAt(++e)-0x35fdc00),l<128?a[s++]=l:(l<2048?a[s++]=l>>6&31|192:(l<65536?a[s++]=l>>12&15|224:(a[s++]=l>>18&7|240,a[s++]=l>>12&63|128),a[s++]=l>>6&63|128),a[s++]=63&l|128)}}function h(e,t){let i=f(e,t.limit),l=e.bytes,s=t.bytes;for(let e=0,a=t.limit;e<a;e++)l[e+i]=s[e]}function p(e){return e.bytes[b(e,1)]}function V(e,t){let i=f(e,1);e.bytes[i]=t}function g(e){let t,i=0,l=0;do t=p(e),i<32&&(l|=(127&t)<<i),i+=7;while(128&t);return l}function k(e,t){for(t>>>=0;t>=128;)V(e,127&t|128),t>>>=7;V(e,t)}function y(e,t){let i,l=0,s=0,a=0;return l=127&(i=p(e)),128&i&&(l|=(127&(i=p(e)))<<7,128&i&&(l|=(127&(i=p(e)))<<14,128&i&&(l|=(127&(i=p(e)))<<21,128&i&&(s=127&(i=p(e)),128&i&&(s|=(127&(i=p(e)))<<7,128&i&&(s|=(127&(i=p(e)))<<14,128&i&&(s|=(127&(i=p(e)))<<21,128&i&&(a=127&(i=p(e)),128&i&&(a|=(127&(i=p(e)))<<7))))))))),{low:l|s<<28,high:s>>>4|a<<24,unsigned:t}}function w(e,t){let i=t.low>>>0,l=(t.low>>>28|t.high<<4)>>>0,s=t.high>>>24,a=0===s?0===l?i<16384?i<128?1:2:i<2097152?3:4:l<16384?l<128?5:6:l<2097152?7:8:s<128?9:10,o=f(e,a),r=e.bytes;switch(a){case 10:r[o+9]=s>>>7&1;case 9:r[o+8]=9!==a?128|s:127&s;case 8:r[o+7]=8!==a?l>>>21|128:l>>>21&127;case 7:r[o+6]=7!==a?l>>>14|128:l>>>14&127;case 6:r[o+5]=6!==a?l>>>7|128:l>>>7&127;case 5:r[o+4]=5!==a?128|l:127&l;case 4:r[o+3]=4!==a?i>>>21|128:i>>>21&127;case 3:r[o+2]=3!==a?i>>>14|128:i>>>14&127;case 2:r[o+1]=2!==a?i>>>7|128:i>>>7&127;case 1:r[o]=1!==a?128|i:127&i}}async function v(s,u){if(200!==u.status)return u;switch(new URL(s.url).pathname){case"/user-customization-service/v1/customize":{let i,l=t(r(new Uint8Array(await u.arrayBuffer())));return A(l.success),new Response((e(l,i=a()),n(i)),{status:u.status})}case"/bootstrap/v1/bootstrap":{let s,f=function(e){let s={};e:for(;!c(e);){let a=g(e);switch(a>>>3){case 0:break e;case 2:{let a=i(e);s.ucsResponseV0=function(e){let s={};e:for(;!c(e);){let a=g(e);switch(a>>>3){case 0:break e;case 1:{let a=i(e);s.success=function(e){let s={};e:for(;!c(e);){let a=g(e);switch(a>>>3){case 0:break e;case 1:{let l=i(e);s.customization=t(e),e.limit=l;break}default:l(e,7&a)}}return s}(e),e.limit=a;break}default:l(e,7&a)}}return s}(e),e.limit=a;break}default:l(e,7&a)}}return s}(r(new Uint8Array(await u.arrayBuffer())));return A(f.ucsResponseV0.success.customization.success),new Response((function(t,i){let l=t.ucsResponseV0;if(void 0!==l){k(i,18);let t=a();(function(t,i){let l=t.success;if(void 0!==l){k(i,10);let t=a();(function(t,i){let l=t.customization;if(void 0!==l){k(i,10);let t=a();e(l,t),k(i,t.limit),h(i,t),o(t)}})(l,t),k(i,t.limit),h(i,t),o(t)}})(l,t),k(i,t.limit),h(i,t),o(t)}}(f,s=a()),n(s)),{status:u.status})}default:return u}}function A(e){let t,i=((t=new Date).setMonth(t.getMonth()+1),t.toISOString().split(".")[0]+"Z");if(Object.assign(e.accountAttributesSuccess.accountAttributes,{"subscription-enddate":{stringValue:i},"product-expiry":{stringValue:i},"smart-shuffle":{stringValue:"AVAILABLE"},"is-euterpe":{boolValue:!0},"has-audiobooks-subscription":{boolValue:!0},type:{stringValue:"premium"},"payments-initial-campaign":{stringValue:"prepaid"},"social-session-free-tier":{boolValue:!1},can_use_superbird:{boolValue:!0},"jam-social-session":{stringValue:"EXPANDED"},offline:{boolValue:!0},"audio-quality":{stringValue:"1"},"shuffle-algorithm":{stringValue:"RANDOM"},"is-thalia":{boolValue:!0},shuffle:{boolValue:!1},"is-pigeon":{boolValue:!0},"nft-disabled":{stringValue:"1"},libspotify:{boolValue:!0},"high-bitrate":{boolValue:!0},unrestricted:{boolValue:!0},catalogue:{stringValue:"premium"},"your-library-tags":{boolValue:!0},ads:{boolValue:!1},"on-demand":{boolValue:!0},name:{stringValue:"Spotify Premium"},"loudness-levels":{stringValue:"1:-5.0,0.0,3.0:-2.0"},"social-session":{boolValue:!0},"pick-and-shuffle":{boolValue:!1},"offline-backup":{stringValue:"UNRESTRICTED"},"lyrics-offline":{boolValue:!0},"streaming-rules":{stringValue:""},"mixing-tools":{stringValue:"EDIT"},mobile:{boolValue:!0},"player-license":{stringValue:"premium"},"com.spotify.madprops.use.ucs.product.state":{boolValue:!0},"com.spotify.madprops.delivered.by.ucs":{boolValue:!0}}),e.resolveSuccess?.configuration?.assignedValues){let t=e.resolveSuccess.configuration.assignedValues;for(let e=t.length-1;e>=0;e--){let i=t[e],{scope:l}=i.propertyId;"ios-system-your-plan-sidedrawer"===l&&(i.boolValue.value=!1)}}}(async()=>{let e=new Request($request.url,$request),t=new Response($response.body,$response);$done(await v(e,t).then(async e=>({status:e.status,headers:Object.fromEntries(e.headers),body:new Uint8Array(await e.arrayBuffer())})))})();
+const ACCOUNT_ATTRIBUTES = {
+  ads: { type: "bool", value: false },
+  catalogue: { type: "string", value: "premium" },
+  type: { type: "string", value: "premium" },
+  "player-license": { type: "string", value: "premium" },
+  "player-license-v2": { type: "string", value: "premium" },
+  "on-demand": { type: "bool", value: true },
+  unrestricted: { type: "bool", value: true },
+  shuffle: { type: "bool", value: false },
+  "smart-shuffle": { type: "string", value: "AVAILABLE" },
+  "pick-and-shuffle": { type: "bool", value: false },
+  "high-bitrate": { type: "bool", value: true },
+  "audio-quality": { type: "string", value: "1" },
+  name: { type: "string", value: "Spotify Premium" },
+  "streaming-rules": { type: "string", value: "" },
+  "com.spotify.madprops.use.ucs.product.state": { type: "bool", value: true },
+  "com.spotify.madprops.delivered.by.ucs": { type: "bool", value: true },
+};
+
+const ALWAYS_DISABLED_PROPERTIES = new Map([
+  ["core-ads\u0000music_adt_enabled", false],
+  ["core-podcast-ads\u0000podcast_adt_enabled", false],
+  ["ios-feature-ondemandtrial\u0000enable_call_trials_facade", false],
+]);
+
+function readVarint(bytes, offset) {
+  let value = 0;
+  let shift = 0;
+
+  while (offset < bytes.length && shift <= 49) {
+    const byte = bytes[offset++];
+    value += (byte & 0x7f) * 2 ** shift;
+    if ((byte & 0x80) === 0) return { value, offset };
+    shift += 7;
+  }
+
+  throw new Error("Invalid protobuf varint");
+}
+
+function encodeVarint(value) {
+  const bytes = [];
+  let remaining = Number(value);
+
+  if (!Number.isSafeInteger(remaining) || remaining < 0) {
+    throw new Error(`Invalid protobuf integer: ${value}`);
+  }
+
+  do {
+    let byte = remaining % 128;
+    remaining = Math.floor(remaining / 128);
+    if (remaining > 0) byte |= 0x80;
+    bytes.push(byte);
+  } while (remaining > 0);
+
+  return Uint8Array.from(bytes);
+}
+
+function concatBytes(parts) {
+  const size = parts.reduce((total, part) => total + part.length, 0);
+  const result = new Uint8Array(size);
+  let offset = 0;
+
+  for (const part of parts) {
+    result.set(part, offset);
+    offset += part.length;
+  }
+
+  return result;
+}
+
+function skipFieldValue(bytes, offset, wireType, fieldNumber) {
+  switch (wireType) {
+    case 0:
+      return readVarint(bytes, offset).offset;
+    case 1:
+      return offset + 8;
+    case 2: {
+      const length = readVarint(bytes, offset);
+      return length.offset + length.value;
+    }
+    case 3: {
+      while (offset < bytes.length) {
+        const key = readVarint(bytes, offset);
+        offset = key.offset;
+        const nestedNumber = Math.floor(key.value / 8);
+        const nestedWireType = key.value & 7;
+
+        if (nestedWireType === 4) {
+          if (nestedNumber !== fieldNumber) throw new Error("Mismatched protobuf group");
+          return offset;
+        }
+
+        offset = skipFieldValue(bytes, offset, nestedWireType, nestedNumber);
+      }
+      throw new Error("Unterminated protobuf group");
+    }
+    case 5:
+      return offset + 4;
+    default:
+      throw new Error(`Unsupported protobuf wire type: ${wireType}`);
+  }
+}
+
+function parseMessage(bytes) {
+  const fields = [];
+  let offset = 0;
+
+  while (offset < bytes.length) {
+    const start = offset;
+    const key = readVarint(bytes, offset);
+    offset = key.offset;
+
+    const number = Math.floor(key.value / 8);
+    const wireType = key.value & 7;
+    if (number === 0) throw new Error("Invalid protobuf field number");
+
+    let data;
+    let value;
+
+    switch (wireType) {
+      case 0: {
+        const parsed = readVarint(bytes, offset);
+        value = parsed.value;
+        offset = parsed.offset;
+        break;
+      }
+      case 1:
+        offset += 8;
+        break;
+      case 2: {
+        const length = readVarint(bytes, offset);
+        offset = length.offset;
+        const end = offset + length.value;
+        if (end > bytes.length) throw new Error("Protobuf field exceeds message boundary");
+        data = bytes.slice(offset, end);
+        offset = end;
+        break;
+      }
+      case 3:
+        offset = skipFieldValue(bytes, offset, wireType, number);
+        break;
+      case 5:
+        offset += 4;
+        break;
+      default:
+        throw new Error(`Unsupported protobuf wire type: ${wireType}`);
+    }
+
+    if (offset > bytes.length) throw new Error("Truncated protobuf field");
+    fields.push({ number, wireType, data, value, raw: bytes.slice(start, offset) });
+  }
+
+  return fields;
+}
+
+function encodeMessage(fields) {
+  return concatBytes(fields.map((field) => field.raw));
+}
+
+function makeVarintField(number, value) {
+  return {
+    number,
+    wireType: 0,
+    value,
+    raw: concatBytes([encodeVarint(number * 8), encodeVarint(value)]),
+  };
+}
+
+function makeDelimitedField(number, data) {
+  return {
+    number,
+    wireType: 2,
+    data,
+    raw: concatBytes([encodeVarint(number * 8 + 2), encodeVarint(data.length), data]),
+  };
+}
+
+function replaceUniqueField(fields, number, replacement) {
+  const result = [];
+  let replaced = false;
+
+  for (const field of fields) {
+    if (field.number !== number) {
+      result.push(field);
+    } else if (!replaced) {
+      result.push(replacement);
+      replaced = true;
+    }
+  }
+
+  if (!replaced) result.push(replacement);
+  return result;
+}
+
+function removeFields(fields, numbers) {
+  const targets = new Set(numbers);
+  return fields.filter((field) => !targets.has(field.number));
+}
+
+function mutateAtPath(bytes, path, mutator) {
+  if (path.length === 0) return mutator(bytes);
+
+  const fields = parseMessage(bytes);
+  const index = fields.findIndex(
+    (field) => field.number === path[0] && field.wireType === 2,
+  );
+
+  if (index < 0) throw new Error(`Missing protobuf path field: ${path[0]}`);
+
+  const child = mutateAtPath(fields[index].data, path.slice(1), mutator);
+  if (child.changes === 0) return { bytes, changes: 0 };
+
+  fields[index] = makeDelimitedField(path[0], child.bytes);
+  return { bytes: encodeMessage(fields), changes: child.changes };
+}
+
+function encodeUtf8(value) {
+  const bytes = [];
+
+  for (let index = 0; index < value.length; index++) {
+    let code = value.charCodeAt(index);
+
+    if (code >= 0xd800 && code <= 0xdbff && index + 1 < value.length) {
+      const low = value.charCodeAt(index + 1);
+      if (low >= 0xdc00 && low <= 0xdfff) {
+        code = 0x10000 + ((code - 0xd800) << 10) + (low - 0xdc00);
+        index++;
+      }
+    }
+
+    if (code < 0x80) {
+      bytes.push(code);
+    } else if (code < 0x800) {
+      bytes.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f));
+    } else if (code < 0x10000) {
+      bytes.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f));
+    } else {
+      bytes.push(
+        0xf0 | (code >> 18),
+        0x80 | ((code >> 12) & 0x3f),
+        0x80 | ((code >> 6) & 0x3f),
+        0x80 | (code & 0x3f),
+      );
+    }
+  }
+
+  return Uint8Array.from(bytes);
+}
+
+function decodeUtf8(bytes) {
+  let result = "";
+
+  for (let index = 0; index < bytes.length; index++) {
+    const first = bytes[index];
+
+    if (first < 0x80) {
+      result += String.fromCharCode(first);
+    } else if ((first & 0xe0) === 0xc0) {
+      const code = ((first & 0x1f) << 6) | (bytes[++index] & 0x3f);
+      result += String.fromCharCode(code);
+    } else if ((first & 0xf0) === 0xe0) {
+      const code =
+        ((first & 0x0f) << 12) |
+        ((bytes[++index] & 0x3f) << 6) |
+        (bytes[++index] & 0x3f);
+      result += String.fromCharCode(code);
+    } else {
+      let code =
+        ((first & 7) << 18) |
+        ((bytes[++index] & 0x3f) << 12) |
+        ((bytes[++index] & 0x3f) << 6) |
+        (bytes[++index] & 0x3f);
+      code -= 0x10000;
+      result += String.fromCharCode(0xd800 + (code >> 10), 0xdc00 + (code & 0x3ff));
+    }
+  }
+
+  return result;
+}
+
+function getStringField(fields, number) {
+  const field = fields.find((item) => item.number === number && item.wireType === 2);
+  return field ? decodeUtf8(field.data) : undefined;
+}
+
+function encodeAttribute(original, setting) {
+  let fields = original.length ? parseMessage(original) : [];
+  fields = removeFields(fields, [2, 3, 4]);
+
+  if (setting.type === "bool") {
+    fields.push(makeVarintField(2, setting.value ? 1 : 0));
+  } else if (setting.type === "string") {
+    fields.push(makeDelimitedField(4, encodeUtf8(setting.value)));
+  } else {
+    throw new Error(`Unsupported account attribute type: ${setting.type}`);
+  }
+
+  return encodeMessage(fields);
+}
+
+function makeAccountEntry(key, setting) {
+  return encodeMessage([
+    makeDelimitedField(1, encodeUtf8(key)),
+    makeDelimitedField(2, encodeAttribute(new Uint8Array(), setting)),
+  ]);
+}
+
+function mutateAccountAttributes(bytes, settings) {
+  const fields = parseMessage(bytes);
+  const pending = new Map(Object.entries(settings));
+  let changes = 0;
+
+  for (let index = 0; index < fields.length; index++) {
+    const field = fields[index];
+    if (field.number !== 1 || field.wireType !== 2) continue;
+
+    const entryFields = parseMessage(field.data);
+    const key = getStringField(entryFields, 1);
+    if (!pending.has(key)) continue;
+
+    const setting = pending.get(key);
+    const valueField = entryFields.find(
+      (item) => item.number === 2 && item.wireType === 2,
+    );
+    const value = encodeAttribute(valueField?.data || new Uint8Array(), setting);
+    const updatedEntry = replaceUniqueField(
+      entryFields,
+      2,
+      makeDelimitedField(2, value),
+    );
+
+    fields[index] = makeDelimitedField(1, encodeMessage(updatedEntry));
+    pending.delete(key);
+    changes++;
+  }
+
+  for (const [key, setting] of pending) {
+    fields.push(makeDelimitedField(1, makeAccountEntry(key, setting)));
+    changes++;
+  }
+
+  return { bytes: encodeMessage(fields), changes };
+}
+
+function setAssignedBool(bytes, value) {
+  let fields = parseMessage(bytes);
+  fields = removeFields(fields, [3, 4, 5]);
+  const boolValue = encodeMessage([makeVarintField(1, value ? 1 : 0)]);
+  fields.push(makeDelimitedField(3, boolValue));
+  return encodeMessage(fields);
+}
+
+function readPropertyId(assignedValue) {
+  const fields = parseMessage(assignedValue);
+  const property = fields.find(
+    (field) => field.number === 1 && field.wireType === 2,
+  );
+
+  if (!property) return undefined;
+  const propertyFields = parseMessage(property.data);
+  const scope = getStringField(propertyFields, 1);
+  const name = getStringField(propertyFields, 2);
+  return scope && name ? { scope, name } : undefined;
+}
+
+function mutateAssignedValues(bytes, options) {
+  const fields = parseMessage(bytes);
+  const targets = new Map(ALWAYS_DISABLED_PROPERTIES);
+  targets.set("ios-system-your-plan-sidedrawer\u0000is_row_enabled", !options.removePlanRow);
+  targets.set("ios-feature-share\u0000is_useractivity_sharing_enabled", options.userActivity);
+
+  let changes = 0;
+
+  for (let index = 0; index < fields.length; index++) {
+    const field = fields[index];
+    if (field.number !== 3 || field.wireType !== 2) continue;
+
+    const property = readPropertyId(field.data);
+    if (!property) continue;
+
+    const key = `${property.scope}\u0000${property.name}`;
+    if (!targets.has(key)) continue;
+
+    fields[index] = makeDelimitedField(3, setAssignedBool(field.data, targets.get(key)));
+    targets.delete(key);
+    changes++;
+  }
+
+  return { bytes: encodeMessage(fields), changes };
+}
+
+function buildAccountSettings() {
+  const expiry = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split(".")[0] + "Z";
+
+  return {
+    ...ACCOUNT_ATTRIBUTES,
+    "subscription-enddate": { type: "string", value: expiry },
+    "product-expiry": { type: "string", value: expiry },
+  };
+}
+
+function mutateCustomizationSuccess(bytes, options) {
+  let result = { bytes, changes: 0 };
+
+  const attributes = mutateAtPath(result.bytes, [3], (value) =>
+    mutateAccountAttributes(value, buildAccountSettings()),
+  );
+  result = {
+    bytes: attributes.bytes,
+    changes: result.changes + attributes.changes,
+  };
+
+  const assignedValues = mutateAtPath(result.bytes, [1, 1], (value) =>
+    mutateAssignedValues(value, options),
+  );
+
+  return {
+    bytes: assignedValues.bytes,
+    changes: result.changes + assignedValues.changes,
+  };
+}
+
+function parseBoolean(value, fallback) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value !== "string") return fallback;
+
+  const normalized = value.trim().toLowerCase();
+  if (["true", "1", "yes", "on"].includes(normalized)) return true;
+  if (["false", "0", "no", "off"].includes(normalized)) return false;
+  return fallback;
+}
+
+function parseArguments(raw) {
+  let values = [];
+
+  if (Array.isArray(raw)) {
+    values = raw;
+  } else if (typeof raw === "string" && raw.trim()) {
+    const text = raw.trim();
+    try {
+      const parsed = JSON.parse(text);
+      values = Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      values = text.replace(/^\[|\]$/g, "").split(",");
+    }
+  }
+
+  return {
+    removePlanRow: parseBoolean(values[0], true),
+    userActivity: parseBoolean(values[1], true),
+  };
+}
+
+function responseBodyBytes(response) {
+  const body = response.bodyBytes || response.body;
+  if (body instanceof ArrayBuffer) return new Uint8Array(body);
+  if (ArrayBuffer.isView(body)) {
+    return new Uint8Array(body.buffer, body.byteOffset, body.byteLength);
+  }
+  throw new Error("Spotify response body is not binary");
+}
+
+function cleanResponseHeaders(headers = {}) {
+  const result = {};
+  const invalid = new Set(["content-length", "content-encoding", "etag"]);
+
+  for (const [name, value] of Object.entries(headers)) {
+    if (!invalid.has(name.toLowerCase())) result[name] = value;
+  }
+
+  return result;
+}
+
+function processResponse(path, body, options) {
+  if (path === "/user-customization-service/v1/customize") {
+    return mutateAtPath(body, [1], (value) => mutateCustomizationSuccess(value, options));
+  }
+
+  if (path === "/bootstrap/v1/bootstrap") {
+    return mutateAtPath(body, [2, 1, 1, 1], (value) =>
+      mutateCustomizationSuccess(value, options),
+    );
+  }
+
+  return { bytes: body, changes: 0 };
+}
+
+function main() {
+  const status = $response.status ?? $response.statusCode;
+  if (status !== 200) return $done({});
+
+  try {
+    const path = new URL($request.url).pathname;
+    const input = responseBodyBytes($response);
+    const options = parseArguments(typeof $argument === "undefined" ? undefined : $argument);
+    const output = processResponse(path, input, options);
+
+    if (output.changes === 0) return $done({});
+
+    console.log(
+      `[Spotify] ${path}: updated ${output.changes} values, ${input.length} -> ${output.bytes.length} bytes`,
+    );
+
+    return $done({
+      body: output.bytes,
+      headers: cleanResponseHeaders($response.headers),
+    });
+  } catch (error) {
+    console.log(`[Spotify] safe fallback: ${error.message}`);
+    return $done({});
+  }
+}
+
+main();
