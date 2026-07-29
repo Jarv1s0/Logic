@@ -1,10 +1,10 @@
 #!name=Spotify去广告（增强版）
 #!desc=基于 001ProMax 版本，修复 customize 因 ETag 缓存返回 304、脚本无法处理的问题。首次启用后请重新登录 Spotify。
 #!openUrl=https://apps.apple.com/app/id324684580
-#!author=app2smile, 001ProMax, Codex Fix
+#!author=app2smile, 001ProMax, Jarv1s0
 #!tag=去广告
 #!loon_version=3.2.4(787)
-#!homepage=https://github.com/001ProMax/Surge
+#!homepage=https://github.com/Jarv1s0/Logic/tree/master/Loon
 #!icon=https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/Spotify.png
 #!date=2026-07-29 00:00:00
 
@@ -19,8 +19,8 @@
 ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ header-del if-none-match
 
 [Script]
-# 锁定到已审查的 commit，避免 main 分支更新后静默改变执行代码。
-http-response ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ script-path=https://raw.githubusercontent.com/001ProMax/Surge/2e3eb28d163d5e5de4d2f2532fe71eba22666634/Script/Spotify.Crack.Dev.js, requires-body=true, binary-body-mode=true, timeout=5, tag=Spotify-Protobuf
+# 固定到本仓库中已经审查的脚本 commit，避免后续更新静默改变执行代码。
+http-response ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/d9345e5b3bb647bc328b4be5e914f02b48368981/Loon/Script/Spotify.Crack.Dev.js, requires-body=true, binary-body-mode=true, timeout=5, tag=Spotify-Protobuf
 
 [MitM]
 hostname= *-spclient.spotify.com, spclient.wg.spotify.com
