@@ -390,7 +390,10 @@ function readPropertyId(assignedValue) {
 function mutateAssignedValues(bytes, options) {
   const fields = parseMessage(bytes);
   const targets = new Map(ALWAYS_DISABLED_PROPERTIES);
-  targets.set("ios-system-your-plan-sidedrawer\u0000is_row_enabled", !options.removePlanRow);
+  targets.set(
+    "ios-system-your-plan-sidedrawer\u0000is_row_enabled",
+    !options.removePremiumEntries,
+  );
   targets.set("ios-feature-share\u0000is_useractivity_sharing_enabled", options.userActivity);
 
   let changes = 0;
@@ -413,23 +416,29 @@ function mutateAssignedValues(bytes, options) {
   return { bytes: encodeMessage(fields), changes };
 }
 
-function buildAccountSettings() {
+function buildAccountSettings(options) {
   const expiry = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
     .toISOString()
     .split(".")[0] + "Z";
 
-  return {
+  const settings = {
     ...ACCOUNT_ATTRIBUTES,
     "subscription-enddate": { type: "string", value: expiry },
     "product-expiry": { type: "string", value: expiry },
   };
+
+  if (options.removePremiumEntries) {
+    settings["nft-disabled"] = { type: "string", value: "1" };
+  }
+
+  return settings;
 }
 
 function mutateCustomizationSuccess(bytes, options) {
   let result = { bytes, changes: 0 };
 
   const attributes = mutateAtPath(result.bytes, [3], (value) =>
-    mutateAccountAttributes(value, buildAccountSettings()),
+    mutateAccountAttributes(value, buildAccountSettings(options)),
   );
   result = {
     bytes: attributes.bytes,
@@ -473,7 +482,7 @@ function parseArguments(raw) {
   }
 
   return {
-    removePlanRow: parseBoolean(values[0], true),
+    removePremiumEntries: parseBoolean(values[0], true),
     userActivity: parseBoolean(values[1], true),
   };
 }
