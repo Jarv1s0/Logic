@@ -24,7 +24,7 @@ useractivity=switch, true, tag=启用 Apple 设备接力, desc=控制是否允�
 
 [Script]
 # 固定到本仓库中已经审查的脚本 commit，避免后续更新静默改变执行代码。
-http-response ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/ef42d8155719f8104e8a63a43335e49285da5b42/Loon/Script/Spotify.Crack.Dev.js, requires-body=true, binary-body-mode=true, timeout=5, argument=[{tab},{useractivity}], tag=Spotify-Protobuf
+http-response ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/7ab7e7afd6c30d829208991302870e29770455aa/Loon/Script/Spotify.Crack.Dev.js, requires-body=true, binary-body-mode=true, timeout=5, argument=[{tab},{useractivity}], tag=Spotify-Protobuf
 
 [MitM]
 hostname= *-spclient.spotify.com, spclient.wg.spotify.com
