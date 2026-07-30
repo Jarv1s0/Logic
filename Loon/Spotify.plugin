@@ -5,7 +5,7 @@
 #!loon_version=3.2.4(787)
 #!homepage=https://github.com/Jarv1s0/Logic/tree/master/Loon
 #!icon=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png
-#!date=2026-07-29 00:00:00
+#!date=2026-07-30 00:00:00
 
 [Argument]
 tab=switch, true, tag=移除 Premium 入口, desc=控制是否隐藏底栏 Premium 按钮和侧边栏套餐入口
@@ -18,9 +18,6 @@ useractivity=switch, true, tag=启用 Apple 设备接力, desc=控制是否允�
 # 使用 iPad 歌手页布局，恢复歌手列表展示。
 ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/artistview\/v1\/artist\/(.*)&platform=iphone header https://spclient.wg.spotify.com/artistview/v1/artist/$1&platform=ipad
 
-# 强制 Spotify 返回完整 Protobuf 正文，避免 304 空响应绕过脚本。
-^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ header-del if-none-match
-
 # 拦截音频广告及其伴随展示广告的请求。
 ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/ad-logic\/(?:prefetch|state\/config)$ reject-dict
 ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/ads\/v2\/config(?:\?.*)?$ reject-dict
@@ -30,7 +27,9 @@ useractivity=switch, true, tag=启用 Apple 设备接力, desc=控制是否允�
 
 [Script]
 # 固定到本仓库中已经审查的脚本 commit，避免后续更新静默改变执行代码。
-http-response ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize|browsita\/v1\/browse)(?:\?.*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/69d857165f9e4582e9379f44a8be878633027939/Loon/Script/Spotify.Crack.Dev.js, requires-body=true, binary-body-mode=true, timeout=5, argument=[{tab},{useractivity}], tag=Spotify-Protobuf
+# 仅复用同脚本版本和同开关参数下已修改的配置，其余情况强制获取完整响应。
+http-request ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/a1e2d50e16015f91d1d5f3879b373e167be4e66c/Loon/Script/Spotify.Crack.Dev.js, timeout=5, argument=[{tab},{useractivity}], tag=Spotify-Config-Cache
+http-response ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize|browsita\/v1\/browse)(?:\?.*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/a1e2d50e16015f91d1d5f3879b373e167be4e66c/Loon/Script/Spotify.Crack.Dev.js, requires-body=true, binary-body-mode=true, timeout=5, argument=[{tab},{useractivity}], tag=Spotify-Protobuf
 
 [MitM]
 hostname= *-spclient.spotify.com, spclient.wg.spotify.com
