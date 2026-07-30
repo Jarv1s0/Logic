@@ -89,6 +89,24 @@ function concatBytes(parts) {
   return result;
 }
 
+function containsBytes(bytes, marker) {
+  if (marker.length === 0) return true;
+
+  const limit = bytes.length - marker.length;
+  for (let start = 0; start <= limit; start++) {
+    let matched = true;
+    for (let index = 0; index < marker.length; index++) {
+      if (bytes[start + index] !== marker[index]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) return true;
+  }
+
+  return false;
+}
+
 function skipFieldValue(bytes, offset, wireType, fieldNumber) {
   switch (wireType) {
     case 0:
@@ -469,6 +487,36 @@ function mutateCustomizationSuccess(bytes, options) {
   };
 }
 
+function removeBrowsitaBrandAds(bytes) {
+  const marker = encodeUtf8("brand-ads-browse");
+  const rootFields = parseMessage(bytes);
+  let changes = 0;
+
+  for (let index = 0; index < rootFields.length; index++) {
+    const rootField = rootFields[index];
+    if (rootField.number !== 1 || rootField.wireType !== 2) continue;
+
+    const sections = parseMessage(rootField.data);
+    const retained = sections.filter((section) => {
+      const isBrandAd =
+        section.number === 1 &&
+        section.wireType === 2 &&
+        containsBytes(section.data, marker);
+      if (isBrandAd) changes++;
+      return !isBrandAd;
+    });
+
+    if (retained.length !== sections.length) {
+      rootFields[index] = makeDelimitedField(1, encodeMessage(retained));
+    }
+  }
+
+  return {
+    bytes: changes === 0 ? bytes : encodeMessage(rootFields),
+    changes,
+  };
+}
+
 function parseBoolean(value, fallback) {
   if (typeof value === "boolean") return value;
   if (typeof value === "number") return value !== 0;
@@ -522,6 +570,10 @@ function cleanResponseHeaders(headers = {}) {
 }
 
 function processResponse(path, body, options) {
+  if (path === "/browsita/v1/browse") {
+    return removeBrowsitaBrandAds(body);
+  }
+
   if (path === "/user-customization-service/v1/customize") {
     return mutateAtPath(body, [1], (value) => mutateCustomizationSuccess(value, options));
   }
