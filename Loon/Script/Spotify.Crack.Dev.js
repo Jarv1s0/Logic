@@ -37,6 +37,10 @@ const ALWAYS_DISABLED_PROPERTIES = new Map([
   ["ios-feature-ondemandtrial\u0000enable_call_trials_facade", false],
 ]);
 
+// Bump this when account or assigned-value mutations change, forcing one fresh response.
+const CONFIG_CACHE_VERSION = "2026-07-30.1";
+const CONFIG_ETAG_PREFIX = "spotify-protobuf";
+
 function readVarint(bytes, offset, requireSafeInteger = true) {
   let value = 0;
   let multiplier = 1;
@@ -549,6 +553,83 @@ function parseArguments(raw) {
   };
 }
 
+function isConfigPath(path) {
+  return (
+    path === "/bootstrap/v1/bootstrap" ||
+    path === "/user-customization-service/v1/customize"
+  );
+}
+
+function configFingerprint(options) {
+  return [
+    CONFIG_CACHE_VERSION,
+    options.removePremiumEntries ? "tab-on" : "tab-off",
+    options.userActivity ? "handoff-on" : "handoff-off",
+  ].join(":");
+}
+
+function stripWeakAndQuotes(value) {
+  let result = value.trim();
+  if (result.startsWith("W/")) result = result.slice(2).trim();
+  if (result.startsWith('"') && result.endsWith('"')) result = result.slice(1, -1);
+  return result;
+}
+
+function makeConfigEtag(original, options) {
+  if (typeof original !== "string" || !original.trim()) return undefined;
+
+  return [
+    `"${CONFIG_ETAG_PREFIX}`,
+    encodeURIComponent(configFingerprint(options)),
+    `${encodeURIComponent(original.trim())}"`,
+  ].join("|");
+}
+
+function parseConfigEtag(value) {
+  if (typeof value !== "string") return undefined;
+
+  const parts = stripWeakAndQuotes(value).split("|");
+  if (parts.length !== 3 || parts[0] !== CONFIG_ETAG_PREFIX) return undefined;
+
+  try {
+    return {
+      fingerprint: decodeURIComponent(parts[1]),
+      original: decodeURIComponent(parts[2]),
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+function findHeaderName(headers, target) {
+  return Object.keys(headers).find((name) => name.toLowerCase() === target);
+}
+
+function processRequest(path, options) {
+  if (!isConfigPath(path)) return {};
+
+  const headers = { ...($request.headers || {}) };
+  const etagHeader = findHeaderName(headers, "if-none-match");
+  if (!etagHeader) return {};
+
+  const cached = parseConfigEtag(headers[etagHeader]);
+  const canRevalidate =
+    cached &&
+    cached.fingerprint === configFingerprint(options) &&
+    typeof cached.original === "string" &&
+    cached.original.length > 0;
+
+  if (canRevalidate) {
+    headers[etagHeader] = cached.original;
+    console.log(`[Spotify] ${path}: revalidating the modified configuration cache`);
+    return { headers };
+  }
+
+  delete headers[etagHeader];
+  console.log(`[Spotify] ${path}: requesting a fresh configuration`);
+  return { headers };
+}
+
 function responseBodyBytes(response) {
   const body = response.bodyBytes || response.body;
   if (body instanceof ArrayBuffer) return new Uint8Array(body);
@@ -560,12 +641,25 @@ function responseBodyBytes(response) {
 
 function cleanResponseHeaders(headers = {}) {
   const result = {};
-  const invalid = new Set(["content-length", "content-encoding", "etag"]);
+  const invalid = new Set(["content-length", "content-encoding"]);
 
   for (const [name, value] of Object.entries(headers)) {
     if (!invalid.has(name.toLowerCase())) result[name] = value;
   }
 
+  return result;
+}
+
+function prepareResponseHeaders(path, headers, options) {
+  const result = cleanResponseHeaders(headers);
+  if (!isConfigPath(path)) return result;
+
+  const etagHeader = findHeaderName(result, "etag");
+  if (!etagHeader) return result;
+
+  const cached = parseConfigEtag(result[etagHeader]);
+  const tagged = makeConfigEtag(cached?.original || result[etagHeader], options);
+  if (tagged) result[etagHeader] = tagged;
   return result;
 }
 
@@ -588,13 +682,23 @@ function processResponse(path, body, options) {
 }
 
 function main() {
-  const status = $response.status ?? $response.statusCode;
-  if (status !== 200) return $done({});
-
   try {
     const path = new URL($request.url).pathname;
-    const input = responseBodyBytes($response);
     const options = parseArguments(typeof $argument === "undefined" ? undefined : $argument);
+
+    if (typeof $response === "undefined") {
+      return $done(processRequest(path, options));
+    }
+
+    const status = $response.status ?? $response.statusCode;
+    if (status === 304 && isConfigPath(path)) {
+      return $done({
+        headers: prepareResponseHeaders(path, $response.headers, options),
+      });
+    }
+    if (status !== 200) return $done({});
+
+    const input = responseBodyBytes($response);
     const output = processResponse(path, input, options);
 
     if (output.changes === 0) return $done({});
@@ -605,7 +709,7 @@ function main() {
 
     return $done({
       body: output.bytes,
-      headers: cleanResponseHeaders($response.headers),
+      headers: prepareResponseHeaders(path, $response.headers, options),
     });
   } catch (error) {
     console.log(`[Spotify] safe fallback: ${error.message}`);
