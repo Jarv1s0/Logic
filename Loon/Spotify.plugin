@@ -5,7 +5,7 @@
 #!loon_version=3.5.1(978)
 #!homepage=https://github.com/Jarv1s0/Logic/tree/master/Loon
 #!icon=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png
-#!date=2026-08-03 00:00:00
+#!date=2026-08-05 00:00:00
 
 [Argument]
 tab=switch, true, tag=移除 Premium 入口, desc=控制是否隐藏底栏 Premium 按钮和侧边栏套餐入口
@@ -13,17 +13,17 @@ useractivity=switch, true, tag=启用 Apple 设备接力, desc=控制是否允�
 
 [Rewrite]
 # 屏蔽 Pendragon 推广内容。
-http-request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/pendragon\// then reject(status=200, body="json-object")
+request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/pendragon\// then reject_dict(200)
 
 # 使用 iPad 歌手页布局，恢复歌手列表展示。
-http-request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/artistview\/v1\/artist\/.*[?&]platform=iphone(?:&|$)/ then url.replace(pattern=/^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?/, replacement="https://spclient.wg.spotify.com") | url.replace(pattern=/\?platform=iphone/, replacement="?platform=ipad") | url.replace(pattern=/&platform=iphone/, replacement="&platform=ipad")
+request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?(\/artistview\/v1\/artist\/.*[?&]platform=)iphone((?:&.*)?$)/ as artist then url.replace("https://spclient.wg.spotify.com${artist.1}ipad${artist.2}")
 
 # 拦截音频广告及其伴随展示广告的请求。
-http-request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/ad-logic\/(?:prefetch|state\/config)(?:\?.*)?$/ then reject(status=200, body="json-object")
-http-request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/ads\/v2\/config(?:\?.*)?$/ then reject(status=200, body="json-object")
-http-request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/ads\/v3\/ads(?:\?.*)?$/ then reject(status=404, body="empty")
-http-request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/sponsoredplaylist\/v1\/sponsored(?:\?.*)?$/ then reject(status=200, body="json-object")
-http-request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/podcast-ap4p\/leavebehinds\/ads(?:\?.*)?$/ then reject(status=200, body="json-object")
+request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/ad-logic\/(?:prefetch|state\/config)(?:\?.*)?$/ then reject_dict(200)
+request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/ads\/v2\/config(?:\?.*)?$/ then reject_dict(200)
+request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/ads\/v3\/ads(?:\?.*)?$/ then reject(404)
+request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/sponsoredplaylist\/v1\/sponsored(?:\?.*)?$/ then reject_dict(200)
+request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/podcast-ap4p\/leavebehinds\/ads(?:\?.*)?$/ then reject_dict(200)
 
 [Script]
 # 固定到本仓库中已经审查的脚本 commit，避免后续更新静默改变执行代码。
