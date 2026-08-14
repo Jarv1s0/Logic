@@ -33,11 +33,12 @@ const ACCOUNT_ATTRIBUTES = {
 
 const ALWAYS_DISABLED_PROPERTIES = new Map([
   ["core-ads\u0000music_adt_enabled", false],
+  ["core-podcast-ads\u0000podcast_adt_enabled", false],
   ["ios-feature-ondemandtrial\u0000enable_call_trials_facade", false],
 ]);
 
 // Bump this when account or assigned-value mutations change, forcing one fresh response.
-const CONFIG_CACHE_VERSION = "2026-08-14.1";
+const CONFIG_CACHE_VERSION = "2026-07-30.1";
 const CONFIG_ETAG_PREFIX = "spotify-protobuf";
 
 function readVarint(bytes, offset, requireSafeInteger = true) {
