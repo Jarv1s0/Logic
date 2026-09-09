@@ -88,6 +88,8 @@ request if ${url} ~= /^https?:\/\/m?api\.weibo\.c(n|om)\/2\/logservice\/service\
 request if ${url} ~= /^https?:\/\/m?api\.weibo\.c(n|om)\/2\/push\/info\?/ then reject(404)
 # 搜索页面净化
 response if ${url} ~= /^https?:\/\/m?api\.weibo\.c(n|om)\/2\/cardlist\?/ then response.json.jq(`del(.items[] | select(.category == "group"))`)
+# 个人页移除“用户任务 / 微博购 / 短剧 / 稀缺装扮”卡片
+response if ${url} ~= /^https?:\/\/m?api\.weibo\.c(n|om)\/2\/profile\/(me|container_timeline)\?/ then response.json.jq(`del(.items[] | select(.data.card_type == 236 or .data.card_type == "236"))`)
 
 [Script]
 # 微博移除发现页广告
