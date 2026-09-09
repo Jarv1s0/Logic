@@ -19,6 +19,7 @@ try {
     removeChannelsTabs(resp_data.channelInfo.channels);
     if (resp_data.header?.data?.items) {
       removeHeaderAds(resp_data.header.data.items);
+      removeHotSearchHeader(resp_data.header.data.items);
     }
     if (resp_data.header?.insert_data) {
       delete resp_data.header.insert_data;
@@ -31,6 +32,7 @@ try {
     processPayload(resp_data);
     if (resp_data.header?.data?.items) {
       removeHeaderAds(resp_data.header.data.items);
+      removeHotSearchHeader(resp_data.header.data.items);
     }
   }
 
@@ -225,6 +227,19 @@ function removeHeaderAds(headerItems) {
     if (headerItems[i].items) {
       removeCommonAds(headerItems[i].items);
     }
+  }
+}
+
+// 删除发现页顶部的“微博热搜”及热搜列表卡片。
+function removeHotSearchHeader(headerItems) {
+  if (!Array.isArray(headerItems)) {
+    return;
+  }
+  const originalLength = headerItems.length;
+  const filteredItems = headerItems.filter((item) => ![17, 101, 235].includes(item?.data?.card_type));
+  if (filteredItems.length !== originalLength) {
+    headerItems.splice(0, headerItems.length, ...filteredItems);
+    console.log('移除发现页顶部微博热搜模块');
   }
 }
 
