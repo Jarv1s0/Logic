@@ -61,33 +61,33 @@ DOMAIN, adpinpai.video.weibocdn.com, REJECT
 
 [Rewrite]
 # 热门视频 | 热推荐
-^https?:\/\/api\.weibo\.c(n|om)\/\d\/(cardlist\?v_f=\d|ad\/weibointl\?) reject-dict
-^https?:\/\/weibointl\.api\.weibo\.c(n|om)\/portal\.php\?a=hot_search_users reject-dict
+request if ${url} ~= /^https?:\/\/api\.weibo\.c(n|om)\/\d\/(cardlist\?v_f=\d|ad\/weibointl\?)/ then reject_dict(200)
+request if ${url} ~= /^https?:\/\/weibointl\.api\.weibo\.c(n|om)\/portal\.php\?a=hot_search_users/ then reject_dict(200)
 # 微博轻享版热搜词
-^https?:\/\/weibointl\.api\.weibo\.cn\/portal\.php\?a=get_searching_info reject-dict
+request if ${url} ~= /^https?:\/\/weibointl\.api\.weibo\.cn\/portal\.php\?a=get_searching_info/ then reject_dict(200)
 # 微博轻享版banner广告
-^https?:\/\/weibointl\.api\.weibo\.cn\/portal\.php\?a=trends& response-body-json-jq 'del(.data.banner)'
+response if ${url} ~= /^https?:\/\/weibointl\.api\.weibo\.cn\/portal\.php\?a=trends&/ then response.json.jq(`del(.data.banner)`)
 # 私信中绿洲的擦边诱导推广
-^https?:\/\/weibointl\.api\.weibo\.c(n|om)\/portal\.php\?a=treehole&auth= reject-dict
+request if ${url} ~= /^https?:\/\/weibointl\.api\.weibo\.c(n|om)\/portal\.php\?a=treehole&auth=/ then reject_dict(200)
 # 屏蔽首页左上角每日的弹窗tips
-^https?:\/\/m?api\.weibo\.c(n|om)\/\d/push\/daily reject-dict
+request if ${url} ~= /^https?:\/\/m?api\.weibo\.c(n|om)\/\d\/push\/daily/ then reject_dict(200)
 # 超话按钮的提示
-^https?:\/\/m?api\.weibo\.c(n|om)\/2\/!\/huati\/(discovery_home_bottom_getdotinfo|mobile_discovery_searchchange)\? reject-dict
+request if ${url} ~= /^https?:\/\/m?api\.weibo\.c(n|om)\/2\/!\/huati\/(discovery_home_bottom_getdotinfo|mobile_discovery_searchchange)\?/ then reject_dict(200)
 # 开屏广告
-^https?:\/\/bootrealtime\.uve\.weibo\.com\/v\d\/ad\/realtime reject-dict
-^https?:\/\/bootpreload\.uve\.weibo\.com\/v\d\/ad\/preload reject-dict
-^https?:\/\/sdkapp\.uve\.weibo\.com\/interface\/sdk\/(get-lbs-cell-info\.php|sdkconfig\.php) REJECT
+request if ${url} ~= /^https?:\/\/bootrealtime\.uve\.weibo\.com\/v\d\/ad\/realtime/ then reject_dict(200)
+request if ${url} ~= /^https?:\/\/bootpreload\.uve\.weibo\.com\/v\d\/ad\/preload/ then reject_dict(200)
+request if ${url} ~= /^https?:\/\/sdkapp\.uve\.weibo\.com\/interface\/sdk\/(get-lbs-cell-info\.php|sdkconfig\.php)/ then reject(404)
 # 微博长文章推广
-^https:\/\/card\.weibo\.com\/article\/m\/aj\/(reward|uvead)\? reject-dict
-^https:\/\/weibo\.com\/ttarticle\/x\/m\/aj\/(reward|uvead)\? reject-dict
+request if ${url} ~= /^https:\/\/card\.weibo\.com\/article\/m\/aj\/(reward|uvead)\?/ then reject_dict(200)
+request if ${url} ~= /^https:\/\/weibo\.com\/ttarticle\/x\/m\/aj\/(reward|uvead)\?/ then reject_dict(200)
 # 微博
-^https?:\/\/m?api\.weibo\.c(n|om)\/2\/!\/huati\/discovery_home_bottom_channels reject-dict
-^https?:\/\/m?api\.weibo\.c(n|om)\/2\/!\/chaohua\/discovery\/home_bottom\/switch reject-dict
-^https?:\/\/m?api\.weibo\.c(n|om)\/2\/!\/was\/finder\/searchbarchange\? reject-dict
-^https?:\/\/m?api\.weibo\.c(n|om)\/2\/logservice\/service\? reject
-^https?:\/\/m?api\.weibo\.c(n|om)\/2\/push\/info\? reject
+request if ${url} ~= /^https?:\/\/m?api\.weibo\.c(n|om)\/2\/!\/huati\/discovery_home_bottom_channels/ then reject_dict(200)
+request if ${url} ~= /^https?:\/\/m?api\.weibo\.c(n|om)\/2\/!\/chaohua\/discovery\/home_bottom\/switch/ then reject_dict(200)
+request if ${url} ~= /^https?:\/\/m?api\.weibo\.c(n|om)\/2\/!\/was\/finder\/searchbarchange\?/ then reject_dict(200)
+request if ${url} ~= /^https?:\/\/m?api\.weibo\.c(n|om)\/2\/logservice\/service\?/ then reject(404)
+request if ${url} ~= /^https?:\/\/m?api\.weibo\.c(n|om)\/2\/push\/info\?/ then reject(404)
 # 搜索页面净化
-^https?:\/\/m?api\.weibo\.c(n|om)\/2\/cardlist\? response-body-json-jq 'del(.items[] | select(.category == "group"))'
+response if ${url} ~= /^https?:\/\/m?api\.weibo\.c(n|om)\/2\/cardlist\?/ then response.json.jq(`del(.items[] | select(.category == "group"))`)
 
 [Script]
 # 微博移除发现页广告
