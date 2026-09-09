@@ -535,7 +535,10 @@ function removeHome(data) {
 	let newItems = [];
 	for (let item of data.items) {
 		let itemId = item.itemId;
-		if(itemId == 'profileme_mine') {
+		// 删除“用户任务 / 微博购 / 短剧 / 稀缺装扮”卡片（card_type=236）。
+		if(item?.category === 'card' && (item.data?.card_type === 236 || item.data?.card_type === '236')) {
+			continue;
+		} else if(itemId == 'profileme_mine') {
 			if(mainConfig.removeHomeVip) {
 				item = removeHomeVip(item);
 			}
