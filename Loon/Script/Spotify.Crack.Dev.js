@@ -492,7 +492,14 @@ function mutateCustomizationSuccess(bytes, options) {
 }
 
 function removeBrowsitaBrandAds(bytes) {
-  const marker = encodeUtf8("brand-ads-browse");
+  // Filter standalone homepage ad sections by Spotify's delivery identifiers
+  // and its advertiser-independent semantic label. Do not match media URLs:
+  // the same CDN also serves regular music and podcast content.
+  const adSectionMarkers = [
+    encodeUtf8("brand-ads-browse"),
+    encodeUtf8("promotion-browse"),
+    encodeUtf8("Sponsored recommendation"),
+  ];
   const rootFields = parseMessage(bytes);
   let changes = 0;
 
@@ -505,7 +512,7 @@ function removeBrowsitaBrandAds(bytes) {
       const isBrandAd =
         section.number === 1 &&
         section.wireType === 2 &&
-        containsBytes(section.data, marker);
+        adSectionMarkers.some((marker) => containsBytes(section.data, marker));
       if (isBrandAd) changes++;
       return !isBrandAd;
     });
