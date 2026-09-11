@@ -31,8 +31,8 @@ request if ${url} ~= /^https:\/\/asia\.adform\.net(?::443)?\/(?:C|adfserve)\/.*$
 [Script]
 # 固定到本仓库中已经审查的脚本 commit，避免后续更新静默改变执行代码。
 # 仅复用同脚本版本和同开关参数下已修改的配置，其余情况强制获取完整响应。
-http-request ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/a1e2d50e16015f91d1d5f3879b373e167be4e66c/Loon/Script/Spotify.Crack.Dev.js, timeout=5, argument=[{tab},{useractivity}], tag=Spotify-Config-Cache
-http-response ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize|browsita\/v1\/browse)(?:\?.*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/a1e2d50e16015f91d1d5f3879b373e167be4e66c/Loon/Script/Spotify.Crack.Dev.js, requires-body=true, binary-body-mode=true, timeout=5, argument=[{tab},{useractivity}], tag=Spotify-Protobuf
+http-request ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/a2601d0380bff33d09a10cc7574561483c726467/Loon/Script/Spotify.Crack.Dev.js, timeout=5, argument=[{tab},{useractivity}], tag=Spotify-Config-Cache
+http-response ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize|browsita\/v1\/browse)(?:\?.*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/a2601d0380bff33d09a10cc7574561483c726467/Loon/Script/Spotify.Crack.Dev.js, requires-body=true, binary-body-mode=true, timeout=5, argument=[{tab},{useractivity}], tag=Spotify-Protobuf
 
 [MitM]
 hostname= *-spclient.spotify.com, spclient.wg.spotify.com, asia.adform.net
