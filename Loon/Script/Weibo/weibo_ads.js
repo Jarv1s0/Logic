@@ -87,12 +87,12 @@ try {
   // 6、移除微博首页的多余tab页 微博首页Tab标签页
   if (url.includes("/groups/allgroups/v2")) {
     removePageDataAds(resp_data.pageDatas);
-    // 删除恶心人的“全部微博”
-    if (resp_data.pageDatas[0].categories) {
-      delete resp_data.pageDatas[0].categories[0].pageDatas[0];
-    } else {
-      delete resp_data.pageDatas[1].categories[0].pageDatas[0];
-    }
+    setLatestWeiboAsDefault(resp_data);
+  }
+
+  // 微博启动时会通过该接口再次指定首页默认频道。
+  if (url.includes("/client/interrupt")) {
+    setLatestWeiboOnLaunch(resp_data);
   }
 
   // 7、话题页面 微博话题页面
@@ -338,6 +338,63 @@ function removePageDataAds(items) {
       });
     }
   }
+}
+
+// 将“关注”设为默认首页，并把“最新微博”置于关注分组首位。
+function setLatestWeiboAsDefault(data) {
+  if (!Array.isArray(data?.pageDatas)) {
+    return;
+  }
+
+  const homeFeed = data.pageDatas.find((item) => item?.pageId === "homeFeed" || item?.pageDataType === "homeFeed");
+  if (!homeFeed) {
+    return;
+  }
+
+  for (const category of homeFeed.categories || []) {
+    if (!Array.isArray(category.pageDatas)) {
+      continue;
+    }
+    // 保留原有行为：移除关注分组中的“全部关注”。
+    category.pageDatas = category.pageDatas.filter((pageData) => pageData?.title !== "全部关注");
+    const latestIndex = category.pageDatas.findIndex((pageData) => pageData?.title === "最新微博");
+    if (latestIndex === -1) {
+      continue;
+    }
+
+    const [latest] = category.pageDatas.splice(latestIndex, 1);
+    category.pageDatas.unshift(latest);
+    data.defaultPageId = "homeFeed";
+    if (latest.uid && latest.gid && typeof $persistentStore !== "undefined") {
+      $persistentStore.write(String(latest.gid), `weibo_latest_gid_${latest.uid}`);
+    }
+    console.log('设置“最新微博”为默认首页');
+    return;
+  }
+}
+
+// 覆盖启动配置中的“推荐”默认页，并将关注流指向当前账号的“最新微博”。
+function setLatestWeiboOnLaunch(data) {
+  const users = data?.tabbar?.uids;
+  if (!Array.isArray(users)) {
+    return;
+  }
+
+  for (const user of users) {
+    if (!user?.feed) {
+      continue;
+    }
+    user.feed.homeDefaultPageId = "homeFeed";
+
+    const latestGid = typeof $persistentStore !== "undefined"
+      ? $persistentStore.read(`weibo_latest_gid_${user.uid}`)
+      : null;
+    const currentGroup = user.feed.feedlistChangeGroup?.find((group) => group?.type === 0);
+    if (currentGroup && latestGid) {
+      currentGroup.gid = latestGid;
+    }
+  }
+  console.log('微博启动默认进入“最新微博”');
 }
 
 // 删除一条微博下面的图片广告

@@ -114,6 +114,9 @@ http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/container_detail\?
 # 微博最顶部的tab页分组
 http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/groups\/allgroups\/v2 script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js, requires-body=true, timeout=60, tag=微博最顶部的tab页分组
 
+# 微博启动时默认进入“最新微博”
+http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/client\/interrupt script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js, requires-body=true, timeout=60, tag=微博默认进入最新微博
+
 # 微博评论区广告
 http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/comments\/mix_comments\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js, requires-body=true, timeout=60, tag=微博评论区广告
 http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/(container_detail_comment|container_detail_mix)\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js, requires-body=true, timeout=60, tag=微博评论区广告
