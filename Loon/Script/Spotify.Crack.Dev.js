@@ -500,6 +500,29 @@ function removeBrowsitaBrandAds(bytes) {
     encodeUtf8("promotion-browse"),
     encodeUtf8("Sponsored recommendation"),
   ];
+  return removeHomepageAdSections(bytes, (section) =>
+    adSectionMarkers.some((marker) => containsBytes(section, marker)),
+  );
+}
+
+function removeCasitaNativeAds(bytes) {
+  return removeHomepageAdSections(bytes, (section) => {
+    // Casita stores the section ID at [1, 1]. Match the delivery type,
+    // rather than titles or shared media metadata elsewhere in the response.
+    const idMessage = parseMessage(section).find(
+      (field) => field.number === 1 && field.wireType === 2,
+    );
+    if (!idMessage) return false;
+    const id = parseMessage(idMessage.data).find(
+      (field) => field.number === 1 && field.wireType === 2,
+    );
+    if (!id) return false;
+    const value = decodeUtf8(id.data);
+    return value.startsWith("spotify:section:") && value.endsWith("|native-ads");
+  });
+}
+
+function removeHomepageAdSections(bytes, isAdSection) {
   const rootFields = parseMessage(bytes);
   let changes = 0;
 
@@ -512,7 +535,7 @@ function removeBrowsitaBrandAds(bytes) {
       const isBrandAd =
         section.number === 1 &&
         section.wireType === 2 &&
-        adSectionMarkers.some((marker) => containsBytes(section.data, marker));
+        isAdSection(section.data);
       if (isBrandAd) changes++;
       return !isBrandAd;
     });
@@ -673,6 +696,10 @@ function prepareResponseHeaders(path, headers, options) {
 function processResponse(path, body, options) {
   if (path === "/browsita/v1/browse") {
     return removeBrowsitaBrandAds(body);
+  }
+
+  if (path === "/casita/v1/home/default") {
+    return removeCasitaNativeAds(body);
   }
 
   if (path === "/user-customization-service/v1/customize") {
