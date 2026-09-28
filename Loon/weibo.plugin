@@ -1,12 +1,10 @@
 #!name=微博去广告&净化
 #!desc=微博去广告、净化界面，并隐藏发现页热搜、首页超话和我的页面推广模块
-#!author=奶思[https://github.com/fmz200], Jarv1s0[https://github.com/Jarv1s0/Logic]
+#!author=Jarv1s0[https://github.com/Jarv1s0/Logic]
 #!homepage=https://github.com/Jarv1s0/Logic/tree/master/Loon
-#!icon=https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps/Weibo-00.png
+#!icon=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Weibo.png
 #!raw-url=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/weibo.plugin
-#!tg-channel=https://t.me/inaisi
-#!category=奶思的模块
-#!tag = 去广告, 微博, fmz200
+#!tag = 去广告, 微博,
 #!system = iOS, iPadOS
 #!system_version =
 #!loon_version =
