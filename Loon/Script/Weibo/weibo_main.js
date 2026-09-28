@@ -704,7 +704,58 @@ function containerHandler(data) {
 	}
 }
 
-//可能感兴趣的人
+function isProfileRecommendation(item) {
+	if (!item) {
+		return false;
+	}
+
+	const idValues = [
+		item.itemId,
+		item.itemid,
+		item.analysis_extra,
+		item.data?.itemId,
+		item.data?.itemid,
+		item.data?.analysis_extra,
+		...(Array.isArray(item.items) ? item.items : []).flatMap((subItem) => [
+			subItem?.itemId,
+			subItem?.itemid,
+			subItem?.analysis_extra,
+			subItem?.data?.itemId,
+			subItem?.data?.itemid,
+			subItem?.data?.analysis_extra
+		])
+	].filter((value) => typeof value === 'string');
+	const textValues = [
+		item.header?.title?.content,
+		item.header?.title?.text,
+		item.header?.title?.subTitle,
+		item.data?.desc,
+		item.data?.title,
+		...(Array.isArray(item.items) ? item.items : []).flatMap((subItem) => [
+			subItem?.header?.title?.content,
+			subItem?.header?.title?.text,
+			subItem?.data?.desc,
+			subItem?.data?.title
+		])
+	].filter((value) => typeof value === 'string');
+
+	if (idValues.some((value) => /^(INTEREST_PEOPLE|profile[_-](recommend|collection)|recommend[_-]?(user|people|profile))$/i.test(value)
+		|| /(?:interest[_-]people|profile.*(?:recommend|interest)|(?:recommend|interest).*profile)/i.test(value))) {
+		return true;
+	}
+	if (textValues.some((value) => /荐读|可能感兴趣的人|可能感兴趣|推荐关注/.test(value))) {
+		return true;
+	}
+
+	if (item.category === 'group' && item.type === 'horizontal') {
+		return (Array.isArray(item.items) ? item.items : []).some((subItem) =>
+			subItem?.itemId === 'profile_collection' &&
+			['audio_hot_collection', 'hot_mblog_collection'].includes(subItem.analysis_extra));
+	}
+	return false;
+}
+
+//可能感兴趣的人和荐读
 function userHandler(data) {
 	data = removeMain(data);
 	if (!data.items) {
@@ -733,17 +784,9 @@ function userHandler(data) {
 		if (item.header?.vipView) {
 			delete item.header.vipView;
 		}
-		if (item.category === 'group' && item.itemId === 'INTEREST_PEOPLE') {
-			// 对方主页的“可能感兴趣的人”及其关注推荐。
+		if (isProfileRecommendation(item)) {
+			// 对方主页的“可能感兴趣的人”和“荐读”推荐卡。
 			isAdd = false;
-		} else if (item.category === 'group' && item.type === 'horizontal') {
-			// 对方主页的“热门音频 / 近期热门”横向推荐卡。
-			const collectionItems = item.items || [];
-			if (collectionItems.some((subItem) =>
-				subItem?.itemId === 'profile_collection' &&
-				['audio_hot_collection', 'hot_mblog_collection'].includes(subItem.analysis_extra))) {
-				isAdd = false;
-			}
 		}
 		if (item.category === 'group' && isAdd) {
 			try {
