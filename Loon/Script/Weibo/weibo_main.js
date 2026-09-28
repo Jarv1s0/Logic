@@ -708,10 +708,6 @@ function containerHandler(data) {
 //可能感兴趣的人
 function userHandler(data) {
 	data = removeMain(data);
-	if (!mainConfig.removeInterestUser) {
-		return data;
-	}
-
 	if (!data.items) {
 		return data;
 	}
