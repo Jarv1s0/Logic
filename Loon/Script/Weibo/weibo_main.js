@@ -35,7 +35,7 @@ const mainConfig = storeMainConfig ? JSON.parse(storeMainConfig) : {
 	removeInterestFriendInTopic: false,		//超话：超话里的好友
 	removeInterestTopic: false,				//超话：可能感兴趣的超话 + 好友关注
 	removeUnfollowTopic: true,				//超话：未关注的超话
-	removeInterestUser: false,				//用户页：可能感兴趣的人
+	removeInterestUser: true,				//用户页：可能感兴趣的人
 
 	removeLvZhou: false,					//绿洲模块
 
@@ -712,7 +712,19 @@ function userHandler(data) {
 	let newItems = [];
 	for (let item of data.items) {
 		let isAdd = true;
-		if (item.category === 'group') {
+		if (item.category === 'group' && item.itemId === 'INTEREST_PEOPLE') {
+			// 对方主页的“可能感兴趣的人”及其关注推荐。
+			isAdd = false;
+		} else if (item.category === 'group' && item.type === 'horizontal') {
+			// 对方主页的“热门音频 / 近期热门”横向推荐卡。
+			const collectionItems = item.items || [];
+			if (collectionItems.some((subItem) =>
+				subItem?.itemId === 'profile_collection' &&
+				['audio_hot_collection', 'hot_mblog_collection'].includes(subItem.analysis_extra))) {
+				isAdd = false;
+			}
+		}
+		if (item.category === 'group' && isAdd) {
 			try {
 				if (item.items[0]['data']['desc'] === '可能感兴趣的人') {
 					isAdd = false;
