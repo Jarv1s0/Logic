@@ -710,9 +710,29 @@ function userHandler(data) {
 	if (!data.items) {
 		return data;
 	}
+	const profileJunkIds = new Set([
+		'100505_-_manage',
+		'100505_-_newcreator',
+		'100505_-_newusertask',
+		'100505_-_vipkaitong',
+		'100505_-_hongbao2022',
+		'100505_-_adphoto',
+		'100505_-_hongrenjie2022',
+		'100505_-_weibonight2023',
+		'100505_-_meattent_pic',
+		'mine_attent_title'
+	]);
 	let newItems = [];
 	for (let item of data.items) {
 		let isAdd = true;
+		if (profileJunkIds.has(item.itemId) ||
+			(item.itemId || '').startsWith('100505_-_meattent_-_') ||
+			item.data?.card_type === 236 || item.data?.card_type === '236') {
+			isAdd = false;
+		}
+		if (item.header?.vipView) {
+			delete item.header.vipView;
+		}
 		if (item.category === 'group' && item.itemId === 'INTEREST_PEOPLE') {
 			// 对方主页的“可能感兴趣的人”及其关注推荐。
 			isAdd = false;
