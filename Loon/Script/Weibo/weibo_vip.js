@@ -1,7 +1,7 @@
 /**
  * @author fmz200
  * @function 解锁微博会员图标
- * @date 2024-06-13 09:20:00
+ * @date 2026-09-28 00:00:00
  *
  * [MITM]
  * hostname = new.vip.weibo.cn

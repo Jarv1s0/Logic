@@ -2,7 +2,7 @@
  * @author fmz200
  * @function 微博去广告
  * @since 2025-12-08 20:15:00
- * @date 2026-06-24 10:50:00
+ * @date 2026-09-28 00:00:00
  */
 
 let url = $request.url;

@@ -1,7 +1,7 @@
 /**
  * @auther @fmz200
  * @function 微博去广告
- * @date 2025-12-16 21:33:23
+ * @date 2026-09-28 00:00:00
  * @quote zmqcherish
  */
 
@@ -75,7 +75,7 @@ const itemMenusConfig = storeItemMenusConfig ? JSON.parse(storeItemMenusConfig) 
 }
 
 const modifyCardsUrls = ['/cardlist', 'video/community_tab', '/searchall'];
-const modifyStatusesUrls = ['statuses/friends/timeline', 'statuses/unread_friends_timeline', 'statuses/unread_hot_timeline', 'groups/timeline'];
+const modifyStatusesUrls = ['statuses/friends/timeline', 'statuses/unread_friends_timeline', 'statuses/unread_hot_timeline', 'groups/timeline', 'flowlist'];
 
 const otherUrls = {
 	'/profile/me': 'removeHome',						//个人页模块
@@ -150,6 +150,9 @@ function isAd(data) {
 		return true;
 	}
 	if (data.ads_material_info?.is_ads) {
+		return true;
+	}
+	if (data.ad_state === 1 || data.ad_state === '1') {
 		return true;
 	}
 	return data.is_ad === 1;
@@ -436,6 +439,9 @@ function isBlock(data) {
 }
 
 function removeTimeLine(data) {
+	if (Array.isArray(data.items)) {
+		return removeMain(data);
+	}
 	for (const s of ["ad", "advertises", "trends"]) {
 		if (data[s]) {
 			delete data[s];
