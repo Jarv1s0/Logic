@@ -1,25 +1,48 @@
-#!name=Spotify去广告（增强版）
-#!desc=基于 001ProMax 版本修复，首次启用后请重新登录 Spotify。
-#!author=app2smile, 001ProMax, Jarv1s0
-#!tag=去广告
-#!loon_version=3.2.4(787)
-#!homepage=https://github.com/Jarv1s0/Logic/tree/master/Loon
-#!icon=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png
-#!date=2026-07-29 00:00:00
+#!name = Spotify
+#!desc = 移除 Spotify 广告并启用部分 Premium 功能；不支持极高音质。两套 Protobuf 脚本只能启用一套；启用插件后请重新登录以应用完整配置。
+#!openUrl = https://loon-plugins.vercel.app
+#!author = devchristian1337, Jarv1s0
+#!tag = Spotify, AdBlock, Premium
+#!loon_version = 3.3.4(898)
+#!homepage = https://github.com/Jarv1s0/Logic/tree/master/Loon
+#!icon = https://raw.githubusercontent.com/devchristian1337/loon-plugins/refs/heads/main/App-Icons/spotify.png
+#!date = 2026-10-09
+
+# 上游来源：https://github.com/devchristian1337/loon-plugins/tree/7ae0a25b2de75746dc602bfa890b9737d3847a9f
+# 六个脚本原样收录到本仓库；原 Spotify.Crack.Dev.js 保留，但不再被本插件调用。
+
+[Argument]
+spot-ev3-enable = switch,true,false,tag=Local config override,desc=使用预置配置覆盖 bootstrap/customize Protobuf（推荐）
+spot-ev1-enable = switch,false,true,tag=Remote config modification,desc=按规则修改现有 Protobuf 配置；请勿与预置配置覆盖同时启用
+
+[Rule]
+AND,((DOMAIN-SUFFIX, spotify.com), (PROTOCOL, QUIC)),REJECT
+
+DOMAIN,aet.spotify.com,REJECT
 
 [Rewrite]
-# 屏蔽 Pendragon 推广内容。
-^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/pendragon\/ reject-dict
-
-# 使用 iPad 歌手页布局，恢复歌手列表展示。
+# 保留本仓库的 iPad 艺人页布局规则。
 ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/artistview\/v1\/artist\/(.*)&platform=iphone header https://spclient.wg.spotify.com/artistview/v1/artist/$1&platform=ipad
+^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/user-customization-service\/v1\/customize header-del if-none-match
+^https:\/\/(spclient\.wg|.*-spclient)\.spotify\.com(:443)?\/pendragon reject-dict
 
-# 强制 Spotify 返回完整 Protobuf 正文，避免 304 空响应绕过脚本。
-^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ header-del if-none-match
+# Hide the discovery feed on the Now Playing screen (personal preference)
+^https:\/\/(spclient\.wg|.*-spclient)\.spotify\.com(:443)?\/watch-feed-entrypoints\/v.\/discovery-from-seed reject-dict
+
+# Hide the membership info in Settings (display only, can be removed)
+^https:\/\/.*-spclient\.spotify\.com(:443)?\/pam-view-service\/ reject-dict
+
+# Block the AI DJ URL
+37i9dQZF1EYkqdzj48dyYq reject-dict
+
+[Mitm]
+hostname = spclient.wg.spotify.com, *spclient.spotify.com
 
 [Script]
-# 固定到本仓库中已经审查的脚本 commit，避免后续更新静默改变执行代码。
-http-response ^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/d9345e5b3bb647bc328b4be5e914f02b48368981/Loon/Script/Spotify.Crack.Dev.js, requires-body=true, binary-body-mode=true, timeout=5, tag=Spotify-Protobuf
+http-request ^https:\/\/(.*-spclient\.spotify\.com(:443)?|spclient\.wg\.spotify\.com)\/gabo-receiver-service script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-gabo.js, timeout=10, tag=Spotify gabo
 
-[MitM]
-hostname= *-spclient.spotify.com, spclient.wg.spotify.com
+http-response ^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/browsita\/v.\/browse script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-NoSearchAd.js, requires-body=true, binary-body-mode=true, timeout=10, tag=Spotify search ads
+http-response ^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/casita\/v.\/home\/ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-NoHomeAd.js, requires-body=true, binary-body-mode=true, timeout=10, tag=Spotify home ads
+http-response ^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/scrollsita\/v.\/scroll\/spotify script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-NoScrollAd.js, requires-body=true, binary-body-mode=true, timeout=10, tag=Spotify scroll ads
+http-response ^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)(\?.*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-proto-eevee.js, requires-body=true, binary-body-mode=true, timeout=10, tag=Spotify protobuf (remote), enable={spot-ev1-enable}
+http-response ^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)(\?.*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-proto-ev3.js, requires-body=true, binary-body-mode=true, timeout=10, tag=Spotify protobuf (local), enable={spot-ev3-enable}
