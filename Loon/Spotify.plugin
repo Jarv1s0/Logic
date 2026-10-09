@@ -3,7 +3,7 @@
 #!openUrl = https://loon-plugins.vercel.app
 #!author = devchristian1337, Jarv1s0
 #!tag = Spotify, AdBlock, Premium
-#!loon_version = 3.3.4(898)
+#!loon_version = 3.5.1(978)
 #!homepage = https://github.com/Jarv1s0/Logic/tree/master/Loon
 #!icon = https://raw.githubusercontent.com/devchristian1337/loon-plugins/refs/heads/main/App-Icons/spotify.png
 #!date = 2026-10-09
@@ -21,8 +21,15 @@ AND,((DOMAIN-SUFFIX, spotify.com), (PROTOCOL, QUIC)),REJECT
 DOMAIN,aet.spotify.com,REJECT
 
 [Rewrite]
+# 保留本仓库已确认的音频、赞助及 Adform 广告拦截规则。
+request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/ad-logic\/(?:prefetch|state\/config)(?:\?.*)?$/ then reject_dict(200)
+request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/ads\/v2\/config(?:\?.*)?$/ then reject_dict(200)
+request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/ads\/v3\/ads(?:\?.*)?$/ then reject(404)
+request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/sponsoredplaylist\/v1\/sponsored(?:\?.*)?$/ then reject_dict(200)
+request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/podcast-ap4p\/leavebehinds\/ads(?:\?.*)?$/ then reject_dict(200)
+request if ${url} ~= /^https:\/\/asia\.adform\.net(?::443)?\/(?:C|adfserve)\/.*$/ then reject(404)
 # 保留本仓库的 iPad 艺人页布局规则。
-^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/artistview\/v1\/artist\/(.*)&platform=iphone header https://spclient.wg.spotify.com/artistview/v1/artist/$1&platform=ipad
+request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?(\/artistview\/v1\/artist\/.*[?&]platform=)iphone((?:&.*)?$)/ as artist then url.replace("https://spclient.wg.spotify.com${artist.1}ipad${artist.2}")
 ^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/user-customization-service\/v1\/customize header-del if-none-match
 ^https:\/\/(spclient\.wg|.*-spclient)\.spotify\.com(:443)?\/pendragon reject-dict
 
@@ -36,7 +43,7 @@ DOMAIN,aet.spotify.com,REJECT
 37i9dQZF1EYkqdzj48dyYq reject-dict
 
 [Mitm]
-hostname = spclient.wg.spotify.com, *spclient.spotify.com
+hostname = spclient.wg.spotify.com, *spclient.spotify.com, asia.adform.net
 
 [Script]
 http-request ^https:\/\/(.*-spclient\.spotify\.com(:443)?|spclient\.wg\.spotify\.com)\/gabo-receiver-service script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-gabo.js, timeout=10, tag=Spotify gabo

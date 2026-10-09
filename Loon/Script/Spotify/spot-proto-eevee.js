@@ -1141,7 +1141,7 @@ if(resStatus !== 200) {
 }
 
 function modifyAssignedValues(values) {
-  
+
    for (const rule of rules) {
      const matchingIndices = values
        .map((_, index) => index)
@@ -1182,7 +1182,7 @@ function modifyAssignedValues(values) {
            break;
        }
      }
-     //console.log("==========");  
+     //console.log("==========");
   }
 
   console.log("assignedValuesMapObj processed");
@@ -1235,7 +1235,7 @@ function modifyAttributes(attributes) {
   delete attributes['shuffle']; // remove the shuffle attribute, controlled by shuffle-eligible
 
 
-    
+
   delete attributes["payment-state"];
   delete attributes["last-premium-activation-date"];
 

@@ -49,7 +49,7 @@ function parseField6(buffer) {
         varintLength: length,
         totalLength: 1 + length + value
       };
-      }  
+      }
     }
   }
   return null;
