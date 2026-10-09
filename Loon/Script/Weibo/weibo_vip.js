@@ -5,7 +5,7 @@
  * [MITM]
  * hostname = new.vip.weibo.cn
  *
- * 由 Loon/weibo.plugin 的 [Script] 规则加载，脚本地址固定为 master 分支。
+ * 由 Loon/weibo.lpx 的 [Script] 规则加载，脚本地址固定为 master 分支。
  * https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_vip.js
  */
 
