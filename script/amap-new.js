@@ -11,6 +11,11 @@ const poiAds = [
   "MarketingGoods", "adStoreBigBannerModule", "image_banner",
   "yellowPageAdRecommendModule", "CouponPush"
 ];
+// 房产详情专用模块及其锚点，由用户 HAR 确认；通用商品货架不在其他模板删除。
+const houseDetailModules = [
+  "houseAgentService", "surroundFacility", "surroundHouseTab", "houseShelf",
+  "commonGoodsShelf", "similarShopRecommend", "nearbyRecommendModule"
+];
 const searchAds = ["BrandBannerCard", "CustomerServiceAdEntrances", "CouponBanner"];
 const mapAds = [
   "UserAssetsVirtualCard", "FootPrintNewCityDialog",
@@ -46,6 +51,54 @@ function removeModules(data, names) {
     const metaInfo = data.meta.vo_meta_info;
     if (isObject(metaInfo) && Array.isArray(metaInfo.couponRefreshModules)) {
       metaInfo.couponRefreshModules = metaInfo.couponRefreshModules.filter(name => !names.includes(name));
+    }
+  }
+}
+
+function filterHouseAnchors(items) {
+  return items.filter(item => {
+    if (!isObject(item)) return true;
+    if (typeof item.anchor === "string") return !houseDetailModules.includes(item.anchor);
+    if (!Array.isArray(item.anchor)) return true;
+    const kept = item.anchor.filter(name => !houseDetailModules.includes(name));
+    if (kept.length === item.anchor.length) return true;
+    if (kept.length === 0) return false;
+    item.anchor = kept;
+    return true;
+  });
+}
+
+function cleanHouseDetail(data) {
+  if (data.template !== "house_all_expt_temp") return;
+  removeModules(data, houseDetailModules);
+  if (!isObject(data.modules)) return;
+  const base = data.modules.baseInfo;
+  if (isObject(base) && isObject(base.data) && Array.isArray(base.data.iconsList)) {
+    base.data.iconsList = base.data.iconsList.filter(icon => {
+      if (!isObject(icon) || icon.type !== "tel" || !isObject(icon.tel_info) ||
+          !isObject(icon.tel_info.params) || !Array.isArray(icon.tel_info.params.multiVirtualPhone)) return true;
+      const phones = icon.tel_info.params.multiVirtualPhone;
+      const kept = phones.filter(phone => !isObject(phone) || !isObject(phone.material) ||
+        typeof phone.material.dial_virtual_txt !== "string" || !phone.material.dial_virtual_txt.includes("经纪人提供服务"));
+      if (kept.length === phones.length) return true;
+      icon.tel_info.params.multiVirtualPhone = kept;
+      // 保留其他拨号选项或跳转入口，纯经纪人按钮才整体移除。
+      return kept.length > 0 || Array.isArray(icon.tel_info.jump_list) && icon.tel_info.jump_list.length > 0;
+    });
+  }
+  const anchor = data.modules.anchor;
+  if (isObject(anchor) && isObject(anchor.data) && Array.isArray(anchor.data.items)) {
+    anchor.data.items = filterHouseAnchors(anchor.data.items);
+  }
+  const belt = data.modules.poiDetailNewBeltV2;
+  if (isObject(belt) && isObject(belt.data) && isObject(belt.data.belt) &&
+      Array.isArray(belt.data.belt.list)) {
+    const items = belt.data.belt.list;
+    const kept = filterHouseAnchors(items);
+    if (items.length > 0 && kept.length === 0) {
+      removeModules(data, ["poiDetailNewBeltV2"]);
+    } else {
+      belt.data.belt.list = kept;
     }
   }
 }
@@ -154,6 +207,7 @@ try {
           break;
         case "info.amap.com/ws/shield/search/poi/detail":
           removeModules(data, poiAds);
+          cleanHouseDetail(data);
           break;
         case "m5.amap.com/ws/shield/search_poi/search/sp":
           removeModules(data, searchAds);

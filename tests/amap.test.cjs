@@ -104,6 +104,74 @@ test('地点详情保留门票、油价、电影、地图标识，清理广告�
   assert.deepEqual(result.meta.vo_meta_info.couponRefreshModules, ['Unknown']);
 });
 
+const houseModules = ['houseAgentService', 'surroundFacility', 'surroundHouseTab', 'houseShelf', 'commonGoodsShelf', 'similarShopRecommend', 'nearbyRecommendModule'];
+
+test('房产详情移除服务、配套、房源和相关推荐，保留基础信息与导航', () => {
+  const keep = { baseInfo: { data: { title: 'fixture' } }, poiMapModule: {}, poiDetailBottomBar: { data: { items: [{ key: 'navi' }, { key: 'collect' }] } }, combineReviews: {}, Unknown: {} };
+  const input = {
+    template: 'house_all_expt_temp', modules: { ...keep, ...Object.fromEntries(houseModules.map(name => [name, {}])) },
+    regions: { listContent: ['baseInfo', ...houseModules, 'combineReviews'], other: ['poiMapModule'], malformed: {} },
+    meta: { half_hidden_modules: [...houseModules, 'Unknown'], vo_meta_info: { couponRefreshModules: [...houseModules, 'Unknown'] } }
+  };
+  const result = data(routes[1], input);
+  assert.deepEqual(result.modules, keep);
+  assert.deepEqual(result.regions, { listContent: ['baseInfo', 'combineReviews'], other: ['poiMapModule'], malformed: {} });
+  assert.deepEqual(result.meta.half_hidden_modules, ['Unknown']);
+  assert.deepEqual(result.meta.vo_meta_info.couponRefreshModules, ['Unknown']);
+  // 通用商品货架及周边模块在其他地点模板仍保留。
+  for (const template of ['hotelUnionPortal', 'restaurant', undefined]) {
+    const original = { ...input, template };
+    assert.deepEqual(data(routes[1], original), JSON.parse(JSON.stringify(original)));
+  }
+});
+
+test('房产标签和配套快捷入口清理模块引用，未知入口及混合引用保留', () => {
+  const items = [{ title: '房源', anchor: ['houseShelf'] }, { title: '服务', anchor: ['houseAgentService'] },
+    { title: '配套', anchor: ['surroundFacility'] }, { title: '评价', anchor: ['combineReviews'] },
+    { title: '混合', anchor: ['surroundFacility', 'Unknown'] }, { title: '未知', anchor: [] }, null, {}, { anchor: 1 }];
+  const result = data(routes[1], { template: 'house_all_expt_temp', modules: {
+    anchor: { data: { leastShowCount: 4, items } },
+    poiDetailNewBeltV2: { data: { belt: { list: [{ key: 'traffic', anchor: 'surroundFacility' }, { key: 'normal', anchor: 'Unknown' }] } } }
+  } });
+  assert.deepEqual(result.modules.anchor.data.items, [items[3], { title: '混合', anchor: ['Unknown'] }, ...items.slice(5)]);
+  assert.equal(result.modules.anchor.data.leastShowCount, 4);
+  assert.deepEqual(result.modules.poiDetailNewBeltV2.data.belt.list, [{ key: 'normal', anchor: 'Unknown' }]);
+  const cleared = data(routes[1], { template: 'house_all_expt_temp', modules: {
+    poiDetailNewBeltV2: { data: { belt: { list: [{ anchor: 'surroundFacility' }] } } }
+  }, regions: { other: ['poiMapModule', 'poiDetailNewBeltV2'] } });
+  assert.equal(cleared.modules.poiDetailNewBeltV2, undefined);
+  assert.deepEqual(cleared.regions.other, ['poiMapModule']);
+});
+
+test('房产电话仅过滤明确的经纪人拨号选项，保留普通电话及未知结构', () => {
+  const broker = { material: { dial_virtual_txt: '测试经纪人提供服务' }, params: { fixture: true } };
+  const ordinary = { material: { dial_virtual_txt: '物业联系电话' }, params: { fixture: true } };
+  const input = { template: 'house_all_expt_temp', modules: { baseInfo: { data: { iconsList: [
+    { type: 'map' }, { type: 'tel', tel_info: { params: { multiVirtualPhone: [broker] }, jump_list: [] } },
+    { type: 'tel', tel_info: { params: { multiVirtualPhone: [broker, ordinary, null, {}] } } },
+    { type: 'tel', tel_info: { params: { multiVirtualPhone: {} } } }, null
+  ] } } } };
+  const result = data(routes[1], input);
+  const expected = structuredClone(input);
+  expected.modules.baseInfo.data.iconsList.splice(1, 1);
+  expected.modules.baseInfo.data.iconsList[1].tel_info.params.multiVirtualPhone = [ordinary, null, {}];
+  assert.deepEqual(result, expected);
+  assert.deepEqual(data(routes[1], { ...input, template: 'other' }), { ...input, template: 'other' });
+  const otherJump = data(routes[1], { template: 'house_all_expt_temp', modules: { baseInfo: { data: {
+    iconsList: [{ type: 'tel', tel_info: { params: { multiVirtualPhone: [broker] }, jump_list: [{ fixture: 'other' }] } }]
+  } } } });
+  assert.deepEqual(otherJump.modules.baseInfo.data.iconsList[0].tel_info.params.multiVirtualPhone, []);
+  assert.deepEqual(otherJump.modules.baseInfo.data.iconsList[0].tel_info.jump_list, [{ fixture: 'other' }]);
+});
+
+test('房产详情缺字段及模块类型变化时原样透传', () => {
+  for (const modules of [null, [], {}, { anchor: null, poiDetailNewBeltV2: {} },
+    { anchor: { data: { items: {} } }, poiDetailNewBeltV2: { data: { belt: { list: {} } } } }]) {
+    const result = run(routes[1], { data: { template: 'house_all_expt_temp', modules } });
+    assert.equal(result.body, result.original);
+  }
+});
+
 test('酒店保留现有布局及模块，不插入不存在的名称', () => {
   const result = data(routes[3], { template: 'hotelUnionPortal', modules: { real_card: {}, CouponPopup: {} }, regions: { content: ['real_card', 'CouponPopup'], widget: ['real_widget'] } });
   assert.deepEqual(result.regions, { content: ['real_card'], widget: ['real_widget'] });
