@@ -184,25 +184,48 @@ test('HAR 首页 SSE 接口交给响应脚本，其他 AI 路径不受影响', (
 
 function homeStream(newline = '\n') {
   // 使用 HAR 中的协议形状；会话及卡片内容为合成值。
-  const container = { is_done: false, component: { type: 'container', data: { data: { template: 'aiPmtGenerate', modules: { AiCardContainer_0: {} } } } } };
+  const container = { seq: '1', is_done: false, component: { type: 'container', is_done: true, data: { data: {
+    template: 'aiPmtGenerate', regions: { content: ['AiCardContainer_0'] },
+    modules: { AiCardContainer_0: { card_id: 'WaterfallContainer', data: { list: [{ title: 'fixture-promotion' }] } } }
+  } } } };
+  const functional = { seq: '2', component: { type: 'container', data: { data: {
+    template: 'aiPmtGenerate', modules: { AiCardContainer_0: { card_id: 'NestCard', data: { props: { fixture: true } } } }
+  } } } };
   const done = { is_done: true, has_more: true, next_page_num: 3, seq: '3', session_id: 'fixture-session', component: { type: 'markdown', text: '', displayText: '', is_done: false } };
-  return ['event: data', 'data: ' + JSON.stringify(container), '', 'event: data', 'id: 3', 'data: ' + JSON.stringify(done), '', 'event: COMPLETE', 'data: {}', '', ''].join(newline);
+  return ['event: data', 'data: ' + JSON.stringify(container), '', 'event: data', 'data: ' + JSON.stringify(functional), '', 'event: data', 'id: 3', 'data: ' + JSON.stringify(done), '', 'event: COMPLETE', 'data: {}', '', ''].join(newline);
 }
 
-test('首页 SSE 返回成功结束与 COMPLETE，无推荐容器、不再加载下一页', () => {
+function streamMessages(body) {
+  return body.split(/\r?\n/).filter(line => line.startsWith('data:')).map(line => JSON.parse(line.slice(5)));
+}
+
+test('首页 SSE 保留完整事件链和功能卡片，仅清空瀑布列表并停止分页', () => {
   for (const newline of ['\n', '\r\n']) {
-    const result = run(routes[11], homeStream(newline));
+    const input = homeStream(newline);
+    const before = streamMessages(input);
+    const result = run(routes[11], input);
     assert.deepEqual(result.logs, []);
-    assert.ok(!result.body.includes('AiCardContainer_0'));
     assert.ok(result.body.includes('event: COMPLETE'));
     assert.ok(result.body.includes('id: 3'));
-    const messages = result.body.split(/\r?\n/).filter(line => line.startsWith('data:')).map(line => JSON.parse(line.slice(5)));
-    assert.equal(messages.length, 2);
-    assert.equal(messages[0].is_done, true);
-    assert.equal(messages[0].has_more, false);
-    assert.equal(messages[0].session_id, 'fixture-session');
-    assert.deepEqual(messages[1], {});
+    const messages = streamMessages(result.body);
+    assert.equal(messages.length, before.length);
+    assert.deepEqual(messages.map(message => message.seq), before.map(message => message.seq));
+    const expected = structuredClone(before);
+    expected[0].component.data.data.modules.AiCardContainer_0.data.list = [];
+    expected[2].has_more = false;
+    assert.deepEqual(messages, expected);
+    assert.equal(run(routes[11], result.body).body, result.body);
   }
+});
+
+test('首页 SSE 保留思考事件、空容器及 SSE 元数据，多行 data 可解析', () => {
+  const thinking = 'event: data\nid: 0\n: fixture-comment\ndata: {"seq":"0","component":{"type":"container","think_type":1,"is_done":true}}\n\n';
+  const empty = 'event: data\ndata: {"seq":"empty","component":{"type":"container","data":{"data":{"template":"aiPmtGenerate","modules":{"AiCardContainer_0":{"card_id":"WaterfallContainer","data":{"list":[]}}}}}}}\n\n';
+  const input = thinking + empty + homeStream().replace('data: {"seq":"1",', 'data: {\ndata: "seq":"1",');
+  const result = run(routes[11], input);
+  assert.ok(result.body.startsWith(thinking + empty));
+  assert.equal(streamMessages(result.body).length, 6);
+  assert.ok(!result.body.includes('fixture-promotion'));
 });
 
 test('首页 SSE 未完成、出错或未知结构时原样返回', () => {
@@ -212,6 +235,8 @@ test('首页 SSE 未完成、出错或未知结构时原样返回', () => {
     'event: error\ndata: {"code":500}\n\n',
     'event: data\ndata: not-json\n\n',
     homeStream().replace('event: COMPLETE', 'event: unknown'),
+    homeStream().replaceAll('WaterfallContainer', 'UnknownContainer'),
+    homeStream().replace('"list":[{"title":"fixture-promotion"}]', '"list":{}'),
     homeStream().replace('"text":""', '"text":"unknown"'),
     'event: COMPLETE\ndata: {}\n\n' + homeStream().split('event: COMPLETE')[0]
   ];

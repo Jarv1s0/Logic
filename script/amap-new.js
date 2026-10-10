@@ -60,43 +60,64 @@ function keepPageCards(data, allowed) {
   }
 }
 
-function emptyHomeStream(stream) {
+function cleanHomeStream(stream) {
   const frames = stream.split(/\r?\n\r?\n/);
-  let doneFrame;
-  let completeFrame;
   let doneIndex = -1;
   let completeIndex = -1;
-  for (let index = 0; index < frames.length; index++) {
-    const lines = frames[index].split(/\r?\n/);
+  let clearedContainers = 0;
+  const rewritten = frames.map((frame, index) => {
+    const lines = frame.split(/\r?\n/);
     const eventLine = lines.find(line => line.startsWith("event:"));
     const event = eventLine ? eventLine.slice(6).trim() : "message";
     const dataLines = lines.filter(line => line.startsWith("data:"));
-    if (dataLines.length === 0) continue;
+    if (dataLines.length === 0) return frame;
     // 未知或错误事件不伪装成成功，保持整段原响应。
-    if (event !== "data" && event !== "COMPLETE") return stream;
+    if (event !== "data" && event !== "COMPLETE") throw new Error("Unknown SSE event");
     const value = JSON.parse(dataLines.map(line => line.slice(5).replace(/^ /, "")).join("\n"));
-    if (event === "data" && isObject(value) && value.is_done === true &&
-        typeof value.has_more === "boolean" && isObject(value.component) &&
-        value.component.type === "markdown" && value.component.text === "" &&
-        value.component.displayText === "") {
-      value.has_more = false;
-      doneFrame = lines.filter(line => !line.startsWith("data:")).join("\n") +
-        "\ndata: " + JSON.stringify(value);
-      doneIndex = index;
+    let changed = false;
+    if (event === "data" && isObject(value) && isObject(value.component)) {
+      const component = value.component;
+      const template = isObject(component.data) ? component.data.data : null;
+      if (component.type === "container" && isObject(template) &&
+          template.template === "aiPmtGenerate" && isObject(template.modules)) {
+        Object.keys(template.modules).forEach(key => {
+          const card = template.modules[key];
+          if (isObject(card) && card.card_id === "WaterfallContainer" &&
+              isObject(card.data) && Array.isArray(card.data.list)) {
+            // HAR 中服务端已有 list: [] 的成功容器；保留容器及区域引用。
+            clearedContainers++;
+            if (card.data.list.length > 0) {
+              card.data.list = [];
+              changed = true;
+            }
+          }
+        });
+      }
+      if (value.is_done === true && typeof value.has_more === "boolean" &&
+          component.type === "markdown" && component.text === "" && component.displayText === "") {
+        doneIndex = index;
+        if (value.has_more) {
+          value.has_more = false;
+          changed = true;
+        }
+      }
     }
     if (event === "COMPLETE" && isObject(value) && Object.keys(value).length === 0) {
-      completeFrame = frames[index];
       completeIndex = index;
     }
-  }
-  if (!doneFrame || !completeFrame || completeIndex <= doneIndex) return stream;
-  // 使用 HAR 中成功响应的结束结构，保留会话信息及 COMPLETE，不发送推荐容器。
-  return doneFrame + "\n\n" + completeFrame + "\n\n";
+    if (!changed) return frame;
+    // 保留 event、id、注释等 SSE 字段，以及所有事件的原始顺序和 seq。
+    const firstDataIndex = lines.findIndex(line => line.startsWith("data:"));
+    return lines.filter((line, lineIndex) => !line.startsWith("data:") || lineIndex === firstDataIndex)
+      .map(line => line.startsWith("data:") ? "data: " + JSON.stringify(value) : line).join("\n");
+  });
+  if (clearedContainers === 0 || doneIndex < 0 || completeIndex <= doneIndex) return stream;
+  return rewritten.every((frame, index) => frame === frames[index]) ? stream : rewritten.join("\n\n");
 }
 
 try {
   if (/^https:\/\/ai\.amap\.com\/v1\/ai_rec\/home_qs(?:\?|$)/.test($request.url)) {
-    body = emptyHomeStream(originalBody);
+    body = cleanHomeStream(originalBody);
   } else {
     const obj = JSON.parse(originalBody);
     const before = JSON.stringify(obj);
