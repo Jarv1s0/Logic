@@ -18,14 +18,13 @@ https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Amap_remove_ads.lpx
 
 不要求卸载高德；缓存可能使旧广告继续显示。重启应用并观察后续请求，不能以界面暂时不变判断规则一定无效。卸载重装会丢失本地数据，不作为默认步骤。
 
-本地验证无需安装依赖：
+本地语法检查无需安装依赖：
 
 ```powershell
 node --check Loon/Script/Amap/amap-new.js
-node --test tests/amap.test.cjs
 ```
 
-通用回归测试运行响应脚本并检查插件匹配规则，输入为模拟数据；真实 HAR 的验证见下一段。未在设备上验证 Loon 配置解析或 iOS JavaScript 运行时，不能保证所有版本均有效。界面效果需在设备上确认。
+下文测试数量为历史验证记录，测试文件已移除。真实 HAR 的验证见下一段。未在设备上验证 Loon 配置解析或 iOS JavaScript 运行时，不能保证所有版本均有效。界面效果需在设备上确认。
 
 首页 SSE 接口用原始 HAR 的两条真实成功响应做旧版/新版对照：旧版只剩两个结束事件，丢失前面的内容事件；新版分别保留全部 4 / 10 个事件，每条仅清空两个瀑布列表并关闭分页，其余 JSON 字段一致。真实响应中服务端本来就存在 `WaterfallContainer.data.list: []`，此次沿用这一空列表结构，不构造会话或新的容器类型。思考事件、序号、区域引用和 `COMPLETE` 均保留。`20261010-5` 另按 `NestCard.props.children[].meta.dy_card_id` 过滤抓包确认的续导航（`VO_G2A3UGG3_CARD_LM2W5Y14`）与常用地点（`VO_KHYZDF9G_CARD_OC67DFOU`）子卡片，保留外层 `NestCard` 及其他未知子卡片；卡片标识变化时不会扩大删除范围。
 
@@ -37,7 +36,7 @@ node --test tests/amap.test.cjs
 
 `20261010-6` 的 25 项本地回归测试通过，覆盖房产模板隔离、标签与快捷入口引用、经纪人和普通电话区分、混合引用及未知结构。真实响应重放不代替设备显示效果验证，HAR 不提交到仓库。
 
-`20261010-7` 根据新增 HAR 识别到 `quickLinksPortal.data.headerProps.title` 为“发现·你的理想居所”，`poiDetailWaterFeedTitle.data.title` 为“发现好去处”，后者内容由 `poiDetailWaterFeed` 分页提供。重放全部 13 条详情响应，与旧版输出相比额外移除 2 个理想居所入口、2 个好去处标题及 7 个信息流模块实例，并清理区域及已知元数据引用，其余字段一致。当前 26 项本地回归测试通过，覆盖分批响应及其他模板透传；设备效果仍待确认。
+`20261010-7` 根据新增 HAR 识别到 `quickLinksPortal.data.headerProps.title` 为“发现·你的理想居所”，`poiDetailWaterFeedTitle.data.title` 为“发现好去处”，后者内容由 `poiDetailWaterFeed` 分页提供。重放全部 13 条详情响应，与旧版输出相比额外移除 2 个理想居所入口、2 个好去处标题及 7 个信息流模块实例，并清理区域及已知元数据引用，其余字段一致。移除测试文件前，26 项本地回归测试通过，覆盖分批响应及其他模板透传；设备效果仍待确认。
 
 ## 修改边界
 
