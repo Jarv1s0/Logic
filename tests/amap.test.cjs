@@ -31,7 +31,8 @@ const rejectedRoutes = [
   'm5.amap.com/ws/shield/search_poi/tips_adv',
   'm5.amap.com/ws/aos/activity/bus/sign/task',
   'm5-zb.amap.com/ws/boss/transportation/diversion/resource/driving',
-  'm5-zb.amap.com/ws/boss/transportation/diversion/resource/bus_only_refresh'
+  'm5-zb.amap.com/ws/boss/transportation/diversion/resource/bus_only_refresh',
+  'ai.amap.com/v1/ai_rec/home_qs'
 ];
 
 function run(route, input) {
@@ -168,9 +169,21 @@ test('未知路径及同名前缀接口不修改响应', () => {
   }
 });
 
+test('HAR 首页 SSE 接口被精确拦截，其他 AI 路径不受影响', () => {
+  for (const suffix of ['', '?scene=home', '?scene=home&page=2']) {
+    const url = 'https://ai.amap.com/v1/ai_rec/home_qs' + suffix;
+    assert.equal(rejectRules.filter(regex => regex.test(url)).length, 1);
+    assert.ok(scriptRules.every(rule => !rule.regex.test(url)));
+  }
+  for (const path of ['nav_start', 'home_qs_new', 'home_qs/other', 'chat']) {
+    const url = 'https://ai.amap.com/v1/ai_rec/' + path + '?scene=home';
+    assert.ok(rejectRules.every(regex => !regex.test(url)));
+  }
+});
+
 test('插件入口无冲突，匹配含参数及无参数请求，排除同名前缀', () => {
   assert.equal(scriptRules.length, 10);
-  assert.equal(rejectRules.length, 7);
+  assert.equal(rejectRules.length, 8);
   for (const route of routes) for (const suffix of ['', '?x=1']) {
     const url = `https://${route}${suffix}`;
     assert.equal(scriptRules.filter(rule => rule.regex.test(url)).length, 1);
@@ -190,7 +203,7 @@ test('插件入口无冲突，匹配含参数及无参数请求，排除同名�
   const protectedRoutes = ['m5.amap.com/ws/faas/amap-navigation/main-page-assets', 'render.amap.com/ws/render/api/data',
     'm5-zb.amap.com/ws/boss/order/car/feedback/get_card_questions', 'm5-zb.amap.com/ws/boss/order/car/remark/satisfactionConf',
     'm5.amap.com/ws/aos_public_travel/recommend_plan',
-    'ai.amap.com/v1/ai_rec/home_qs', 'ai.amap.com/v1/ai_rec/nav_start'];
+    'ai.amap.com/v1/ai_rec/nav_start'];
   for (const route of protectedRoutes) assert.ok([...rejectRules, ...scriptRules.map(item => item.regex)].every(regex => !regex.test(`https://${route}?x=1`)));
   const mitm = /^hostname = (.+)$/m.exec(plugin)[1].split(',');
   for (const route of [...routes, ...rejectedRoutes]) assert.ok(mitm.includes(route.split('/')[0]));

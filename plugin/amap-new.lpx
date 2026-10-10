@@ -7,6 +7,8 @@
 # 来源与修改说明：https://github.com/Jarv1s0/Logic/blob/master/docs/amap.md
 
 [Rewrite]
+# HAR 确认首页榜单/推荐卡片来自此 SSE 接口，整段屏蔽首页 AI 推荐流。
+^https:\/\/ai\.amap\.com\/v1\/ai_rec\/home_qs(?:\?|$) reject-dict
 # 明确的广告或推广接口；路径必须完整匹配，避免误伤同名前缀接口。
 ^https:\/\/amap-aos-info-nogw\.amap\.com\/ws\/aos\/alimama\/splash_screen_rt(?:\?|$) reject-dict
 ^https:\/\/m5\.amap\.com\/ws\/info_bff\/rankingCard(?:\?|$) reject-dict
@@ -31,4 +33,4 @@ http-response ^https:\/\/m5\.amap\.com\/ws\/valueadded\/alimama\/splash_screen(?
 http-response ^https:\/\/m5\.amap\.com\/ws\/faas\/amap-navigation\/main-page-aiqs(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/script/amap-new.js?v=20261010-2, requires-body = true, tag = 高德地图图层推广
 
 [MitM]
-hostname = m5.amap.com,amap-aos-info-nogw.amap.com,m5-zb.amap.com,info.amap.com
+hostname = m5.amap.com,amap-aos-info-nogw.amap.com,m5-zb.amap.com,info.amap.com,ai.amap.com
