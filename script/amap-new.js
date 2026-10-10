@@ -1,4 +1,4 @@
-// 高德地图：仅清理明确的推广字段，未知结构保持原样。
+// 高德地图：清理推广字段并精简首页、我的页面卡片，未知结构保持原样。
 // 改编自树先生的 amap-new.js；来源及变更见 docs/amap.md。
 // 原作声明：当前文件内容仅供个人学习和研究使用，若使用过程中发生任何问题概不负责。
 
@@ -15,6 +15,11 @@ const searchAds = ["BrandBannerCard", "CustomerServiceAdEntrances", "CouponBanne
 const mapAds = [
   "UserAssetsVirtualCard", "FootPrintNewCityDialog",
   "PoiRecommendVirtualCard", "PersonalRecommendVirtualCard"
+];
+// 仅这两处页面卡片列表按白名单精简，不用于搜索结果。
+const homeCards = ["ContinueNavigationCard", "FrequentLocation", "LoginCard"];
+const profileCards = [
+  "MineNewFootprintCard", "MineNewBEntranceCardV4", "MineNewBEntranceCardV3", "MyOrderCard"
 ];
 
 function isObject(value) {
@@ -47,6 +52,14 @@ function clearDataList(block) {
   if (isObject(block) && Array.isArray(block.dataList)) block.dataList = [];
 }
 
+function keepPageCards(data, allowed) {
+  if (Array.isArray(data.cardList)) {
+    data.cardList = data.cardList.filter(card =>
+      !isObject(card) || typeof card.dataKey !== "string" || allowed.includes(card.dataKey)
+    );
+  }
+}
+
 try {
   const obj = JSON.parse(originalBody);
   const before = JSON.stringify(obj);
@@ -55,6 +68,12 @@ try {
   if (isObject(obj) && isObject(obj.data)) {
     const data = obj.data;
     switch (route) {
+      case "m5.amap.com/ws/faas/amap-navigation/main-page":
+        keepPageCards(data, homeCards);
+        break;
+      case "m5.amap.com/ws/shield/dsp/profile/index/nodefaasv3":
+        keepPageCards(data, profileCards);
+        break;
       case "m5-zb.amap.com/ws/boss/car/order/content_info":
         if (isObject(data.lubanData)) {
           ["skin", "popup", "banner"].forEach(key => clearDataList(data.lubanData[key]));

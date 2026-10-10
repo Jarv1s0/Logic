@@ -20,7 +20,9 @@ const routes = [
   'm5-zb.amap.com/ws/promotion-web/resource/home',
   'm5.amap.com/ws/shield/scene/recommend',
   'm5.amap.com/ws/valueadded/alimama/splash_screen',
-  'm5.amap.com/ws/faas/amap-navigation/main-page-aiqs'
+  'm5.amap.com/ws/faas/amap-navigation/main-page-aiqs',
+  'm5.amap.com/ws/faas/amap-navigation/main-page',
+  'm5.amap.com/ws/shield/dsp/profile/index/nodefaasv3'
 ];
 const rejectedRoutes = [
   'amap-aos-info-nogw.amap.com/ws/aos/alimama/splash_screen_rt',
@@ -47,6 +49,34 @@ function run(route, input) {
   return { body: result, logs, original };
 }
 function data(route, input) { return JSON.parse(run(route, { data: input }).body).data; }
+
+// 推广 dataKey 为合成测试标识，不代表已获取截图对应的真实响应。
+test('首页下拉卡片保留导航与常用地点，移除其他信息流卡片', () => {
+  const keep = ['ContinueNavigationCard', 'FrequentLocation', 'LoginCard'].map(dataKey => ({ dataKey }));
+  const result = data(routes[9], { cardList: [...keep, { dataKey: 'FixturePromotion' }], mapBizList: [{ dataKey: 'FindCarVirtualCard' }], normal: 1 });
+  assert.deepEqual(result.cardList, keep);
+  assert.deepEqual(result.mapBizList, [{ dataKey: 'FindCarVirtualCard' }]);
+  assert.equal(result.normal, 1);
+});
+
+test('我的页面保留足迹、入口、订单，移除下拉推广卡片', () => {
+  const keep = ['MineNewFootprintCard', 'MineNewBEntranceCardV4', 'MineNewBEntranceCardV3', 'MyOrderCard'].map(dataKey => ({ dataKey }));
+  const result = data(routes[10], { cardList: [...keep, { dataKey: 'FixturePromotion' }], memberInfo: { level: 1 }, footPrintV2: { count: 2 } });
+  assert.deepEqual(result.cardList, keep);
+  assert.deepEqual(result.memberInfo, { level: 1 });
+  assert.deepEqual(result.footPrintV2, { count: 2 });
+});
+
+test('页面卡片结构未知时透传，推广专用列表可清空', () => {
+  for (const route of [routes[9], routes[10]]) {
+    assert.deepEqual(data(route, { cardList: [{ dataKey: 'FixturePromotion' }] }).cardList, []);
+    for (const cardList of [{}, null, [null, {}, 'unknown', { dataKey: 1 }]]) {
+      const result = run(route, { data: { cardList } });
+      assert.equal(result.body, result.original);
+      assert.deepEqual(result.logs, []);
+    }
+  }
+});
 
 test('搜索保留全部结果及未知模块，只清理已知广告和区域引用', () => {
   const cards = [{ card_id: 'PoiCardUniversal' }, { card_id: 'OtherNormalCard' }, null];
@@ -115,7 +145,7 @@ test('地图图层仅删除明确推广标识，保留未知项', () => {
 
 test('所有入口兼容缺字段及类型变化，原始正文逐字透传', () => {
   const inputs = ['null', '[]', '{}', '{ "data": null }', '{ "data": [] }', '{ "data": { "regions": {"listManage": {}}, "modules": [], "meta": {"half_hidden_modules": {}} } }',
-    '{ "data": { "lubanData": {"popup": {"dataList": {}}}, "ad": {}, "shadingWords": null, "mapBizList": {} } }'];
+    '{ "data": { "lubanData": {"popup": {"dataList": {}}}, "ad": {}, "shadingWords": null, "mapBizList": {}, "cardList": {} } }'];
   for (const route of routes) for (const input of inputs) {
     const result = run(route, input);
     assert.equal(result.body, input);
@@ -139,7 +169,7 @@ test('未知路径及同名前缀接口不修改响应', () => {
 });
 
 test('插件入口无冲突，匹配含参数及无参数请求，排除同名前缀', () => {
-  assert.equal(scriptRules.length, 8);
+  assert.equal(scriptRules.length, 10);
   assert.equal(rejectRules.length, 7);
   for (const route of routes) for (const suffix of ['', '?x=1']) {
     const url = `https://${route}${suffix}`;
@@ -159,7 +189,7 @@ test('插件入口无冲突，匹配含参数及无参数请求，排除同名�
   }
   const protectedRoutes = ['m5.amap.com/ws/faas/amap-navigation/main-page-assets', 'render.amap.com/ws/render/api/data',
     'm5-zb.amap.com/ws/boss/order/car/feedback/get_card_questions', 'm5-zb.amap.com/ws/boss/order/car/remark/satisfactionConf',
-    'm5.amap.com/ws/shield/dsp/profile/index/nodefaasv3', 'm5.amap.com/ws/aos_public_travel/recommend_plan',
+    'm5.amap.com/ws/aos_public_travel/recommend_plan',
     'ai.amap.com/v1/ai_rec/home_qs', 'ai.amap.com/v1/ai_rec/nav_start'];
   for (const route of protectedRoutes) assert.ok([...rejectRules, ...scriptRules.map(item => item.regex)].every(regex => !regex.test(`https://${route}?x=1`)));
   const mitm = /^hostname = (.+)$/m.exec(plugin)[1].split(',');
@@ -170,7 +200,7 @@ test('插件脚本和图标全部引用本仓库，并对应存在的文件', ()
   const urls = [...scriptRules.map(rule => rule.url), /^#!icon = (.+)$/m.exec(plugin)[1]];
   for (const url of urls) {
     assert.ok(url.startsWith('https://raw.githubusercontent.com/Jarv1s0/Logic/master/'));
-    const relative = url.split('/master/')[1];
+    const relative = new URL(url).pathname.split('/master/')[1];
     assert.ok(fs.existsSync(path.join(root, relative)));
   }
   const icon = fs.readFileSync(path.join(root, 'icon/gaode.png'));
