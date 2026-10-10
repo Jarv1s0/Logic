@@ -14,7 +14,7 @@ https://raw.githubusercontent.com/Jarv1s0/Logic/master/plugin/amap-new.lpx
 
 2026-10-10 补充了首页和“我的”下拉卡片过滤。已安装旧版的用户需在 Loon 更新插件，并更新对应远程脚本；脚本 URL 带版本参数，以区分旧缓存。
 
-随后根据用户提供的 HAR，恢复首页 `ai.amap.com/v1/ai_rec/home_qs` 的 `reject-dict`，并补回 `ai.amap.com` 解密域名。这次只改插件，脚本版本参数保持不变；需更新插件才能加载新拦截规则。
+根据用户提供的 HAR，确认首页 `ai.amap.com/v1/ai_rec/home_qs` 提供 SSE 推荐流，补回 `ai.amap.com` 解密域名。直接 `reject-dict` 后用户反馈首页出现“网络不畅”，现改为响应脚本保留正常结束事件、清空推荐流，脚本版本为 `20261010-3`。需同时更新插件及远程脚本。
 
 不要求卸载高德；缓存可能使旧广告继续显示。重启应用并观察后续请求，不能以界面暂时不变判断规则一定无效。卸载重装会丢失本地数据，不作为默认步骤。
 
@@ -27,7 +27,7 @@ node --test tests/amap.test.cjs
 
 通用回归测试运行响应脚本并检查插件匹配规则，输入为模拟数据；真实 HAR 的验证见下一段。未在设备上验证 Loon 配置解析或 iOS JavaScript 运行时，不能保证所有版本均有效。界面效果需在设备上确认。
 
-首页 SSE 接口另用用户提供的 HAR 中两条真实请求验证规则命中。HAR 中该接口响应包含“小吃快餐热门榜”“小众景点热门榜”，与反馈截图一致；旧规则未命中这两条请求。另重放了 9 条已有脚本响应，处理均完成，“我的”页面保留预期三类卡片。此次抓包没有旧 `/main-page` 请求，`/main-page-aiqs` 的 `data.cardList` 也为空，因此之前的卡片白名单不足以屏蔽当前首页信息流。HAR 仅用于本地排查，不存入仓库。
+首页 SSE 接口另用用户提供的 HAR 中两条真实响应重放验证：移除推荐容器，保留 `is_done: true` 的空 markdown 事件与 `COMPLETE`，将 `has_more` 改为 `false`，不再加载下一页。HAR 中该接口响应包含“小吃快餐热门榜”“小众景点热门榜”，与反馈截图一致。此前另重放了 9 条已有脚本响应，处理均完成，“我的”页面保留预期三类卡片。此次抓包没有旧 `/main-page` 请求，`/main-page-aiqs` 的 `data.cardList` 也为空，因此旧卡片白名单不足以屏蔽当前首页信息流。HAR 仅用于本地排查，不存入仓库；空推荐流的实际 UI 效果仍待真机确认。
 
 ## 修改边界
 
@@ -37,7 +37,7 @@ node --test tests/amap.test.cjs
 - 首页 `/ws/faas/amap-navigation/main-page` 的 `data.cardList` 仅保留 `ContinueNavigationCard`、`FrequentLocation`、`LoginCard`；不修改地图图层列表。
 - “我的” `/ws/shield/dsp/profile/index/nodefaasv3` 的 `data.cardList` 仅保留 `MineNewFootprintCard`、`MineNewBEntranceCardV4`、`MineNewBEntranceCardV3`、`MyOrderCard`；不删除顶层足迹、会员等字段。
 - 两处页面卡片列表按用户要求精简，白名单外的有效 `dataKey` 卡片也会删除，不保证全是广告；无法识别的数据结构透传。此白名单不应用于搜索结果。
-- 当前首页信息流由 `/v1/ai_rec/home_qs` 的 SSE 响应提供，整段拦截该接口；同时会关闭这个接口中的天气、榜单及其他 AI 推荐卡片，不按单张卡片识别广告。其他 AI 接口不新增拦截。
+- 当前首页信息流由 `/v1/ai_rec/home_qs` 的 SSE 响应提供。仅在识别到 HAR 中相同的成功结束结构时，移除此前的推荐事件并保留结束协议；天气、榜单及其他首页 AI 推荐卡片均不显示。未知结构、未完成或错误事件原样返回，不伪造真实故障的成功状态；其他 AI 接口不新增处理。
 - 地点详情保留门票、电影、油价、商品、订房及其他非明确广告模块，不改地图标识和商家 logo。
 - 打车保留完整工具箱及分享地址图标，酒店仅移除已知优惠弹窗及其引用，不重写页面布局。
 - 解除评价、问题反馈、地图渲染、顶部通知、公共出行推荐和其他 AI 推荐接口处理；用途或结构不足以支持整段删除。

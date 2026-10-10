@@ -22,7 +22,8 @@ const routes = [
   'm5.amap.com/ws/valueadded/alimama/splash_screen',
   'm5.amap.com/ws/faas/amap-navigation/main-page-aiqs',
   'm5.amap.com/ws/faas/amap-navigation/main-page',
-  'm5.amap.com/ws/shield/dsp/profile/index/nodefaasv3'
+  'm5.amap.com/ws/shield/dsp/profile/index/nodefaasv3',
+  'ai.amap.com/v1/ai_rec/home_qs'
 ];
 const rejectedRoutes = [
   'amap-aos-info-nogw.amap.com/ws/aos/alimama/splash_screen_rt',
@@ -31,8 +32,7 @@ const rejectedRoutes = [
   'm5.amap.com/ws/shield/search_poi/tips_adv',
   'm5.amap.com/ws/aos/activity/bus/sign/task',
   'm5-zb.amap.com/ws/boss/transportation/diversion/resource/driving',
-  'm5-zb.amap.com/ws/boss/transportation/diversion/resource/bus_only_refresh',
-  'ai.amap.com/v1/ai_rec/home_qs'
+  'm5-zb.amap.com/ws/boss/transportation/diversion/resource/bus_only_refresh'
 ];
 
 function run(route, input) {
@@ -169,21 +169,58 @@ test('未知路径及同名前缀接口不修改响应', () => {
   }
 });
 
-test('HAR 首页 SSE 接口被精确拦截，其他 AI 路径不受影响', () => {
+test('HAR 首页 SSE 接口交给响应脚本，其他 AI 路径不受影响', () => {
   for (const suffix of ['', '?scene=home', '?scene=home&page=2']) {
     const url = 'https://ai.amap.com/v1/ai_rec/home_qs' + suffix;
-    assert.equal(rejectRules.filter(regex => regex.test(url)).length, 1);
-    assert.ok(scriptRules.every(rule => !rule.regex.test(url)));
+    assert.ok(rejectRules.every(regex => !regex.test(url)));
+    assert.equal(scriptRules.filter(rule => rule.regex.test(url)).length, 1);
   }
   for (const path of ['nav_start', 'home_qs_new', 'home_qs/other', 'chat']) {
     const url = 'https://ai.amap.com/v1/ai_rec/' + path + '?scene=home';
     assert.ok(rejectRules.every(regex => !regex.test(url)));
+    assert.ok(scriptRules.every(rule => !rule.regex.test(url)));
   }
 });
 
+function homeStream(newline = '\n') {
+  // 使用 HAR 中的协议形状；会话及卡片内容为合成值。
+  const container = { is_done: false, component: { type: 'container', data: { data: { template: 'aiPmtGenerate', modules: { AiCardContainer_0: {} } } } } };
+  const done = { is_done: true, has_more: true, next_page_num: 3, seq: '3', session_id: 'fixture-session', component: { type: 'markdown', text: '', displayText: '', is_done: false } };
+  return ['event: data', 'data: ' + JSON.stringify(container), '', 'event: data', 'id: 3', 'data: ' + JSON.stringify(done), '', 'event: COMPLETE', 'data: {}', '', ''].join(newline);
+}
+
+test('首页 SSE 返回成功结束与 COMPLETE，无推荐容器、不再加载下一页', () => {
+  for (const newline of ['\n', '\r\n']) {
+    const result = run(routes[11], homeStream(newline));
+    assert.deepEqual(result.logs, []);
+    assert.ok(!result.body.includes('AiCardContainer_0'));
+    assert.ok(result.body.includes('event: COMPLETE'));
+    assert.ok(result.body.includes('id: 3'));
+    const messages = result.body.split(/\r?\n/).filter(line => line.startsWith('data:')).map(line => JSON.parse(line.slice(5)));
+    assert.equal(messages.length, 2);
+    assert.equal(messages[0].is_done, true);
+    assert.equal(messages[0].has_more, false);
+    assert.equal(messages[0].session_id, 'fixture-session');
+    assert.deepEqual(messages[1], {});
+  }
+});
+
+test('首页 SSE 未完成、出错或未知结构时原样返回', () => {
+  const inputs = [
+    'event: data\ndata: {"is_done":false}\n\n',
+    'event: COMPLETE\ndata: {}\n\n',
+    'event: error\ndata: {"code":500}\n\n',
+    'event: data\ndata: not-json\n\n',
+    homeStream().replace('event: COMPLETE', 'event: unknown'),
+    homeStream().replace('"text":""', '"text":"unknown"'),
+    'event: COMPLETE\ndata: {}\n\n' + homeStream().split('event: COMPLETE')[0]
+  ];
+  for (const input of inputs) assert.equal(run(routes[11], input).body, input);
+});
+
 test('插件入口无冲突，匹配含参数及无参数请求，排除同名前缀', () => {
-  assert.equal(scriptRules.length, 10);
-  assert.equal(rejectRules.length, 8);
+  assert.equal(scriptRules.length, 11);
+  assert.equal(rejectRules.length, 7);
   for (const route of routes) for (const suffix of ['', '?x=1']) {
     const url = `https://${route}${suffix}`;
     assert.equal(scriptRules.filter(rule => rule.regex.test(url)).length, 1);
