@@ -17,7 +17,9 @@ const mapAds = [
   "PoiRecommendVirtualCard", "PersonalRecommendVirtualCard"
 ];
 // 仅这两处页面卡片列表按白名单精简，不用于搜索结果。
-const homeCards = ["ContinueNavigationCard", "FrequentLocation", "LoginCard"];
+const homeCards = ["LoginCard"];
+// HAR 中确认的续导航、常用地点动态子卡片；只用于首页 SSE。
+const hiddenHomeDynamicCards = ["VO_G2A3UGG3_CARD_LM2W5Y14", "VO_KHYZDF9G_CARD_OC67DFOU"];
 const profileCards = [
   "MineNewFootprintCard", "MineNewBEntranceCardV4", "MineNewBEntranceCardV3", "MyOrderCard"
 ];
@@ -64,7 +66,7 @@ function cleanHomeStream(stream) {
   const frames = stream.split(/\r?\n\r?\n/);
   let doneIndex = -1;
   let completeIndex = -1;
-  let clearedContainers = 0;
+  let knownHomeContainers = 0;
   const rewritten = frames.map((frame, index) => {
     const lines = frame.split(/\r?\n/);
     const eventLine = lines.find(line => line.startsWith("event:"));
@@ -85,9 +87,21 @@ function cleanHomeStream(stream) {
           if (isObject(card) && card.card_id === "WaterfallContainer" &&
               isObject(card.data) && Array.isArray(card.data.list)) {
             // HAR 中服务端已有 list: [] 的成功容器；保留容器及区域引用。
-            clearedContainers++;
+            knownHomeContainers++;
             if (card.data.list.length > 0) {
               card.data.list = [];
+              changed = true;
+            }
+          }
+          if (isObject(card) && card.card_id === "NestCard" && isObject(card.data) &&
+              isObject(card.data.props) && Array.isArray(card.data.props.children)) {
+            const children = card.data.props.children;
+            const kept = children.filter(child => !isObject(child) || !isObject(child.meta) ||
+              !hiddenHomeDynamicCards.includes(child.meta.dy_card_id));
+            if (kept.length !== children.length) {
+              // 仅过滤已识别的子卡片，保留 NestCard 外层及整个事件。
+              card.data.props.children = kept;
+              knownHomeContainers++;
               changed = true;
             }
           }
@@ -111,7 +125,7 @@ function cleanHomeStream(stream) {
     return lines.filter((line, lineIndex) => !line.startsWith("data:") || lineIndex === firstDataIndex)
       .map(line => line.startsWith("data:") ? "data: " + JSON.stringify(value) : line).join("\n");
   });
-  if (clearedContainers === 0 || doneIndex < 0 || completeIndex <= doneIndex) return stream;
+  if (knownHomeContainers === 0 || doneIndex < 0 || completeIndex <= doneIndex) return stream;
   return rewritten.every((frame, index) => frame === frames[index]) ? stream : rewritten.join("\n\n");
 }
 

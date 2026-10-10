@@ -52,9 +52,10 @@ function run(route, input) {
 function data(route, input) { return JSON.parse(run(route, { data: input }).body).data; }
 
 // 推广 dataKey 为合成测试标识，不代表已获取截图对应的真实响应。
-test('首页下拉卡片保留导航与常用地点，移除其他信息流卡片', () => {
-  const keep = ['ContinueNavigationCard', 'FrequentLocation', 'LoginCard'].map(dataKey => ({ dataKey }));
-  const result = data(routes[9], { cardList: [...keep, { dataKey: 'FixturePromotion' }], mapBizList: [{ dataKey: 'FindCarVirtualCard' }], normal: 1 });
+test('旧首页下拉隐藏导航和常用地点卡片，保留登录入口', () => {
+  const keep = [{ dataKey: 'LoginCard' }];
+  const hidden = ['ContinueNavigationCard', 'FrequentLocation', 'FixturePromotion'].map(dataKey => ({ dataKey }));
+  const result = data(routes[9], { cardList: [...keep, ...hidden], mapBizList: [{ dataKey: 'FindCarVirtualCard' }], normal: 1 });
   assert.deepEqual(result.cardList, keep);
   assert.deepEqual(result.mapBizList, [{ dataKey: 'FindCarVirtualCard' }]);
   assert.equal(result.normal, 1);
@@ -226,6 +227,37 @@ test('首页 SSE 保留思考事件、空容器及 SSE 元数据，多行 data �
   assert.ok(result.body.startsWith(thinking + empty));
   assert.equal(streamMessages(result.body).length, 6);
   assert.ok(!result.body.includes('fixture-promotion'));
+});
+
+test('首页 SSE 仅移除已识别的导航与常用地点子卡片，保留容器和未知子卡片', () => {
+  const messages = streamMessages(homeStream());
+  const children = [
+    { meta: { dy_card_id: 'VO_G2A3UGG3_CARD_LM2W5Y14' }, data: { bizData: { data: { buttonText: '导航' } } } },
+    { meta: { dy_card_id: 'VO_KHYZDF9G_CARD_OC67DFOU' }, data: { scrollButton: { list: [1] } } },
+    { meta: { dy_card_id: 'UnknownCard' }, data: { normal: true } },
+    null, {}, { meta: null }
+  ];
+  messages[1].component.data.data.modules.AiCardContainer_0.data.props.children = children;
+  const input = messages.map((message, index) => 'event: ' + (index === messages.length - 1 ? 'COMPLETE' : 'data') + '\ndata: ' + JSON.stringify(message)).join('\n\n') + '\n\n';
+  const output = streamMessages(run(routes[11], input).body);
+  const expected = structuredClone(messages);
+  expected[0].component.data.data.modules.AiCardContainer_0.data.list = [];
+  expected[1].component.data.data.modules.AiCardContainer_0.data.props.children = children.slice(2);
+  expected[2].has_more = false;
+  assert.deepEqual(output, expected);
+  // 全部子卡片被过滤后仍保留 NestCard 容器及完整事件链。
+  messages[1].component.data.data.modules.AiCardContainer_0.data.props.children = children.slice(0, 2);
+  const onlyHidden = messages.map((message, index) => 'event: ' + (index === messages.length - 1 ? 'COMPLETE' : 'data') + '\ndata: ' + JSON.stringify(message)).join('\n\n') + '\n\n';
+  const cleared = streamMessages(run(routes[11], onlyHidden).body);
+  assert.equal(cleared.length, messages.length);
+  assert.deepEqual(cleared[1].component.data.data.modules.AiCardContainer_0.data.props.children, []);
+  assert.equal(cleared[1].component.data.data.modules.AiCardContainer_0.card_id, 'NestCard');
+  const withoutWaterfall = onlyHidden.split('\n\n').slice(1).join('\n\n');
+  const noFeed = run(routes[11], withoutWaterfall).body;
+  assert.deepEqual(streamMessages(noFeed)[0].component.data.data.modules.AiCardContainer_0.data.props.children, []);
+  assert.equal(run(routes[11], noFeed).body, noFeed);
+  assert.equal(run(routes[11], withoutWaterfall.replace('event: COMPLETE', 'event: error')).body,
+    withoutWaterfall.replace('event: COMPLETE', 'event: error'));
 });
 
 test('首页 SSE 未完成、出错或未知结构时原样返回', () => {
