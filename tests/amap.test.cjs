@@ -399,6 +399,6 @@ test('插件脚本和图标全部引用本仓库，并对应存在的文件', ()
     const relative = new URL(url).pathname.split('/master/')[1];
     assert.ok(fs.existsSync(path.join(root, relative)));
   }
-  const icon = fs.readFileSync(path.join(root, 'icon/gaode.png'));
+  const icon = fs.readFileSync(path.join(root, 'Loon/Icon/gaode.png'));
   assert.equal(icon.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
 });

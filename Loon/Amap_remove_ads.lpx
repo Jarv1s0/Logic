@@ -1,10 +1,10 @@
 #!name = 高德地图净化
 #!desc = 清理广告与推广，减少正常功能误删。缓存可能影响效果，默认不要求卸载重装；兼容性与验证边界见说明文档。
 #!author = 树先生（原作）, Jarv1s0（迁移维护）
-#!icon = https://raw.githubusercontent.com/Jarv1s0/Logic/master/icon/gaode.png
+#!icon = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Icon/gaode.png
 #!date = 2026-10-10
 
-# 来源与修改说明：https://github.com/Jarv1s0/Logic/blob/master/docs/amap.md
+# 来源与修改说明：https://github.com/Jarv1s0/Logic/blob/master/Loon/Docs/amap.md
 
 [Rewrite]
 # 明确的广告或推广接口；路径必须完整匹配，避免误伤同名前缀接口。

@@ -1,5 +1,5 @@
 // 高德地图：清理推广字段并精简首页、我的页面卡片，未知结构保持原样。
-// 改编自树先生的 amap-new.js；来源及变更见 docs/amap.md。
+// 改编自树先生的 amap-new.js；来源及变更见 Loon/Docs/amap.md。
 // 原作声明：当前文件内容仅供个人学习和研究使用，若使用过程中发生任何问题概不负责。
 
 const originalBody = $response.body;

@@ -8,4 +8,4 @@
 另维护独立的 Loon 插件，不能导入 Mihomo / Clash。
 
 - [高德地图净化插件](Loon/Amap_remove_ads.lpx)：清理广告与推广，保留正常搜索结果及服务功能。
-- [安装、修改边界与上游来源](docs/amap.md)。
+- [安装、修改边界与上游来源](Loon/Docs/amap.md)。
