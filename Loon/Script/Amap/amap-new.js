@@ -14,7 +14,8 @@ const poiAds = [
 // 房产详情专用模块及其锚点，由用户 HAR 确认；通用商品货架不在其他模板删除。
 const houseDetailModules = [
   "houseAgentService", "surroundFacility", "surroundHouseTab", "houseShelf",
-  "commonGoodsShelf", "similarShopRecommend", "nearbyRecommendModule"
+  "commonGoodsShelf", "similarShopRecommend", "nearbyRecommendModule",
+  "quickLinksPortal", "poiDetailWaterFeedTitle", "poiDetailWaterFeed"
 ];
 const searchAds = ["BrandBannerCard", "CustomerServiceAdEntrances", "CouponBanner"];
 const mapAds = [

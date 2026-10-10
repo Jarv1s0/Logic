@@ -7,21 +7,21 @@
 仓库发布后，在 Loon 的插件页面添加：
 
 ```text
-https://raw.githubusercontent.com/Jarv1s0/Logic/master/plugin/amap-new.lpx
+https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Amap_remove_ads.lpx
 ```
 
 启用插件、HTTPS 解密及对应的受信任证书后使用。上述远程地址只有在文件推送至 `master` 后才可用。与其他高德插件同时启用可能产生重写冲突。
 
 2026-10-10 补充了首页和“我的”下拉卡片过滤。已安装旧版的用户需在 Loon 更新插件，并更新对应远程脚本；脚本 URL 带版本参数，以区分旧缓存。
 
-根据用户提供的 HAR，确认首页 `ai.amap.com/v1/ai_rec/home_qs` 提供 SSE 推荐流，补回 `ai.amap.com` 解密域名。`reject-dict` 和只保留结束事件的 `20261010-3` 均收到“网络不畅”反馈。用户已确认 `20261010-4` 消除了此前的加载及“网络不畅”问题，但续导航与常用地点卡片恢复显示。`20261010-5` 额外过滤两类已识别的动态子卡片。当前脚本版本为 `20261010-6`，新增房产详情清理；需同时更新插件及远程脚本，新过滤效果仍待真机验证。
+根据用户提供的 HAR，确认首页 `ai.amap.com/v1/ai_rec/home_qs` 提供 SSE 推荐流，补回 `ai.amap.com` 解密域名。`reject-dict` 和只保留结束事件的 `20261010-3` 均收到“网络不畅”反馈。用户已确认 `20261010-4` 消除了此前的加载及“网络不畅”问题，但续导航与常用地点卡片恢复显示。`20261010-5` 额外过滤两类已识别的动态子卡片。`20261010-6` 新增房产详情清理；当前脚本版本为 `20261010-7`，补充移除房产详情的“发现·你的理想居所”和“发现好去处”。需同时更新插件及远程脚本，新过滤效果仍待真机验证。
 
 不要求卸载高德；缓存可能使旧广告继续显示。重启应用并观察后续请求，不能以界面暂时不变判断规则一定无效。卸载重装会丢失本地数据，不作为默认步骤。
 
 本地验证无需安装依赖：
 
 ```powershell
-node --check script/amap-new.js
+node --check Loon/Script/Amap/amap-new.js
 node --test tests/amap.test.cjs
 ```
 
@@ -35,7 +35,9 @@ node --test tests/amap.test.cjs
 
 房产详情使用本次 HAR 的 13 条真实 `/ws/shield/search/poi/detail` 响应进行旧版/新版对照：共移除 10 个服务、配套、房源或推荐模块实例，1 组配套快捷入口和 1 个纯经纪人电话按钮；13 条响应中的对应布局及元数据引用也已清理。除此之外，响应字段保持一致。该接口分批返回模块，因此每一批均需按同一 `house_all_expt_temp` 模板处理，不能仅依据某一批是否包含完整基础信息决定过滤。
 
-当前 25 项本地回归测试通过，覆盖房产模板隔离、标签与快捷入口引用、经纪人和普通电话区分、混合引用及未知结构。真实响应重放不代替设备显示效果验证，HAR 不提交到仓库。
+`20261010-6` 的 25 项本地回归测试通过，覆盖房产模板隔离、标签与快捷入口引用、经纪人和普通电话区分、混合引用及未知结构。真实响应重放不代替设备显示效果验证，HAR 不提交到仓库。
+
+`20261010-7` 根据新增 HAR 识别到 `quickLinksPortal.data.headerProps.title` 为“发现·你的理想居所”，`poiDetailWaterFeedTitle.data.title` 为“发现好去处”，后者内容由 `poiDetailWaterFeed` 分页提供。重放全部 13 条详情响应，与旧版输出相比额外移除 2 个理想居所入口、2 个好去处标题及 7 个信息流模块实例，并清理区域及已知元数据引用，其余字段一致。当前 26 项本地回归测试通过，覆盖分批响应及其他模板透传；设备效果仍待确认。
 
 ## 修改边界
 
@@ -47,7 +49,7 @@ node --test tests/amap.test.cjs
 - 两处页面卡片列表按用户要求精简，白名单外的有效 `dataKey` 卡片也会删除，不保证全是广告；无法识别的数据结构透传。此白名单不应用于搜索结果。
 - 当前首页信息流由 `/v1/ai_rec/home_qs` 的 SSE 响应提供。识别到瀑布列表或目标动态子卡片、空 markdown 成功结束事件及其后的 `COMPLETE` 时，清空瀑布列表、过滤续导航和常用地点子卡片并停止分页；其余事件和未知子卡片保留。无匹配内容、未完成、解析失败或未知事件类型时整段透传；其他 AI 接口不新增处理。
 - 地点详情保留门票、电影、油价、订房及其他非明确广告模块，不改地图标识和商家 logo。
-- 房产详情仅在 `data.template === "house_all_expt_temp"` 时移除 `houseAgentService`、`surroundFacility`、`surroundHouseTab`、`houseShelf`、`commonGoodsShelf`、`similarShopRecommend`、`nearbyRecommendModule`；覆盖经纪人服务、配套、房源及相关服务推荐。其他模板不删除这些模块，尤其保留餐饮、酒店等正常商品货架。
+- 房产详情仅在 `data.template === "house_all_expt_temp"` 时移除 `houseAgentService`、`surroundFacility`、`surroundHouseTab`、`houseShelf`、`commonGoodsShelf`、`similarShopRecommend`、`nearbyRecommendModule`、`quickLinksPortal`、`poiDetailWaterFeedTitle`、`poiDetailWaterFeed`；覆盖经纪人服务、配套、房源及相关服务推荐，以及“发现·你的理想居所”入口和“发现好去处”标题、信息流。其他模板不删除这些模块，尤其保留餐饮、酒店等正常商品货架。
 - 同步清理 `regions`、已知元数据引用、`anchor.data.items[].anchor` 及 `poiDetailNewBeltV2.data.belt.list[].anchor`。混合引用只删目标，未知入口保留；配套快捷入口全部清空时移除该快捷模块及引用。
 - 房产基础信息的电话选项，仅过滤 `material.dial_virtual_txt` 明确包含“经纪人提供服务”的 `multiVirtualPhone` 项。全部号码均为经纪人且没有其他跳转入口时，移除对应电话按钮；普通电话、地图、导航、收藏及评价内容保留。
 - 打车保留完整工具箱及分享地址图标，酒店仅移除已知优惠弹窗及其引用，不重写页面布局。
@@ -63,7 +65,7 @@ node --test tests/amap.test.cjs
 
 - [原插件快照](https://github.com/ishowshu/loon/blob/e0b1e58d6e5a67707a2823c68ca2aeef966b510f/plugin/amap-new.lpx)
 - [原脚本快照](https://github.com/ishowshu/qx/blob/d38e2289f4f388dfc55aaa8f19c8d002d828f62a/script/amap-new.js)
-- [首页过滤参考](https://github.com/ishowshu/qx/blob/d38e2289f4f388dfc55aaa8f19c8d002d828f62a/script/amap.js)：`main-page` 的卡片白名单；本仓库已有 `Loon/Amap_remove_ads.plugin` 也覆盖该接口。
+- [首页过滤参考](https://github.com/ishowshu/qx/blob/d38e2289f4f388dfc55aaa8f19c8d002d828f62a/script/amap.js)：`main-page` 的卡片白名单；本仓库原有 `Loon/Amap_remove_ads.plugin` 也覆盖该接口，现已更新为本次维护版本并改名为 `Loon/Amap_remove_ads.lpx`。
 - [原图标快照](https://github.com/ishowshu/loon/blob/e0b1e58d6e5a67707a2823c68ca2aeef966b510f/icon/gaode.png)
 
 抓取文件 SHA-256：

@@ -5,8 +5,8 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
-const source = fs.readFileSync(path.join(root, 'script/amap-new.js'), 'utf8');
-const plugin = fs.readFileSync(path.join(root, 'plugin/amap-new.lpx'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'Loon/Script/Amap/amap-new.js'), 'utf8');
+const plugin = fs.readFileSync(path.join(root, 'Loon/Amap_remove_ads.lpx'), 'utf8');
 const scriptRules = [...plugin.matchAll(/^http-response (\S+) script-path = (\S+),/gm)]
   .map(match => ({ regex: new RegExp(match[1]), url: match[2] }));
 const rejectRules = [...plugin.matchAll(/^(\^\S+) reject-dict$/gm)]
@@ -104,7 +104,28 @@ test('地点详情保留门票、油价、电影、地图标识，清理广告�
   assert.deepEqual(result.meta.vo_meta_info.couponRefreshModules, ['Unknown']);
 });
 
-const houseModules = ['houseAgentService', 'surroundFacility', 'surroundHouseTab', 'houseShelf', 'commonGoodsShelf', 'similarShopRecommend', 'nearbyRecommendModule'];
+const houseModules = ['houseAgentService', 'surroundFacility', 'surroundHouseTab', 'houseShelf', 'commonGoodsShelf', 'similarShopRecommend', 'nearbyRecommendModule', 'quickLinksPortal', 'poiDetailWaterFeedTitle', 'poiDetailWaterFeed'];
+
+test('房产详情分批移除理想居所入口及好去处标题、信息流，同步清理引用', () => {
+  const targets = ['quickLinksPortal', 'poiDetailWaterFeedTitle', 'poiDetailWaterFeed'];
+  const keep = { poiMapModule: {}, combineReviews: {}, Unknown: {} };
+  for (const names of [['quickLinksPortal'], ['poiDetailWaterFeedTitle', 'poiDetailWaterFeed'], ['poiDetailWaterFeed']]) {
+    const input = { template: 'house_all_expt_temp', modules: {
+      ...keep, ...Object.fromEntries(names.map(name => [name, { data: { fixture: true } }])),
+      anchor: { data: { items: [{ anchor: targets }, { anchor: ['combineReviews'] }] } }
+    }, regions: { feedContent: ['poiDetailWaterFeed'], main: ['quickLinksPortal', 'combineReviews'] },
+    meta: { half_hidden_modules: ['quickLinksPortal', 'Unknown'] } };
+    const result = data(routes[1], input);
+    assert.deepEqual(result.modules, { ...keep, anchor: { data: { items: [{ anchor: ['combineReviews'] }] } } });
+    assert.deepEqual(result.regions, { feedContent: [], main: ['combineReviews'] });
+    assert.deepEqual(result.meta.half_hidden_modules, ['Unknown']);
+    for (const template of ['restaurant', 'hotelUnionPortal', undefined]) {
+      const other = { ...input, template };
+      const unchanged = run(routes[1], { data: other });
+      assert.equal(unchanged.body, unchanged.original);
+    }
+  }
+});
 
 test('房产详情移除服务、配套、房源和相关推荐，保留基础信息与导航', () => {
   const keep = { baseInfo: { data: { title: 'fixture' } }, poiMapModule: {}, poiDetailBottomBar: { data: { items: [{ key: 'navi' }, { key: 'collect' }] } }, combineReviews: {}, Unknown: {} };
