@@ -1,6 +1,6 @@
 # 高德地图 Loon 插件
 
-插件、响应脚本和图标均由本仓库维护，不再运行上游远程脚本。此插件仅适用于 Loon，不能导入 Mihomo / Clash。
+插件和响应脚本由本仓库维护，不再运行上游远程脚本；图标直接引用[上游图标](https://github.com/ishowshu/loon/raw/refs/heads/main/icon/gaode.png)，仓库不再保存图标副本。此插件仅适用于 Loon，不能导入 Mihomo / Clash。
 
 ## 安装与验证
 
