@@ -214,7 +214,12 @@ function removeChannelsTabs(channels) {
   const channelIds = [1001, 1015, 1016, 1040, 1041, 1043, 1053, 1030, 1063, 1061, 1046];
   // 反向遍历数组
   for (let i = channels.length - 1; i >= 0; i--) {
-    if (!channelIds.includes(channels[i].id)) {
+    // 新版使用 key/pageId，没有数字 id；未知结构必须保留，避免清空发现流。
+    const channelId = channels[i]?.id;
+    if (typeof channelId !== "number") {
+      continue;
+    }
+    if (!channelIds.includes(channelId)) {
       // 如果当前元素的id不在channelIds中，则从原数组中删除该元素
       channels.splice(i, 1);
       console.log('移除多余的channel💕💕');

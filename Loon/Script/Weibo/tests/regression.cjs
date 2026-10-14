@@ -68,7 +68,19 @@ test('首次发现页处理多个频道，标题样式缺失不会中断', () =>
   const output = run('weibo_ads.js', 'search/finder', {
     channelInfo: { channels: [{ id: 1001, payload: payload() }, { id: 1015, payload: payload() }] }
   });
+  assert.equal(output.channelInfo.channels.length, 2);
   output.channelInfo.channels.forEach((channel) => checkPayload(channel.payload));
+});
+test('新版 key/pageId 频道缺少 id 时保留发现流和其他频道', () => {
+  const output = run('weibo_ads.js', 'search/finder', {
+    channelInfo: { channels: [
+      { key: 'discover_channel', pageId: '102803_ctg1_1780_-_ctg1_1780', payload: payload() },
+      { key: 'star_product_channel', pageId: '232727_1_heroProduct' }
+    ] }
+  });
+  assert.equal(output.channelInfo.channels.length, 2);
+  assert.equal(output.channelInfo.channels[0].key, 'discover_channel');
+  checkPayload(output.channelInfo.channels[0].payload);
 });
 test('空发现页响应不会中断', () => {
   assert.deepEqual(run('weibo_ads.js', 'search/container_discover', { items: [] }), { items: [] });
