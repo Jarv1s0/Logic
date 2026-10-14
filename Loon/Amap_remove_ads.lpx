@@ -2,7 +2,7 @@
 #!desc = 清理广告与推广，减少正常功能误删。缓存可能影响效果，默认不要求卸载重装；兼容性与验证边界见说明文档。
 #!author = 树先生（原作）, Jarv1s0（迁移维护）
 #!icon = https://github.com/ishowshu/loon/raw/refs/heads/main/icon/gaode.png
-#!date = 2026-10-10
+#!date = 2026-10-14
 
 # 来源与修改说明：https://github.com/Jarv1s0/Logic/blob/master/Loon/Docs/amap.md
 
@@ -17,20 +17,20 @@
 ^https:\/\/m5-zb\.amap\.com\/ws\/boss\/transportation\/diversion\/resource\/bus_only_refresh(?:\?|$) reject-dict
 
 [Script]
-# 首页保留完整事件链，清空瀑布列表并隐藏续导航、常用地点子卡片。
-http-response ^https:\/\/ai\.amap\.com\/v1\/ai_rec\/home_qs(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261010-7, requires-body = true, tag = 高德首页信息流净化
+# 首页保留完整事件链，清空瀑布列表并隐藏续导航、常用地点和目的地推荐子卡片。
+http-response ^https:\/\/ai\.amap\.com\/v1\/ai_rec\/home_qs(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261014-1, requires-body = true, tag = 高德首页信息流净化
 # 旧首页仅保留登录卡片；“我的”保留足迹、入口及订单。
-http-response ^https:\/\/m5\.amap\.com\/ws\/faas\/amap-navigation\/main-page(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261010-7, requires-body = true, tag = 高德首页下拉卡片
-http-response ^https:\/\/m5\.amap\.com\/ws\/shield\/dsp\/profile\/index\/nodefaasv3(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261010-7, requires-body = true, tag = 高德我的下拉卡片
+http-response ^https:\/\/m5\.amap\.com\/ws\/faas\/amap-navigation\/main-page(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261014-1, requires-body = true, tag = 高德首页下拉卡片
+http-response ^https:\/\/m5\.amap\.com\/ws\/shield\/dsp\/profile\/index\/nodefaasv3(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261014-1, requires-body = true, tag = 高德我的下拉卡片
 # 多用途接口只修改响应中的已知推广字段。
-http-response ^https:\/\/m5-zb\.amap\.com\/ws\/boss\/car\/order\/content_info(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261010-7, requires-body = true, tag = 高德打车推广
-http-response ^https:\/\/info\.amap\.com\/ws\/shield\/search\/poi\/detail(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261010-7, requires-body = true, tag = 高德地点详情净化
-http-response ^https:\/\/m5\.amap\.com\/ws\/shield\/search_poi\/search\/sp(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261010-7, requires-body = true, tag = 高德搜索广告
-http-response ^https:\/\/m5\.amap\.com\/ws\/info_bff\/tradeUnionPortal(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261010-7, requires-body = true, tag = 高德酒店广告
-http-response ^https:\/\/m5-zb\.amap\.com\/ws\/promotion-web\/resource(?:\/home)?(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261010-7, requires-body = true, tag = 高德推广横幅弹窗
-http-response ^https:\/\/m5\.amap\.com\/ws\/shield\/scene\/recommend(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261010-7, requires-body = true, tag = 高德搜索框推广
-http-response ^https:\/\/m5\.amap\.com\/ws\/valueadded\/alimama\/splash_screen(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261010-7, requires-body = true, tag = 高德开屏广告
-http-response ^https:\/\/m5\.amap\.com\/ws\/faas\/amap-navigation\/main-page-aiqs(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261010-7, requires-body = true, tag = 高德地图图层推广
+http-response ^https:\/\/m5-zb\.amap\.com\/ws\/boss\/car\/order\/content_info(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261014-1, requires-body = true, tag = 高德打车推广
+http-response ^https:\/\/info\.amap\.com\/ws\/shield\/search\/poi\/detail(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261014-1, requires-body = true, tag = 高德地点详情净化
+http-response ^https:\/\/m5\.amap\.com\/ws\/shield\/search_poi\/search\/sp(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261014-1, requires-body = true, tag = 高德搜索广告
+http-response ^https:\/\/m5\.amap\.com\/ws\/info_bff\/tradeUnionPortal(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261014-1, requires-body = true, tag = 高德酒店广告
+http-response ^https:\/\/m5-zb\.amap\.com\/ws\/promotion-web\/resource(?:\/home)?(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261014-1, requires-body = true, tag = 高德推广横幅弹窗
+http-response ^https:\/\/m5\.amap\.com\/ws\/shield\/scene\/recommend(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261014-1, requires-body = true, tag = 高德搜索框推广
+http-response ^https:\/\/m5\.amap\.com\/ws\/valueadded\/alimama\/splash_screen(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261014-1, requires-body = true, tag = 高德开屏广告
+http-response ^https:\/\/m5\.amap\.com\/ws\/faas\/amap-navigation\/main-page-aiqs(?:\?|$) script-path = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Amap/amap-new.js?v=20261014-1, requires-body = true, tag = 高德地图图层推广
 
 [MitM]
 hostname = m5.amap.com,amap-aos-info-nogw.amap.com,m5-zb.amap.com,info.amap.com,ai.amap.com

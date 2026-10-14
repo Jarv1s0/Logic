@@ -24,8 +24,10 @@ const mapAds = [
 ];
 // 仅这两处页面卡片列表按白名单精简，不用于搜索结果。
 const homeCards = ["LoginCard"];
-// HAR 中确认的续导航、常用地点动态子卡片；只用于首页 SSE。
-const hiddenHomeDynamicCards = ["VO_G2A3UGG3_CARD_LM2W5Y14", "VO_KHYZDF9G_CARD_OC67DFOU"];
+// HAR 中确认的续导航、常用地点及目的地推荐子卡片；只用于首页 SSE。
+const hiddenHomeDynamicCards = [
+  "VO_G2A3UGG3_CARD_LM2W5Y14", "VO_KHYZDF9G_CARD_OC67DFOU", "VO_3TG6YIWC_CARD_SHDHIDHR"
+];
 const profileCards = [
   "MineNewFootprintCard", "MineNewBEntranceCardV4", "MineNewBEntranceCardV3", "MyOrderCard"
 ];

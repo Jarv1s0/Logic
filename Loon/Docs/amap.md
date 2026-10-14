@@ -40,13 +40,15 @@ node --check Loon/Script/Amap/amap-new.js
 
 ## 修改边界
 
+`20261014-1` 根据 2026-10-14 新增 HAR，在 10:25:06 的首页 SSE 响应中确认目的地导航推荐子卡片 `VO_3TG6YIWC_CARD_SHDHIDHR`，补入首页过滤清单。重放本次全部 6 条首页响应：移除 1 个目标子卡片，其余 5 条输出与旧版逐字一致；外层容器、事件数量、序号及其他字段保留。未知卡片、异常流透传及重复处理检查通过；真机效果仍待确认。插件及脚本需更新至 `20261014-1`。
+
 - `/promotion-web/resource` 及 `/home` 只删除 `banner`、`popup`，解决整段拦截与局部修改重叠。
 - 原 jq 处理统一迁入 JavaScript，增加对象、数组检查；不修改的响应保留原始正文。
 - 搜索结果不再按 `PoiCardUniversal` 白名单过滤，保留其他类型和未知卡片。
 - 首页 `/ws/faas/amap-navigation/main-page` 的 `data.cardList` 仅保留 `LoginCard`，按本次反馈同时隐藏 `ContinueNavigationCard`、`FrequentLocation`；不修改地图图层列表。
 - “我的” `/ws/shield/dsp/profile/index/nodefaasv3` 的 `data.cardList` 仅保留 `MineNewFootprintCard`、`MineNewBEntranceCardV4`、`MineNewBEntranceCardV3`、`MyOrderCard`；不删除顶层足迹、会员等字段。
 - 两处页面卡片列表按用户要求精简，白名单外的有效 `dataKey` 卡片也会删除，不保证全是广告；无法识别的数据结构透传。此白名单不应用于搜索结果。
-- 当前首页信息流由 `/v1/ai_rec/home_qs` 的 SSE 响应提供。识别到瀑布列表或目标动态子卡片、空 markdown 成功结束事件及其后的 `COMPLETE` 时，清空瀑布列表、过滤续导航和常用地点子卡片并停止分页；其余事件和未知子卡片保留。无匹配内容、未完成、解析失败或未知事件类型时整段透传；其他 AI 接口不新增处理。
+- 当前首页信息流由 `/v1/ai_rec/home_qs` 的 SSE 响应提供。识别到瀑布列表或目标动态子卡片、空 markdown 成功结束事件及其后的 `COMPLETE` 时，清空瀑布列表、过滤续导航、常用地点和已识别的目的地推荐子卡片并停止分页；其余事件和未知子卡片保留。无匹配内容、未完成、解析失败或未知事件类型时整段透传；其他 AI 接口不新增处理。
 - 地点详情保留门票、电影、油价、订房及其他非明确广告模块，不改地图标识和商家 logo。
 - 房产详情仅在 `data.template === "house_all_expt_temp"` 时移除 `houseAgentService`、`surroundFacility`、`surroundHouseTab`、`houseShelf`、`commonGoodsShelf`、`similarShopRecommend`、`nearbyRecommendModule`、`quickLinksPortal`、`poiDetailWaterFeedTitle`、`poiDetailWaterFeed`；覆盖经纪人服务、配套、房源及相关服务推荐，以及“发现·你的理想居所”入口和“发现好去处”标题、信息流。其他模板不删除这些模块，尤其保留餐饮、酒店等正常商品货架。
 - 同步清理 `regions`、已知元数据引用、`anchor.data.items[].anchor` 及 `poiDetailNewBeltV2.data.belt.list[].anchor`。混合引用只删目标，未知入口保留；配套快捷入口全部清空时移除该快捷模块及引用。
