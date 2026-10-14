@@ -13,9 +13,16 @@ try {
   if (url.includes("/search/finder?")) {
     console.log('进入发现页...');
     console.log(body);
-    resp_data.channelInfo.channels[0].titleInfo.style.selectTextColor = "#333333";
-    processPayload(resp_data.channelInfo.channels[0].payload);
-    removeChannelsTabs(resp_data.channelInfo.channels);
+    const channels = resp_data.channelInfo?.channels;
+    if (Array.isArray(channels)) {
+      removeChannelsTabs(channels);
+      for (const channel of channels) {
+        if (channel.titleInfo?.style) {
+          channel.titleInfo.style.selectTextColor = "#333333";
+        }
+        processPayload(channel.payload);
+      }
+    }
     if (resp_data.header?.data?.items) {
       removeHeaderAds(resp_data.header.data.items);
       removeHotSearchHeader(resp_data.header.data.items);
@@ -194,12 +201,7 @@ function processPayload(payload) {
     delete payload.loadedInfo.searchBarContent;
   }
 
-  if (payload.items[0].items) {
-    removeCommonAds(payload.items[0].items);
-  }
-
   removeCommonAds(payload.items);
-  removeCategoryFeedAds(payload.items);
 
   if (payload.loadedInfo?.headerBack) {
     delete payload.loadedInfo.headerBack;
@@ -235,7 +237,12 @@ function removeHotSearchHeader(headerItems) {
     return;
   }
   const originalLength = headerItems.length;
-  const filteredItems = headerItems.filter((item) => ![17, 101, 235].includes(item?.data?.card_type));
+  const filteredItems = headerItems.filter((item) => ![17, 235].includes(Number(item?.data?.card_type)));
+  for (const item of filteredItems) {
+    if (Array.isArray(item?.items)) {
+      removeHotSearchHeader(item.items);
+    }
+  }
   if (filteredItems.length !== originalLength) {
     headerItems.splice(0, headerItems.length, ...filteredItems);
     console.log('移除发现页顶部微博热搜模块');
@@ -243,37 +250,36 @@ function removeHotSearchHeader(headerItems) {
 }
 
 function removeCommonAds(items) {
-  // 模块类型，不在里面的都计划删除
-  // 17：微博热搜，235：新版微博热搜，101：热门微博
-  const cardTypes = [17, 235, 101];
-
-  let firstVerticalFound = false;
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].type === "vertical") {
-      if (!firstVerticalFound) {
-        firstVerticalFound = true;
-        continue;
-      }
-      console.log('移除内嵌的模块💕💕');
-      items[i] = {};
+  if (!Array.isArray(items)) {
+    return;
+  }
+  // 仅删除明确广告；未知卡片和纵向分组可能承载正常发现内容。
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    const data = item?.data;
+    const card_type = Number(data?.card_type);
+    if ([118, 247].includes(card_type)
+      || data?.mblogtypename === "广告"
+      || data?.content_auth_info?.content_auth_title === "广告"
+      || Number(data?.ad_state) === 1
+      || Number(data?.is_ad) === 1
+      || data?.promotion?.type === "ad") {
+      items.splice(i, 1);
       continue;
     }
-
-    const card_type = items[i].data?.card_type;
-    console.log(`card_type = ${card_type}`);
-    // 白名单模式
-    if (card_type && !cardTypes.includes(card_type)) {
-      console.log(`移除多余的模块：${card_type}💕💕`);
-      items[i] = {};
-      continue;
+    if (!item) continue;
+    if (Array.isArray(item.items)) {
+      removeCommonAds(item.items);
     }
     // 1.1、"微博热搜"模块
     if (card_type === 17) {
       console.log('处理微博热搜模块17💕');
-      removeHotSearchAds(items[i].data.group);
+      removeHotSearchAds(data.group);
     } else if (card_type === 235) {
       console.log('处理微博热搜模块235💕');
-      removeHotSearchAds(items[i].data.channel_list[0]?.group);
+      for (const channel of data.channel_list || []) {
+        removeHotSearchAds(channel?.group);
+      }
     }
     // 118横版广告图片 182热议话题 217错过了热词 247横版视频广告 236微博趋势
     // 删除信息流中的图片广告、推广
@@ -292,17 +298,6 @@ function removeHotSearchAds(groups) {
     }
   }
   console.log('移除发现页热搜广告结束💕💕');
-}
-
-// 移除“热搜微博”信息流的广告
-function removeCategoryFeedAds(items) {
-  console.log('移除发现页热门微博广告💕');
-  for (let i = items.length - 1; i >= 0; i--) {
-    const item = items[i];
-    if (item.category === "feed" && item.data && item.data.mblogtypename === "广告") {
-      items.splice(i, 1);
-    }
-  }
 }
 
 // 移除微博首页的多余tab页

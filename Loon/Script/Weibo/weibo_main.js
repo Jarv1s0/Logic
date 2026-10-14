@@ -594,6 +594,7 @@ function updateProfileSkin(item, k) {
 
 
 function removeHome(data) {
+	removeProfilePromotions(data.items);
 	if (!data.items) {
 		return data;
 	}
@@ -704,6 +705,35 @@ function containerHandler(data) {
 	}
 }
 
+// 只检查模块标题，不扫描微博正文、用户简介或链接。
+function isProfilePromotion(item) {
+	if (item?.category === 'feed') return false;
+	const titles = [item?.header?.title, item?.title, item?.data?.title, item?.data?.desc];
+	function matches(value) {
+		if (typeof value === 'string') {
+			return /^(?:AI\s*角色(?:伴聊)?|造浪吧[！!\s]*国庆(?:档|檔)?)$/i.test(value.trim());
+		}
+		return value && typeof value === 'object' &&
+			['content', 'text', 'title'].some((key) => matches(value[key]));
+	}
+	return titles.some(matches);
+}
+
+function removeProfilePromotions(items) {
+	if (!Array.isArray(items)) return;
+	for (let i = items.length - 1; i >= 0; i--) {
+		const item = items[i];
+		if (isProfilePromotion(item)) {
+			items.splice(i, 1);
+			continue;
+		}
+		if (Array.isArray(item?.items) && item.items.length > 0) {
+			removeProfilePromotions(item.items);
+			if (item.items.length === 0) items.splice(i, 1);
+		}
+	}
+}
+
 function isProfileRecommendation(item) {
 	if (!item) {
 		return false;
@@ -757,6 +787,7 @@ function isProfileRecommendation(item) {
 
 //可能感兴趣的人和荐读
 function userHandler(data) {
+	removeProfilePromotions(data.items);
 	data = removeMain(data);
 	if (!data.items) {
 		return data;
