@@ -1,5 +1,5 @@
 #!name=微博去广告&净化
-#!desc=微博去广告、净化界面，并隐藏发现页热搜、首页超话和我的页面推广模块
+#!desc=微博去广告、净化界面，保留发现页正常热搜，并隐藏首页超话和我的页面推广模块
 #!author=Jarv1s0[https://github.com/Jarv1s0/Logic]
 #!homepage=https://github.com/Jarv1s0/Logic/tree/master/Loon
 #!icon=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Weibo.png
@@ -88,36 +88,36 @@ request if ${url} ~= /^https?:\/\/m?api\.weibo\.c(n|om)\/2\/push\/info\?/ then r
 response if ${url} ~= /^https?:\/\/m?api\.weibo\.c(n|om)\/2\/cardlist\?/ then response.json.jq(`del(.items[] | select(.category == "group"))`)
 [Script]
 # 微博移除发现页广告
-http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/search\/(finder|container_timeline|container_discover)\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-2, requires-body=true, timeout=60, tag=微博移除发现页广告
+http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/search\/(finder|container_timeline|container_discover)\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-3, requires-body=true, timeout=60, tag=微博移除发现页广告
 
 # 微博热搜页面广告
-http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/(page|flowpage)\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-2, requires-body=true, timeout=60, tag=微博热搜页面广告
+http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/(page|flowpage)\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-3, requires-body=true, timeout=60, tag=微博热搜页面广告
 
 # 微博话题页面广告
-http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/searchall\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-2, requires-body=true, timeout=60, tag=微博话题页面广告
+http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/searchall\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-3, requires-body=true, timeout=60, tag=微博话题页面广告
 
 # 微博超话页面广告
-http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/container_timeline_topicpage\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-2, requires-body=true, timeout=60, tag=微博超话页面广告
+http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/container_timeline_topicpage\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-3, requires-body=true, timeout=60, tag=微博超话页面广告
 
 # 微博超话tab页净化
-http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/container_timeline_topic\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-2, requires-body=true, timeout=60, tag=微博超话tab页净化
+http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/container_timeline_topic\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-3, requires-body=true, timeout=60, tag=微博超话tab页净化
 
 # 微博详情页面广告
-http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/extend\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-2, requires-body=true, timeout=60, tag=微博详情页面广告
-http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/container_detail\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-2, requires-body=true, timeout=60, tag=微博详情页面广告
+http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/extend\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-3, requires-body=true, timeout=60, tag=微博详情页面广告
+http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/container_detail\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-3, requires-body=true, timeout=60, tag=微博详情页面广告
 
 # 微博最顶部的tab页分组
-http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/groups\/allgroups\/v2 script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-2, requires-body=true, timeout=60, tag=微博最顶部的tab页分组
+http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/groups\/allgroups\/v2 script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-3, requires-body=true, timeout=60, tag=微博最顶部的tab页分组
 
 # 微博启动时默认进入“最新微博”
-http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/client\/interrupt script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-2, requires-body=true, timeout=60, tag=微博默认进入最新微博
+http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/client\/interrupt script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-3, requires-body=true, timeout=60, tag=微博默认进入最新微博
 
 # 微博评论区广告
-http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/comments\/mix_comments\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-2, requires-body=true, timeout=60, tag=微博评论区广告
-http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/(container_detail_comment|container_detail_mix)\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-2, requires-body=true, timeout=60, tag=微博评论区广告
+http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/comments\/mix_comments\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-3, requires-body=true, timeout=60, tag=微博评论区广告
+http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/(container_detail_comment|container_detail_mix)\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-3, requires-body=true, timeout=60, tag=微博评论区广告
 
 # 微博转发区广告
-http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/container_detail_forward\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-2, requires-body=true, timeout=60, tag=微博转发区广告
+http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/container_detail_forward\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_ads.js?v=20261014-3, requires-body=true, timeout=60, tag=微博转发区广告
 http-response ^https?:\/\/m?api\.weibo\.c(n|om)\/2\/statuses\/repost_timeline\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_main.js?v=20261014-1, requires-body=true, timeout=60, tag=微博转发区广告
 
 # 微博去广告以及去除各部分推广模块 - cherish

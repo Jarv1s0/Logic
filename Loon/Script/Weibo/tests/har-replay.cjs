@@ -67,6 +67,33 @@ for (const entry of har.log.entries) {
       assert.deepEqual(after.payload.refreshInfo, before.payload.refreshInfo);
       assert.deepEqual(after.payload.pageData, before.payload.pageData);
     }
+    function checkHotSearch(before, after) {
+      assert.ok(Array.isArray(after), '顶部模块必须保留');
+      for (const item of before || []) {
+        const type = Number(item?.data?.card_type);
+        if ([17, 235].includes(type)) {
+          const kept = after.find((candidate) => Number(candidate?.data?.card_type) === type);
+          assert.ok(kept, '不能删除整个热搜列表');
+          const groups = type === 17 ? [item.data] : item.data.channel_list;
+          const keptGroups = type === 17 ? [kept.data] : kept.data.channel_list;
+          assert.equal(keptGroups.length, groups.length, '热搜频道必须保留');
+          groups.forEach((group, index) => {
+            const normal = group.group.filter((entry) => !entry.itemid?.includes('is_ad_pos')
+              && !entry.itemid?.includes('city_code') && !entry.promotion);
+            assert.deepEqual(keptGroups[index].group, normal, '正常热搜必须逐字保留');
+            console.log(`真实热搜：${group.group.length} 条，保留 ${normal.length} 条`);
+          });
+        }
+        if (Array.isArray(item?.items)) {
+          const kept = after.find((candidate) => candidate.itemId === item.itemId && Array.isArray(candidate.items));
+          assert.ok(kept, '热搜所在分组必须保留');
+          checkHotSearch(item.items, kept.items);
+        }
+      }
+    }
+    if (original.header?.data?.items) {
+      checkHotSearch(original.header.data.items, output.header?.data?.items);
+    }
     assert.deepEqual(replay(entry.request.url, output), output, '重复执行不能继续删除内容');
     console.log(`通过：真实发现响应 ${count}，保留 ${channels.length} 个频道及正常微博、分页字段`);
   } catch (error) {

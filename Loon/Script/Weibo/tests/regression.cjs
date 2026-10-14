@@ -85,15 +85,27 @@ test('新版 key/pageId 频道缺少 id 时保留发现流和其他频道', () =
 test('空发现页响应不会中断', () => {
   assert.deepEqual(run('weibo_ads.js', 'search/container_discover', { items: [] }), { items: [] });
 });
-test('顶部热搜过滤保留热门微博，兼容字符串类型与嵌套分组', () => {
-  const output = run('weibo_ads.js', 'search/container_timeline', {
-    items: [{ category: 'feed', data: { text: '正常微博' } }], header: { data: { items: [{ type: 'vertical', items: [
-      { data: { card_type: '235', channel_list: [] } },
-      { data: { card_type: 101, title: '热门微博' } }
-    ] }] } }
+for (const endpoint of ['search/finder', 'search/container_timeline', 'search/container_discover']) {
+  test(`${endpoint} 保留顶部热搜列表、标题和正常条目，仅过滤广告`, () => {
+    const normal = { itemid: 'normal', word: '正常热搜' };
+    const groups = [normal, { itemid: 'is_ad_pos' }, { promotion: { type: 'ad' } }];
+    const title = { data: { card_type: 101, title: '微博热搜' } };
+    const input = { items: [feed], header: { data: { items: [{ type: 'vertical', items: [
+      title,
+      { data: { card_type: 17, group: groups } },
+      { data: { card_type: '235', channel_list: [{ group: groups }] } },
+      { data: { card_type: 118 } }
+    ] }] } } };
+    const output = run('weibo_ads.js', endpoint, input);
+    assert.deepEqual(output.header.data.items[0].items, [
+      title,
+      { data: { card_type: 17, group: [normal] } },
+      { data: { card_type: '235', channel_list: [{ group: [normal] }] } }
+    ]);
+    assert.deepEqual(output.items, [feed]);
+    assert.deepEqual(run('weibo_ads.js', endpoint, output), output);
   });
-  assert.deepEqual(output.header.data.items[0].items, [{ data: { card_type: 101, title: '热门微博' } }]);
-});
+}
 
 for (const endpoint of ['profile/me', 'profile/container_timeline']) {
   test(`${endpoint} 删除目标推广、保留普通模块与微博正文`, () => {
