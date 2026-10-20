@@ -199,6 +199,13 @@ try {
         case "m5.amap.com/ws/faas/amap-navigation/main-page":
           keepPageCards(data, homeCards);
           break;
+        case "m5.amap.com/ws/faas/amap-navigation/main-page-assets":
+          if (isObject(data.pull3) && Array.isArray(data.pull3.msgs)) {
+            data.pull3.msgs = data.pull3.msgs.filter(message =>
+              !isObject(message) || !["1", 1, true].includes(message.is_ad)
+            );
+          }
+          break;
         case "m5.amap.com/ws/shield/dsp/profile/index/nodefaasv3":
           keepPageCards(data, profileCards);
           break;
