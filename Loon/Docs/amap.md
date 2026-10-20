@@ -42,6 +42,8 @@ node --check Loon/Script/Amap/amap-new.js
 
 ## 修改边界
 
+`20261020-5` 根据用户反馈，`20261020-4` 只清空了通勤套餐详情，未隐藏打车页面按钮。重新检查两份 HAR 后，在 `/ws/promotion-web/resource/home` 的 `data.other.data.icon.icon_list` 确认资源 `icon_id === "78888"`、`inner_type === 5601`，其点击地址指向通勤套餐详情。新增精确过滤该图标，保留其他图标；撤销 `/ws/car-place/show` 的详情删除及脚本匹配，恢复正常详情内容。仍为 4 条脚本引用，按钮实际显示效果待真机确认。
+
 `20261020-4` 根据新增 HAR，识别到 `m5-zb.amap.com/ws/car-place/show` 返回的 `data.playMap.comboBuyShow` 标题为“通勤套餐”、`comboType` 为 `5`、参考金额为 `5000` 分。仅在标题与类型同时匹配时删除该套餐推广字段，保留其他活动、接口状态及未知结构；补入现有打车脚本分组，仍为 4 条脚本引用。此数据与用户描述的“50元、通勤超便宜”相符，但按钮是否随之隐藏尚需真机验证。
 
 `20261020-3` 将 Loon 中同一高德脚本的 12 条引用按域名合并为 4 条，分别对应首页 SSE、页面与广告、打车与推广、地点详情；接口路径边界、响应处理参数及 JavaScript 分发逻辑保持不变。Loon 日志中的部分规则名称随分组合并。
@@ -54,7 +56,7 @@ node --check Loon/Script/Amap/amap-new.js
 
 `20261014-1` 根据 2026-10-14 新增 HAR，在 10:25:06 的首页 SSE 响应中确认目的地导航推荐子卡片 `VO_3TG6YIWC_CARD_SHDHIDHR`，补入首页过滤清单。重放本次全部 6 条首页响应：移除 1 个目标子卡片，其余 5 条输出与旧版逐字一致；外层容器、事件数量、序号及其他字段保留。未知卡片、异常流透传及重复处理检查通过；真机效果仍待确认。插件及脚本需更新至 `20261014-1`。
 
-- `/promotion-web/resource` 及 `/home` 只删除 `banner`、`popup`，解决整段拦截与局部修改重叠。
+- `/promotion-web/resource` 及 `/home` 删除 `banner`、`popup`，并精确过滤已确认的通勤套餐图标（`icon_id: "78888"`、`inner_type: 5601`），保留其他图标及响应字段。
 - 原 jq 处理统一迁入 JavaScript，增加对象、数组检查；不修改的响应保留原始正文。
 - 搜索结果不再按 `PoiCardUniversal` 白名单过滤，保留其他类型和未知卡片。
 - 首页 `/ws/faas/amap-navigation/main-page` 的 `data.cardList` 保留 `LoginCard`、`FrequentLocation`，继续隐藏 `ContinueNavigationCard`；不修改地图图层列表。

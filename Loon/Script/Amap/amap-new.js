@@ -204,12 +204,6 @@ try {
           }
           if (isObject(data.matrixData)) clearDataList(data.matrixData.c3DiversionCard);
           break;
-        case "m5-zb.amap.com/ws/car-place/show":
-          if (isObject(data.playMap) && isObject(data.playMap.comboBuyShow) &&
-              data.playMap.comboBuyShow.comboType === 5 && data.playMap.comboBuyShow.title === "通勤套餐") {
-            delete data.playMap.comboBuyShow;
-          }
-          break;
         case "info.amap.com/ws/shield/search/poi/detail":
           removeModules(data, poiAds);
           cleanHouseDetail(data);
@@ -225,6 +219,10 @@ try {
         case "m5-zb.amap.com/ws/promotion-web/resource/home":
           delete data.banner;
           delete data.popup;
+          if (isObject(data.other) && isObject(data.other.data)) {
+            filterList(data.other.data.icon, "icon_list", icon =>
+              !isObject(icon) || icon.icon_id !== "78888" || icon.inner_type !== 5601);
+          }
           break;
         case "m5.amap.com/ws/shield/scene/recommend":
           if (Array.isArray(data.shadingWords)) data.shadingWords = [];
