@@ -23,10 +23,10 @@ const mapAds = [
   "PoiRecommendVirtualCard", "PersonalRecommendVirtualCard"
 ];
 // 仅这两处页面卡片列表按白名单精简，不用于搜索结果。
-const homeCards = ["LoginCard"];
-// HAR 中确认的续导航、常用地点及目的地推荐子卡片；只用于首页 SSE。
+const homeCards = ["LoginCard", "FrequentLocation"];
+// 保留常用地点快捷入口；仅过滤 HAR 中确认的续导航及目的地推荐子卡片。
 const hiddenHomeDynamicCards = [
-  "VO_G2A3UGG3_CARD_LM2W5Y14", "VO_KHYZDF9G_CARD_OC67DFOU", "VO_3TG6YIWC_CARD_SHDHIDHR"
+  "VO_G2A3UGG3_CARD_LM2W5Y14", "VO_3TG6YIWC_CARD_SHDHIDHR"
 ];
 const profileCards = [
   "MineNewFootprintCard", "MineNewBEntranceCardV4", "MineNewBEntranceCardV3", "MyOrderCard"
