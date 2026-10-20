@@ -36,25 +36,23 @@ function isObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+function filterList(object, key, keep) {
+  if (isObject(object) && Array.isArray(object[key])) object[key] = object[key].filter(keep);
+}
+
 function removeModules(data, names) {
+  const keep = name => !names.includes(name);
   if (isObject(data.modules)) {
     names.forEach(name => { delete data.modules[name]; });
   }
   if (isObject(data.regions)) {
     Object.keys(data.regions).forEach(region => {
-      if (Array.isArray(data.regions[region])) {
-        data.regions[region] = data.regions[region].filter(name => !names.includes(name));
-      }
+      filterList(data.regions, region, keep);
     });
   }
   if (isObject(data.meta)) {
-    if (Array.isArray(data.meta.half_hidden_modules)) {
-      data.meta.half_hidden_modules = data.meta.half_hidden_modules.filter(name => !names.includes(name));
-    }
-    const metaInfo = data.meta.vo_meta_info;
-    if (isObject(metaInfo) && Array.isArray(metaInfo.couponRefreshModules)) {
-      metaInfo.couponRefreshModules = metaInfo.couponRefreshModules.filter(name => !names.includes(name));
-    }
+    filterList(data.meta, "half_hidden_modules", keep);
+    filterList(data.meta.vo_meta_info, "couponRefreshModules", keep);
   }
 }
 
@@ -108,14 +106,6 @@ function cleanHouseDetail(data) {
 
 function clearDataList(block) {
   if (isObject(block) && Array.isArray(block.dataList)) block.dataList = [];
-}
-
-function keepPageCards(data, allowed) {
-  if (Array.isArray(data.cardList)) {
-    data.cardList = data.cardList.filter(card =>
-      !isObject(card) || typeof card.dataKey !== "string" || allowed.includes(card.dataKey)
-    );
-  }
 }
 
 function cleanHomeStream(stream) {
@@ -197,17 +187,16 @@ try {
       const data = obj.data;
       switch (route) {
         case "m5.amap.com/ws/faas/amap-navigation/main-page":
-          keepPageCards(data, homeCards);
+          filterList(data, "cardList", card =>
+            !isObject(card) || typeof card.dataKey !== "string" || homeCards.includes(card.dataKey));
           break;
         case "m5.amap.com/ws/faas/amap-navigation/main-page-assets":
-          if (isObject(data.pull3) && Array.isArray(data.pull3.msgs)) {
-            data.pull3.msgs = data.pull3.msgs.filter(message =>
-              !isObject(message) || !["1", 1, true].includes(message.is_ad)
-            );
-          }
+          filterList(data.pull3, "msgs", message =>
+            !isObject(message) || !["1", 1, true].includes(message.is_ad));
           break;
         case "m5.amap.com/ws/shield/dsp/profile/index/nodefaasv3":
-          keepPageCards(data, profileCards);
+          filterList(data, "cardList", card =>
+            !isObject(card) || typeof card.dataKey !== "string" || profileCards.includes(card.dataKey));
           break;
         case "m5-zb.amap.com/ws/boss/car/order/content_info":
           if (isObject(data.lubanData)) {
@@ -251,9 +240,7 @@ try {
           }
           break;
         case "m5.amap.com/ws/faas/amap-navigation/main-page-aiqs":
-          if (Array.isArray(data.mapBizList)) {
-            data.mapBizList = data.mapBizList.filter(item => !isObject(item) || !mapAds.includes(item.dataKey));
-          }
+          filterList(data, "mapBizList", item => !isObject(item) || !mapAds.includes(item.dataKey));
           break;
       }
     }
