@@ -1,0 +1,16 @@
+#!name=Fine Pro
+#!desc=使用 Curtinp118 脚本修改 Fine Pro 订阅响应；需启用脚本与 MitM，安装并信任证书后重启 App。实际效果以 App 为准。
+#!author=Curtinp118, Jarv1s0
+#!homepage=https://github.com/Jarv1s0/Logic/tree/master/Loon
+#!raw-url=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/FinePro.lpx
+#!tag=Fine Pro
+#!date=2026-10-20
+
+# 上游脚本：https://github.com/curtinp118/Scripthub/blob/main/scripts/finepro/finepro.js
+# 直接引用上游，脚本内容会随上游更新。
+
+[Script]
+http-response ^https?:\/\/api\.rc-backup\.com\/v1\/(subscribers\/[^/]+|receipts)$ script-path=https://raw.githubusercontent.com/curtinp118/Scripthub/main/scripts/finepro/finepro.js, requires-body=true, timeout=10, tag=Fine Pro
+
+[Mitm]
+hostname = api.rc-backup.com
