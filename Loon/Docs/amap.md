@@ -42,6 +42,10 @@ node --check Loon/Script/Amap/amap-new.js
 
 ## 修改边界
 
+`20261021-1` 根据新增 HAR 的两条首页 SSE 成功响应，确认目的地打车推荐改由独立的 `C2TaxiBizContainer` 提供，其 `data.cardData.dataList` 包含目的地及“去打车”按钮，不在此前的动态子卡片过滤范围内。仅在首页 `aiPmtGenerate` 模板下清空该容器的推荐列表，保留容器、布局引用、UI schema、全部事件与序号，继续保留常用地点。插件四处脚本版本参数同步更新。旧版在新增回归中失败，且两条真实响应均原样透传；新版重放两条响应时仅目标列表变化，未知卡片、其他模板、异常或未完成流透传及重复处理检查通过。Loon 真机效果待确认；HAR 不入库。
+
+本次首页回归可执行 `node Loon/Script/Amap/tests/home-stream.cjs`；可附本地 HAR 路径重放本次抓包（要求每条首页响应均包含目标推荐，且其他字段无需改写）。
+
 `20261020-5` 根据用户反馈，`20261020-4` 只清空了通勤套餐详情，未隐藏打车页面按钮。重新检查两份 HAR 后，在 `/ws/promotion-web/resource/home` 的 `data.other.data.icon.icon_list` 确认资源 `icon_id === "78888"`、`inner_type === 5601`，其点击地址指向通勤套餐详情。新增精确过滤该图标，保留其他图标；撤销 `/ws/car-place/show` 的详情删除及脚本匹配，恢复正常详情内容。仍为 4 条脚本引用，按钮实际显示效果待真机确认。
 
 `20261020-4` 根据新增 HAR，识别到 `m5-zb.amap.com/ws/car-place/show` 返回的 `data.playMap.comboBuyShow` 标题为“通勤套餐”、`comboType` 为 `5`、参考金额为 `5000` 分。仅在标题与类型同时匹配时删除该套餐推广字段，保留其他活动、接口状态及未知结构；补入现有打车脚本分组，仍为 4 条脚本引用。此数据与用户描述的“50元、通勤超便宜”相符，但按钮是否随之隐藏尚需真机验证。
@@ -62,7 +66,7 @@ node --check Loon/Script/Amap/amap-new.js
 - 首页 `/ws/faas/amap-navigation/main-page` 的 `data.cardList` 保留 `LoginCard`、`FrequentLocation`，继续隐藏 `ContinueNavigationCard`；不修改地图图层列表。
 - “我的” `/ws/shield/dsp/profile/index/nodefaasv3` 的 `data.cardList` 仅保留 `MineNewFootprintCard`、`MineNewBEntranceCardV4`、`MineNewBEntranceCardV3`、`MyOrderCard`；不删除顶层足迹、会员等字段。
 - 两处页面卡片列表按用户要求精简，白名单外的有效 `dataKey` 卡片也会删除，不保证全是广告；无法识别的数据结构透传。此白名单不应用于搜索结果。
-- 当前首页信息流由 `/v1/ai_rec/home_qs` 的 SSE 响应提供。识别到瀑布列表或目标动态子卡片、空 markdown 成功结束事件及其后的 `COMPLETE` 时，清空瀑布列表、过滤续导航和已识别的目的地推荐子卡片并停止分页；保留常用地点子卡片、其余事件和未知子卡片。无匹配内容、未完成、解析失败或未知事件类型时整段透传；其他 AI 接口不新增处理。
+- 当前首页信息流由 `/v1/ai_rec/home_qs` 的 SSE 响应提供。识别到瀑布列表、目标动态子卡片或 `C2TaxiBizContainer` 推荐列表，且包含空 markdown 成功结束事件及其后的 `COMPLETE` 时，清空瀑布与目的地打车推荐列表、过滤续导航和已识别的目的地推荐子卡片并停止分页；保留常用地点子卡片、其余事件和未知子卡片。无匹配内容、未完成、解析失败或未知事件类型时整段透传；其他 AI 接口不新增处理。
 - 地点详情保留门票、电影、油价、订房及其他非明确广告模块，不改地图标识和商家 logo。
 - 房产详情仅在 `data.template === "house_all_expt_temp"` 时移除 `houseAgentService`、`surroundFacility`、`surroundHouseTab`、`houseShelf`、`commonGoodsShelf`、`similarShopRecommend`、`nearbyRecommendModule`、`quickLinksPortal`、`poiDetailWaterFeedTitle`、`poiDetailWaterFeed`；覆盖经纪人服务、配套、房源及相关服务推荐，以及“发现·你的理想居所”入口和“发现好去处”标题、信息流。其他模板不删除这些模块，尤其保留餐饮、酒店等正常商品货架。
 - 同步清理 `regions`、已知元数据引用、`anchor.data.items[].anchor` 及 `poiDetailNewBeltV2.data.belt.list[].anchor`。混合引用只删目标，未知入口保留；配套快捷入口全部清空时移除该快捷模块及引用。

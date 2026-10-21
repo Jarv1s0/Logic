@@ -130,6 +130,16 @@ function cleanHomeStream(stream) {
           template.template === "aiPmtGenerate" && isObject(template.modules)) {
         Object.keys(template.modules).forEach(key => {
           const card = template.modules[key];
+          if (isObject(card) && card.card_id === "C2TaxiBizContainer" &&
+              isObject(card.data) && isObject(card.data.cardData) &&
+              Array.isArray(card.data.cardData.dataList)) {
+            // 首页目的地打车推荐使用独立容器，保留事件及布局，仅清空推荐列表。
+            knownHomeContainers++;
+            if (card.data.cardData.dataList.length > 0) {
+              clearDataList(card.data.cardData);
+              changed = true;
+            }
+          }
           if (isObject(card) && card.card_id === "WaterfallContainer" &&
               isObject(card.data) && Array.isArray(card.data.list)) {
             // HAR 中服务端已有 list: [] 的成功容器；保留容器及区域引用。
