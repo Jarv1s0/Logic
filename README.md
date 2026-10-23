@@ -9,3 +9,4 @@
 
 - [高德地图净化插件](Loon/Amap_remove_ads.lpx)：清理广告与推广，保留正常搜索结果及服务功能。
 - [安装、修改边界与上游来源](Loon/Docs/amap.md)。
+- [YouTube 插件](Loon/YouTube.lpx)：去广告、后台播放、已有字幕翻译及频道屏蔽；[安装说明与上游来源](Loon/Docs/youtube.md)。

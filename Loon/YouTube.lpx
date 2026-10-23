@@ -1,0 +1,71 @@
+#!name = YouTube
+#!desc = 移除 YouTube 应用广告，支持后台播放及已有字幕翻译（简体中文或美式英语，无字幕视频无法翻译）。日志默认仅采集媒体响应头，完整采样可能增加延迟。需要启用 MITM 并信任证书。
+#!openUrl = https://loon-plugins.vercel.app
+#!author = devchristian1337, Jarv1s0
+#!tag = YouTube, 去广告
+#!loon_version = 3.5.1(983)
+#!homepage = https://github.com/Jarv1s0/Logic/tree/master/Loon
+#!icon = https://raw.githubusercontent.com/devchristian1337/loon-plugins/refs/heads/main/App-Icons/youtube.png
+#!date = 2026-10-23
+#!raw-url = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/YouTube.lpx
+
+# 上游来源：https://raw.githubusercontent.com/devchristian1337/loon-plugins/refs/heads/main/Plugins/YouTube.lpx
+# 配套脚本原样收录；仅中文化插件说明并调整本仓库引用。
+
+[Argument]
+background_playback = switch,false,tag=后台播放,desc=切换应用或锁屏后继续播放普通视频的音频；直播和受限内容仍由 YouTube 决定
+playback_region = select,"original","CN","HK","TW","US","JP","KR","SG","GB","DE","RU",tag=播放请求地区,desc=original 为保持原地区；CN 中国大陆、HK 香港、TW 台湾、US 美国、JP 日本、KR 韩国、SG 新加坡、GB 英国、DE 德国、RU 俄罗斯。仅修改客户端 gl 参数，不改变出口 IP；去广告效果仍待验证
+translation_enabled = switch,false,tag=字幕翻译,desc=将已有字幕翻译为所选目标语言；关闭时保留原字幕请求
+translation_target = select,"zh-CN","en-US",tag=字幕目标语言,desc=zh-CN 为简体中文，en-US 为美式英语。仅转换已有字幕，无字幕视频无法翻译；不修改音轨、标题和简介
+hide_home_shorts = switch,false,tag=隐藏首页 Shorts,desc=移除首页信息流中的 Shorts 短视频栏；保留底部 Shorts 标签及其他页面
+blocked_channels = input,"",tag=屏蔽频道,desc=填写频道 ID、@用户名或完整频道名称，以空格分隔。优先使用频道 ID；名称含空格时请使用 @用户名或 ID。留空关闭；仅隐藏可识别所属频道的视频
+blocked_channels_url = input,"",tag=远程屏蔽频道列表地址,desc=填写公开的 HTTPS 纯文本直链（如 GitHub Raw）。本地缓存每小时刷新，也可手动运行更新脚本；与手动列表合并使用，留空关闭
+log_enabled = switch,false,tag=日志工具,desc=首次命中请求时自动启动并通知日志入口。关闭后，下次命中 API 时清除日志并停止采样；需要保留时请先下载。完整采样可能增加延迟
+quality_research = switch,false,tag=画质研究采样,desc=仅在日志工具开启时生效。记录可识别的画质和格式参数，并读取较小的媒体 POST 请求用于对比；不会自动切换画质
+media_capture_mode = select,"headers","full",tag=媒体采样模式,desc=仅在日志工具开启时生效，关闭日志后自动停止采样。headers 仅记录响应头；full 读取完整响应用于开发，可能增加延迟
+log_level = select,"info","debug","warn","error",tag=日志级别,desc=info 保留完整的脱敏跟踪记录；debug 保留调试级别日志；warn 保留警告和错误；error 仅保留错误
+capture_budget = select,"32","16","64",tag=日志容量（MB）,desc=达到上限后停止记录并保留已有样本；导出后请清空日志
+
+[Rule]
+# 强制 API 与播放协商从 QUIC 回退到 TCP，供 MITM 和脚本处理；不拦截媒体响应体。
+AND,((DOMAIN,youtubei.googleapis.com),(PROTOCOL,UDP),(DEST-PORT,443)),REJECT
+AND,((DOMAIN,youtubei-att.googleapis.com),(PROTOCOL,UDP),(DEST-PORT,443)),REJECT
+# 按 QUIC 协议匹配 googlevideo 域名及其子域名，并以 UDP/443 规则兜底。
+AND,((DOMAIN-SUFFIX,googlevideo.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,googlevideo.com),(PROTOCOL,UDP),(DEST-PORT,443)),REJECT
+
+[Rewrite]
+# 仅对 YouTube 应用的 initplayback POST 返回 Loon 内置空白视频；不读取响应体，不影响常规媒体。
+# 上游更新于 2026-10-05，替代已失败的 HTTP 204 实验；播放回退恢复仍需真机验证。
+request if ${url} ~= /^https:\/\/[a-z0-9-]+\.googlevideo\.com\/initplayback(?:\?[^#]*)?$/i && ${request.method} == "POST" && ${request.header['User-Agent']} ~= /(?:^|\s)com\.google\.ios\.youtube\//i then reject_video(200)
+# 仅修改响应头：清除媒体源的备用连接提示，减少拦截 QUIC 后的重试。
+# 上游更新于 2026-10-05；实际启动延迟仍需真机验证，客户端可能使用其他 HTTP/3 发现方式。
+^https://(?:[\w-]+\.)*googlevideo\.com(?::443)?/ response-header-replace Alt-Svc clear
+
+[Script]
+# 独立刷新频道列表缓存；信息流脚本仅读取缓存，不等待远程下载。
+# 上游更新于 2026-10-07。
+cron "0 * * * *" script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js,timeout=10,argument=[{blocked_channels_url}],tag=YouTube 定时更新屏蔽频道
+generic script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js,timeout=10,argument=[{blocked_channels_url}],tag=YouTube 更新屏蔽频道,img-url=person.crop.circle.badge.xmark.system
+http-request ^https:\/\/(?:www\.|m\.)?youtube\.com\/api\/timedtext\?[^#]+$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js,requires-body=false,timeout=10,enable={translation_enabled},argument=[{translation_enabled},{translation_target}],tag=YouTube 字幕目标语言
+# 仅在明确开启日志和画质研究时读取 videoplayback POST；不匹配空白初始化视频。
+# 上游更新于 2026-10-07；必须位于常规日志规则之前，默认不缓冲请求体。
+request if ${url} ~= /^https:\/\/[\w-]+\.googlevideo\.com\/videoplayback(?:\?[^#]*)?$/i && ${request.method} == "POST" && ${log_enabled} == true && ${quality_research} == true then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js", {${log_enabled}, ${log_level}, ${capture_budget}, ${quality_research}}) with requires_body=true, binary_body_mode=true, timeout=10, tag="YouTube 画质研究请求采样"
+http-request ^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/(?:browse|next|search|reel\/reel_watch_sequence)(?:\?[^#]*)?$|^https:\/\/[\w-]+\.googlevideo\.com\/videoplayback\?[^#]*$|^http:\/\/youtube-logs\.invalid(?::80)?(?:\/[^#]*)?$|^https:\/\/[\w-]+\.googlevideo\.com\/initplayback(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js,requires-body=false,timeout=10,enable={log_enabled},argument=[{log_enabled},{log_level},{capture_budget},{background_playback},{media_capture_mode},{quality_research}],tag=YouTube 日志与导出
+http-request ^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.)?youtube\.com)\/youtubei\/v1\/log_event(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js,requires-body=true,binary-body-mode=true,timeout=10,argument=[{log_enabled},{log_level},{capture_budget},{playback_region}],tag=YouTube 配置请求处理
+# 媒体采样由日志总开关控制；关闭后 headers 和 full 均不运行。已保存的模式不代表正在采样。
+# 完整采样需在接收响应体前选定；每个响应仅运行首条匹配脚本。默认响应头规则不传入 full，避免误读响应体。
+response if ${url} ~= /^https:\/\/[\w-]+\.googlevideo\.com\/(?:videoplayback|initplayback)(?:\?[^#]*)?$/i && ${log_enabled} == true && ${media_capture_mode} == "full" then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/response.min.js", {${log_enabled}, ${log_level}, ${capture_budget}, ${media_capture_mode}}) with requires_body=true, binary_body_mode=true, timeout=30, tag="YouTube 完整媒体开发采样"
+http-response ^https:\/\/[\w-]+\.googlevideo\.com\/(?:videoplayback|initplayback)(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/response.min.js,requires-body=false,timeout=10,enable={log_enabled},argument=[{log_enabled},{log_level},{capture_budget}],tag=YouTube 媒体响应日志
+http-response ^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.)?youtube\.com)\/youtubei\/v1\/(?:config|log_event)(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/response.min.js,requires-body=true,binary-body-mode=true,timeout=10,argument=[{log_enabled},{log_level},{capture_budget}],tag=YouTube Onesie 配置缓存
+
+http-request ^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/(?:player|get_watch)(?:\?[^#]*)?$|^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/player\/ad_break(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js,requires-body=true,binary-body-mode=true,timeout=10,argument=[{log_enabled},{log_level},{capture_budget},{playback_region}],tag=YouTube 播放请求与广告配置处理
+
+# 同时清理 iOS 应用的 Protobuf 搜索响应中的赞助结果及其分隔线；上游更新于 2026-10-17。
+http-response ^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/(browse|next|search)(\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/response.min.js,requires-body=true,binary-body-mode=true,timeout=10,argument=[{log_enabled},{log_level},{capture_budget},{hide_home_shorts},{blocked_channels},{blocked_channels_url}],tag=YouTube 信息流广告与首页 Shorts 处理
+http-response ^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/(player|get_watch)(\?[^#]*)?$|^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/reel\/reel_watch_sequence(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/response.min.js,requires-body=true,binary-body-mode=true,timeout=10,argument=[{log_enabled},{log_level},{capture_budget},{background_playback},{quality_research}],tag=YouTube 播放响应与后台播放
+
+[Mitm]
+hostname = youtubei.googleapis.com, youtubei-att.googleapis.com, youtube.com, www.youtube.com, m.youtube.com, music.youtube.com, *.googlevideo.com
+# 关闭日志后，初始化和常规媒体响应均不运行响应体采样脚本；初始化 POST 使用原生空白视频重写，常规播放请求仍清理广告协商。
+# googlevideo 的 UDP 连接仅回退为 TCP，常规 videoplayback 媒体请求仍放行。
