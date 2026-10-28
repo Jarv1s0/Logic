@@ -92,17 +92,38 @@ for (const endpoint of ['search/finder', 'search/container_timeline', 'search/co
     const title = { data: { card_type: 101, title: '微博热搜' } };
     const input = { items: [feed], header: { data: { items: [{ type: 'vertical', items: [
       title,
-      { data: { card_type: 17, group: groups } },
-      { data: { card_type: '235', channel_list: [{ group: groups }] } },
+      { data: { card_type: 17, group: groups, group_unfold: groups } },
+      { data: { card_type: '235', channel_list: [{ group: groups, group_unfold: groups }] } },
       { data: { card_type: 118 } }
     ] }] } } };
     const output = run('weibo_ads.js', endpoint, input);
     assert.deepEqual(output.header.data.items[0].items, [
       title,
-      { data: { card_type: 17, group: [normal] } },
-      { data: { card_type: '235', channel_list: [{ group: [normal] }] } }
+      { data: { card_type: 17, group: [normal], group_unfold: [normal] } },
+      { data: { card_type: '235', channel_list: [{ group: [normal], group_unfold: [normal] }] } }
     ]);
     assert.deepEqual(output.items, [feed]);
+    assert.deepEqual(run('weibo_ads.js', endpoint, output), output);
+  });
+}
+
+for (const endpoint of ['search/finder', 'search/container_timeline', 'search/container_discover']) {
+  test(`${endpoint} 过滤 BigDay 六宫格，保留普通和混合频道入口`, () => {
+    const normal = { title_sub: '普通频道', itemid: 'category:1001', scheme: 'sinaweibo://searchall?q=i6' };
+    const unrelated = { itemid: 'category:1001&not_adid=bigday_1810&' };
+    const ads = Array.from({ length: 6 }, (_, index) => ({
+      title_sub: '', itemid: `type:ctg1|pos:1-0-${index}|ext:&cate=1001&adid=bigday_1810&mod_src=s_finder&`
+    }));
+    const input = { header: { data: { items: [
+      { data: { card_type: 19, itemid: 'finder_channel', group: ads } },
+      { data: { card_type: '19', group: [normal, ...ads, { action_log: { ext: 'adid:bigday_1810|pos:1' } }, unrelated] } },
+      { data: { card_type: 19, group: [normal] } }
+    ] } } };
+    const output = run('weibo_ads.js', endpoint, input);
+    assert.deepEqual(output.header.data.items, [
+      { data: { card_type: '19', group: [normal, unrelated] } },
+      { data: { card_type: 19, group: [normal] } }
+    ]);
     assert.deepEqual(run('weibo_ads.js', endpoint, output), output);
   });
 }

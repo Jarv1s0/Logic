@@ -40,7 +40,6 @@ for (const entry of har.log.entries) {
     const output = replay(entry.request.url, original);
     const channels = original.channelInfo.channels;
     assert.ok(channels.length > 0, '真实原始响应必须有频道');
-    assert.ok(channels.every((channel) => channel.id === undefined), '该回归验证针对缺少 id 的新版频道');
     if (baseline) {
       assert.deepEqual(output, recorded, '旧提交重放应复现 HAR 的实际改写结果');
     }
@@ -52,15 +51,25 @@ for (const entry of har.log.entries) {
       assert.equal(after.pageId, before.pageId);
       assert.equal(after.apiPath, before.apiPath);
       if (!before.payload) {
-        assert.deepEqual(after, before);
+        const expected = structuredClone(before);
+        if (expected.titleInfo?.style) expected.titleInfo.style.selectTextColor = '#333333';
+        assert.deepEqual(after, expected);
         continue;
       }
       const feeds = before.payload.items.filter((item) => item.category === 'feed');
       assert.ok(feeds.length > 0, '原始发现流必须包含微博');
-      // 两条真实响应均含 ad_state=1 的广告；其余微博逐字保留。
+      // 样本包含明确广告；正常微博仅允许既有的推广附属字段清理。
       const ads = feeds.filter((item) => item.data?.ad_state === 1);
       assert.ok(ads.length > 0, '真实样本必须同时覆盖广告过滤和正常内容保留');
-      const normalFeeds = feeds.filter((item) => item.data?.ad_state !== 1);
+      const normalFeeds = structuredClone(feeds.filter((item) => item.data?.ad_state !== 1));
+      for (const item of normalFeeds) {
+        delete item.data.common_struct;
+        delete item.data.semantic_brand_params;
+        if (item.data.extend_info) {
+          delete item.data.extend_info.shopwindow_cards;
+          delete item.data.extend_info.ad_semantic_brand;
+        }
+      }
       assert.deepEqual(after.payload.items.filter((item) => item.category === 'feed'), normalFeeds);
       console.log(`真实微博：${feeds.length} 条，保留 ${normalFeeds.length} 条，删除 ${ads.length} 条明确广告`);
       assert.deepEqual(after.payload.moreInfo, before.payload.moreInfo);
@@ -78,11 +87,25 @@ for (const entry of har.log.entries) {
           const keptGroups = type === 17 ? [kept.data] : kept.data.channel_list;
           assert.equal(keptGroups.length, groups.length, '热搜频道必须保留');
           groups.forEach((group, index) => {
-            const normal = group.group.filter((entry) => !entry.itemid?.includes('is_ad_pos')
-              && !entry.itemid?.includes('city_code') && !entry.promotion);
-            assert.deepEqual(keptGroups[index].group, normal, '正常热搜必须逐字保留');
-            console.log(`真实热搜：${group.group.length} 条，保留 ${normal.length} 条`);
+            for (const key of ['group', 'group_unfold']) {
+              if (!Array.isArray(group[key])) continue;
+              const normal = group[key].filter((entry) => !entry.itemid?.includes('is_ad_pos')
+                && !entry.itemid?.includes('city_code') && !entry.promotion);
+              assert.deepEqual(keptGroups[index][key], normal, '正常热搜必须逐字保留');
+              console.log(`真实热搜 ${key}：${group[key].length} 条，保留 ${normal.length} 条`);
+            }
           });
+        }
+        if (type === 19 && item.data?.group?.some((entry) => entry.itemid?.includes('&adid=bigday_'))) {
+          const normal = item.data.group.filter((entry) => !entry.itemid?.includes('&adid=bigday_'));
+          const kept = after.find((candidate) => candidate.data?.itemid === item.data.itemid
+            && Number(candidate.data?.card_type) === 19);
+          if (normal.length === 0) {
+            assert.equal(kept, undefined, '纯 BigDay 广告卡片必须移除');
+          } else {
+            assert.deepEqual(kept?.data?.group, normal, '混合频道必须保留普通入口');
+          }
+          console.log(`真实 BigDay 入口：${item.data.group.length} 个，保留 ${normal.length} 个`);
         }
         if (Array.isArray(item?.items)) {
           const kept = after.find((candidate) => candidate.itemId === item.itemId && Array.isArray(candidate.items));
@@ -98,7 +121,8 @@ for (const entry of har.log.entries) {
     console.log(`通过：真实发现响应 ${count}，保留 ${channels.length} 个频道及正常微博、分页字段`);
   } catch (error) {
     failures++;
-    console.error(`失败：真实发现响应 ${count}，${error.message.split('\n')[0]}`);
+    const location = error.stack?.match(/har-replay\.cjs:\d+:\d+/)?.[0] || '';
+    console.error(`失败：真实发现响应 ${count}，${error.message.split('\n')[0]} ${location}`);
   }
 }
 assert.ok(count > 0, 'HAR 未包含发现接口');

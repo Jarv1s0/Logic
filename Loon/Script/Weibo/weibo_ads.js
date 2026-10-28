@@ -260,10 +260,25 @@ function removeCommonAds(items) {
     if (card_type === 17) {
       console.log('处理微博热搜模块17💕');
       removeHotSearchAds(data.group);
+      removeHotSearchAds(data.group_unfold);
     } else if (card_type === 235) {
       console.log('处理微博热搜模块235💕');
       for (const channel of data.channel_list || []) {
         removeHotSearchAds(channel?.group);
+        removeHotSearchAds(channel?.group_unfold);
+      }
+    } else if (card_type === 19 && Array.isArray(data.group) && data.group.length > 0) {
+      // BigDay 品牌推广使用普通频道卡片，仅过滤带明确广告标识的入口。
+      for (let j = data.group.length - 1; j >= 0; j--) {
+        const entry = data.group[j];
+        if ([entry?.itemid, entry?.action_log?.ext].some(value =>
+          typeof value === "string" && /(?:^|[&|])adid[=:]bigday_[^&|]+/.test(value))) {
+          data.group.splice(j, 1);
+        }
+      }
+      if (data.group.length === 0) {
+        items.splice(i, 1);
+        continue;
       }
     }
     // 118横版广告图片 182热议话题 217错过了热词 247横版视频广告 236微博趋势
