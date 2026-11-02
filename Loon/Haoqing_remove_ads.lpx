@@ -1,0 +1,32 @@
+#!name=好轻去广告
+#!desc=清理开屏、轮播、横幅、商品推荐、下拉广告和悬浮推广，保留健康数据与正常文章。需启用 MitM 并信任证书。
+#!author=Jarv1s0
+#!homepage=https://github.com/Jarv1s0/Logic/blob/master/Loon/Docs/haoqing.md
+#!loon_version=3.5.1(998)
+#!date=2026-11-02
+#!tag=去广告,好轻
+
+[Rule]
+# 抓包确认使用的第三方广告竞价与广告位服务；域名规则对其他 App 也生效。
+DOMAIN, adx.anythinktech.com, REJECT
+DOMAIN, apiv4.anythinktech.com, REJECT
+
+[Rewrite]
+# 专用广告接口：按抓包中的响应结构生成空数据，不向上游请求广告。
+response if ${request.method} == "GET" && ${url} ~= /^https:\/\/restapi\.iyunmai\.com\/ad-api\/ios\/ad\/launcher\.json(?:\?|$)/ then response.body.mock("json", `{"result":{"code":0,"msg":"OK","msgcn":"OK"},"data":{"launchers":[],"thirdPartyAd":{"switchOn":0,"showIntervalTime":1200}}}`, 200)
+response if ${request.method} == "GET" && ${url} ~= /^https:\/\/restapi\.iyunmai\.com\/ad-api\/ios\/ad\/counter\/getAdSetting\.json(?:\?|$)/ then response.body.mock("json", `{"result":{"code":0,"msg":"OK","msgcn":"OK"},"data":{"remainingTimes":0,"switchOn":0}}`, 200)
+response if ${request.method} == "GET" && ${url} ~= /^https:\/\/restapi\.iyunmai\.com\/ad-api\/ios\/ad\/feed\.json(?:\?|$)/ then response.body.mock("json", `{"result":{"code":0,"msg":"OK","msgcn":"OK"},"data":{"feeds":[]}}`, 200)
+response if ${request.method} == "GET" && ${url} ~= /^https:\/\/restapi\.iyunmai\.com\/ad-api\/ios\/ad\/banner\.json(?:\?|$)/ then response.body.mock("json", `{"result":{"code":0,"msg":"OK","msgcn":"OK"},"data":{"banners":[]}}`, 200)
+response if ${request.method} == "GET" && ${url} ~= /^https:\/\/restapi\.iyunmai\.com\/api\/ios\/ad\/listByPosition\.json(?:\?|$)/ then response.body.mock("json", `{"result":{"code":0,"msg":"OK","msgcn":"OK"},"data":{"total":0,"rows":[]}}`, 200)
+response if ${request.method} == "GET" && ${url} ~= /^https:\/\/(?:sq\.iyunmai\.com\/api\/ios\/adlunbo\/list|restapi\.iyunmai\.com\/(?:community\/ios\/ad\/commentsHome|appapi\/ios\/tips\/list_dock))\.json(?:\?|$)/ then response.body.mock("json", `{"result":{"code":0,"msg":"OK","msgcn":"OK"},"data":[]}`, 200)
+response if ${request.method} == "POST" && ${url} ~= /^https:\/\/restapi\.iyunmai\.com\/ad-api\/ios\/ad\/statistic\.d(?:\?|$)/ then response.body.mock("json", `{"result":{"code":0,"msg":"OK","msgcn":"OK"},"data":null}`, 200)
+
+# 混合响应：仅处理成功响应和已确认的数据类型，保留错误及未知结构。
+response if ${request.method} == "GET" && ${url} ~= /^https:\/\/restapi\.iyunmai\.com\/appapi\/ios\/ad\/listByPositions\.json(?:\?|$)/ && ${response.status} == 200 then response.json.jq("if .result.code == 0 and (.data.positions | type) == \"array\" then .data.positions |= map(if (.ads | type) == \"array\" then .ads = [] else . end) else . end")
+# 首页 moduleType=210 为抓包中的商品推荐，保留其他模块及排序信息。
+response if ${request.method} == "GET" && ${url} ~= /^https:\/\/apisvr\.iyunmai\.com\/api\/ios\/first-page-module\/v3\/get\.json(?:\?|$)/ && ${response.status} == 200 then response.json.jq("if .result.code == 0 and (.data.moduleList | type) == \"array\" then .data.moduleList |= map(select(.moduleType != 210)) else . end")
+# 首页 tips 混有健康文章，只移除指向有赞商城的条目。
+response if ${request.method} == "GET" && ${url} ~= /^https:\/\/restapi\.iyunmai\.com\/api\/ios\/tips\/getFirstPageTips\.json(?:\?|$)/ && ${response.status} == 200 then response.json.jq("if .result.code == 0 and (.data | type) == \"array\" then .data |= map(select(((.schema // \"\") | startswith(\"haoqing://youzan?\")) | not)) else . end")
+
+[MitM]
+hostname = restapi.iyunmai.com, apisvr.iyunmai.com, sq.iyunmai.com
