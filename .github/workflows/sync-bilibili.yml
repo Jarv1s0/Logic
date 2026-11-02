@@ -1,0 +1,50 @@
+name: 同步 Sparkle B站插件
+
+on:
+  schedule:
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-bilibili
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'Jarv1s0/Logic'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 验证同步逻辑
+        run: python -m unittest discover -s scripts/tests -p 'test_sync_bilibili.py' -v
+      - name: 下载并合并上游
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/sync_bilibili.py
+      - name: 验证配套脚本语法
+        run: |
+          for script in Loon/Script/Bilibili/*.js; do
+            node --check "$script"
+          done
+      - name: 提交同步结果
+        run: |
+          git add -- Loon/bilibili.lpx Loon/Script/Bilibili .github/upstream/bilibili.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore(bilibili): sync Sparkle upstream'
+          git push origin HEAD:master
