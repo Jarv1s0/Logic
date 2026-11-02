@@ -1,7 +1,7 @@
 /**
  * 航旅纵横；基于 fmz200/wool_scripts 的 umetrip_ads.js，GPL-3.0，见 LICENSE。
  * 上游：4b7830670baf235ed945085cb926dc499cf619e0。
- * 本地修改（2026-11-02，20261102-5）：按截图清理会员模块及个人页下半区推广，
+ * 本地修改（2026-11-02，20261102-7）：清理会员模块、个人页推广及行程页会员条幅，
  * 过滤 HAR 确认的推广组，保留首页服务和未知字段；异常响应透传。
  */
 
@@ -84,7 +84,7 @@ function rewrite(bytes, visitor) {
 
 function isMember(item) {
   if (!item || typeof item !== 'object') return false;
-  if (item.department === 'equity') return true;
+  if (item.department === 'equity' || item.trackParam?.department === 'equity') return true;
   if (['title', 'serviceName', 'businessTitle'].some(key => typeof item[key] === 'string' && /会员|航旅会/.test(item[key]))) return true;
   return ['parameter', 'weexParams'].some(key => item[key] && /payMember|memberCardbag|memberequity\.umetrip\.com/i.test(JSON.stringify(item[key])));
 }
@@ -184,7 +184,7 @@ function main() {
   const headers = $request.headers || {};
   const key = Object.keys(headers).find(key => key.toLowerCase() === 'rpid');
   const rpid = headers[key];
-  const native = /^https?:\/\/(home\.umetrip\.com|umehome\.umetrip\.com|umerp\.umetrip\.com|sns\.umetrip\.com|opactivity\.umetrip\.com|114\.115\.217\.129)\/gateway\/api\/umetrip\/native(?:\?[^#]*)?$/i.exec($request.url || '');
+  const native = /^https?:\/\/(home\.umetrip\.com|umehome\.umetrip\.com|umerp\.umetrip\.com|sns\.umetrip\.com|opactivity\.umetrip\.com|activity\.umetrip\.com|114\.115\.217\.129)\/gateway\/api\/umetrip\/native(?:\?[^#]*)?$/i.exec($request.url || '');
   if (!native || typeof rpid !== 'string') return {};
   const host = native[1].toLowerCase();
   if (rpid === '1000019' && ['home.umetrip.com', 'umehome.umetrip.com', 'sns.umetrip.com', '114.115.217.129'].includes(host)) {
@@ -193,7 +193,8 @@ function main() {
   const home = rpid === '1000002' && ['home.umetrip.com', 'umehome.umetrip.com', '114.115.217.129'].includes(host);
   const waterfall = rpid === '1000029' && host === 'opactivity.umetrip.com';
   const member = ['1100001', '1370286'].includes(rpid) && host === 'umerp.umetrip.com';
-  if (!home && !waterfall && !member) return {};
+  const tripBanner = rpid === '1370126' && host === 'activity.umetrip.com';
+  if (!home && !waterfall && !member && !tripBanner) return {};
   const body = $response.body;
   if (!(body instanceof Uint8Array) && !(body instanceof ArrayBuffer)) return {};
   const bytes = body instanceof Uint8Array ? body : new Uint8Array(body);

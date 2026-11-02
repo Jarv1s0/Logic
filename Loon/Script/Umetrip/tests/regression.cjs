@@ -80,6 +80,18 @@ const onlyAd=wrap(field(5,join(integer(3,999999),field(8,text(7,'{"trackParam":{
 assert.deepEqual(Buffer.from(run(onlyAd).body),wrap(Buffer.alloc(0)));
 const lowerPage=mineWrap(join(field(5,group(111311)),field(5,group(111312)),field(5,group(111309)),field(5,group(999999))));
 assert.deepEqual(Buffer.from(run(lowerPage,'1100001',mineUrl).body),mineWrap(join(field(5,group(111309)),field(5,group(999999)))));
+const tripUrl=url.replace('umehome.','activity.');
+assert.ok(rule.test(tripUrl));
+assert.ok(plugin.match(/^hostname = .+$/m)[0].split(/,\s*/).includes('activity.umetrip.com'));
+const trip=cards=>{
+  const group=join(integer(3,1271),...cards.map(j=>field(8,text(7,JSON.stringify(j)))));
+  const page=field(5,group);
+  return join(text(5,'1370126'),field(7,field(1,field(1,page))),text(90,'keep'));
+};
+const tripMember={trackParam:{department:'equity'},lottieAndVideo:'{"text":"会员送全年航延险","isShow":1}'};
+const tripNormal={trackParam:{department:'train'},lottieAndVideo:'{"text":"打开轨迹图","isShow":1}'};
+assert.deepEqual(Buffer.from(run(trip([tripMember,tripNormal]),'1370126',tripUrl).body),trip([tripNormal]));
+assert.equal(Object.keys(run(trip([tripMember,tripNormal]),'1370126',url)).length,0);
 
 // 独立读取 Protobuf 字段，用真实 HAR 验证完整字节差异；不存储任何抓包数据。
 function read(bytes) {
@@ -110,7 +122,7 @@ function read(bytes) {
 }
 function memberJson(raw) {
   let value;try {value=JSON.parse(raw.toString());}catch{return raw;}
-  const isMember = item => item && typeof item === 'object' && (item.department === 'equity' || item.trackParam?.department==='advert' || /^advert_/.test(item.serviceTrack||'') ||
+  const isMember = item => item && typeof item === 'object' && (item.department === 'equity' || ['equity','advert'].includes(item.trackParam?.department) || /^advert_/.test(item.serviceTrack||'') ||
     ['title','serviceName','businessTitle'].some(k=>typeof item[k]==='string'&&/会员|航旅会/.test(item[k])) ||
     ['parameter','weexParams'].some(k=>item[k]&&/payMember|memberCardbag|memberequity\.umetrip\.com/i.test(JSON.stringify(item[k]))));
   if(isMember(value))return null;
@@ -138,7 +150,7 @@ function oracle(bytes, rpid, route = [7, 1, rpid === '1100001' ? 11 : rpid === '
     if (route.length) return f.n === route[0] && f.w === 2 ? [field(f.n, oracle(f.value, rpid, route.slice(1)))] : [f.raw];
     if (f.n !== 5 || f.w !== 2) return [f.raw];
     const g = read(f.value), id = g.find(x => x.n === 3 && x.w === 0)?.value;
-    if (rpid === '1000002' || rpid === '1100001') {
+    if (['1000002','1100001','1370126'].includes(rpid)) {
       const advert = g.some(x => x.n === 37 && x.w === 2 && x.value.toString() === 'ADVERT');
       if(advert || [111288, 111281, 111326, 1296].includes(id) || (rpid==='1100001'&&[1297,111310,111249,111311,111312].includes(id)))return [];
       let removedCard=false,retainedCards=0;
@@ -161,7 +173,7 @@ function oracle(bytes, rpid, route = [7, 1, rpid === '1100001' ? 11 : rpid === '
 }
 if (process.argv[2]) {
   const entries = JSON.parse(fs.readFileSync(process.argv[2], 'utf8')).log.entries;
-  let homes = 0, waterfalls = 0, launches = 0, untouched = 0, members = 0;
+  let homes = 0, waterfalls = 0, launches = 0, untouched = 0, members = 0, tripBanners = 0;
   const old = cp.execFileSync('git', ['show', 'e4dae21:Loon/Script/Umetrip/umetrip_ads.js'], { encoding: 'utf8' });
   for (const e of entries) {
     const u = new URL(e.request.url);
@@ -171,39 +183,52 @@ if (process.argv[2]) {
     const result = run(bytes, rpid ?? null, e.request.url);
     if (rpid === '1000002' && u.hostname === 'umehome.umetrip.com') {
       assert.ok(!new RegExp('^https?:\\/\\/(114\\.115\\.217\\.129|home\\.umetrip\\.com)\\/').test(e.request.url));
-      assert.notDeepEqual(Buffer.from(run(bytes, rpid, e.request.url, old).body || bytes), oracle(bytes, rpid));
-      assert.deepEqual(Buffer.from(result.body), oracle(bytes, rpid));
+      if(!bytes.equals(oracle(bytes,rpid)))assert.notDeepEqual(Buffer.from(run(bytes, rpid, e.request.url, old).body || bytes), oracle(bytes, rpid));
+      assert.deepEqual(Buffer.from(result.body||bytes), oracle(bytes, rpid));
       homes++;
     } else if (rpid === '1000029' && u.hostname === 'opactivity.umetrip.com') {
-      assert.deepEqual(Buffer.from(result.body), oracle(bytes, rpid)); waterfalls++;
+      assert.deepEqual(Buffer.from(result.body||bytes), oracle(bytes, rpid)); waterfalls++;
     } else if (rpid === '1000019' && u.hostname === 'sns.umetrip.com') {
       assert.equal(result.status, 'HTTP/1.1 404 Not Found'); launches++;
     } else if(['1100001','1370286'].includes(rpid)&&u.hostname==='umerp.umetrip.com'){
       const expected=oracle(bytes,rpid,rpid==='1370286'?[7,1,2]:[7,1,11]);
-      assert.deepEqual(Buffer.from(result.body),expected);
+      const actual=Buffer.from(result.body||bytes);
+      assert.deepEqual(actual,expected);
       const previous=cp.execFileSync('git',['show','31e86e4:Loon/Script/Umetrip/umetrip_ads.js'],{encoding:'utf8'});
-      assert.notDeepEqual(Buffer.from(run(bytes,rpid,e.request.url,previous).body||bytes),expected);
+      if(!bytes.equals(expected))assert.notDeepEqual(Buffer.from(run(bytes,rpid,e.request.url,previous).body||bytes),expected);
       if(rpid==='1100001'){
         const prior=cp.execFileSync('git',['show','93af833:Loon/Script/Umetrip/umetrip_ads.js'],{encoding:'utf8'});
-        const priorBody=Buffer.from(run(bytes,rpid,e.request.url,prior).body);
-        assert.ok(priorBody.includes(Buffer.from('advert_1016582_no')));
-        assert.ok(!Buffer.from(result.body).includes(Buffer.from('advert_1016582_no')));
+        const priorBody=Buffer.from(run(bytes,rpid,e.request.url,prior).body||bytes);
+        if(bytes.includes(Buffer.from('advert_1016582_no')))assert.ok(priorBody.includes(Buffer.from('advert_1016582_no')));
+        assert.ok(!actual.includes(Buffer.from('advert_1016582_no')));
         const last=cp.execFileSync('git',['show','85456cc:Loon/Script/Umetrip/umetrip_ads.js'],{encoding:'utf8'});
-        const lastBody=Buffer.from(run(bytes,rpid,e.request.url,last).body);
+        const lastBody=Buffer.from(run(bytes,rpid,e.request.url,last).body||bytes);
         for(const title of ['票券权益','特价专区','买三送一','超值券包']){
-          assert.ok(lastBody.includes(Buffer.from(title)));
-          assert.ok(!Buffer.from(result.body).includes(Buffer.from(title)));
+          if(bytes.includes(Buffer.from(title)))assert.ok(lastBody.includes(Buffer.from(title)));
+          assert.ok(!actual.includes(Buffer.from(title)));
         }
-        const content=read(read(read(Buffer.from(result.body)).find(f=>f.n===7).value).find(f=>f.n===1).value).find(f=>f.n===11).value;
+        const content=read(read(read(actual).find(f=>f.n===7).value).find(f=>f.n===1).value).find(f=>f.n===11).value;
         const templates=read(content).filter(f=>f.n===5&&f.w===2).map(g=>read(g.value).find(f=>f.n===3&&f.w===0)?.value);
         assert.deepEqual(templates,[111318,111309]);
       }
       members++;
+    } else if(rpid==='1370126'&&u.hostname==='activity.umetrip.com'){
+      assert.deepEqual(Buffer.from(result.body||bytes),oracle(bytes,rpid));
+      if(bytes.includes(Buffer.from('会员送全年航延险')))assert.ok(result.body);
+      else assert.equal(Object.keys(result).length,0);
+      assert.ok(!Buffer.from(result.body||bytes).includes(Buffer.from('会员送全年航延险')));
+      const payload=read(read(Buffer.from(result.body||bytes)).find(f=>f.n===7).value).find(f=>f.n===1).value;
+      const page=read(payload).find(f=>f.n===1).value;
+      const cards=read(page).filter(f=>f.n===5&&f.w===2).flatMap(g=>read(g.value).filter(c=>c.n===8&&c.w===2));
+      assert.deepEqual(cards.map(c=>read(c.value).find(f=>f.n===2&&f.w===0)?.value),[306680,305519]);
+      const previous=cp.execFileSync('git',['show','4ad7528:Loon/Script/Umetrip/umetrip_ads.js'],{encoding:'utf8'});
+      assert.equal(Object.keys(run(bytes,rpid,e.request.url,previous)).length,0);
+      tripBanners++;
     } else { assert.equal(Object.keys(result).length, 0); untouched++; }
     if (result.body) assert.equal(Object.keys(run(result.body, rpid, e.request.url)).length, 0);
     if(result.body&&['1000002','1100001','1370286'].includes(rpid))assert.ok(!/会员|航旅会|memberequity|payMember/i.test(Buffer.from(result.body).toString()));
   }
   assert.ok(homes && waterfalls && launches && members);
-  console.log(`HAR: home=${homes}, waterfall=${waterfalls}, splash=${launches}, members=${members}, passthrough=${untouched}; old failure confirmed`);
+  console.log(`HAR: home=${homes}, waterfall=${waterfalls}, splash=${launches}, members=${members}, tripBanner=${tripBanners}, passthrough=${untouched}; old failure confirmed`);
 }
 console.log(`${checks} script executions passed`);

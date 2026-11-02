@@ -60,18 +60,21 @@ if(process.argv[2]) {
   const bytes=Buffer.from(e.response.content.text,'base64');
   const files=zip.unzipSync(bytes),key='userCenter/pages/index/entry.js';
   const original=zip.strFromU8(files[key]);
-  const expected=verify(original);
+  const alreadyPatched=original.includes('/* Logic usercenter 20261102-6 */');
+  const expected=alreadyPatched?state.patchUsercenter(original):verify(original);
   const {result,logs}=context(bytes,e.request.url);
-  assert.ok(result.body,logs.join('\n'));
-  const rebuilt=zip.unzipSync(result.body);
+  if(alreadyPatched)assert.equal(Object.keys(result).length,0);
+  else assert.ok(result.body,logs.join('\n'));
+  const output=result.body||bytes;
+  const rebuilt=zip.unzipSync(output);
   assert.deepEqual(Object.keys(rebuilt),Object.keys(files));
   for(const name of Object.keys(files))assert.deepEqual(Buffer.from(rebuilt[name]),name===key?Buffer.from(expected):Buffer.from(files[name]),name);
-  assert.equal(Object.keys(context(result.body,e.request.url).result).length,0);
+  assert.equal(Object.keys(context(output,e.request.url).result).length,0);
   // 即使缓存数据仍包含广告，实际 render 也不再创建目标节点。
   for(const login of [1,2]) {
     const names=renderNames(expected,login);
     for(const name of [...components,'hlLogo'])assert.ok(!names.includes(name));
   }
-  console.log('HAR ZIP rebuilt: same entries, only entry.js content changed; real render hides 6 nodes and retains upper services');
+  console.log(alreadyPatched?'HAR ZIP already contains 20261102-6 patch; real render hides 6 nodes, response remains unchanged':'HAR ZIP rebuilt: same entries, only entry.js content changed; real render hides 6 nodes and retains upper services');
 }
 console.log('usercenter tests passed');
