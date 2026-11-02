@@ -1,10 +1,10 @@
 #!name=航旅纵横去广告
-#!desc=拦截开屏广告，过滤首页广告及推广卡片，保留服务入口、飞行回忆和航线图；详见说明
+#!desc=拦截开屏广告，过滤首页广告、推广卡片及会员模块，保留服务入口、飞行回忆和航线图；详见说明
 #!author=fmz200, Jarv1s0
 #!homepage=https://github.com/Jarv1s0/Logic/blob/master/Loon/Docs/umetrip.md
 #!raw-url=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/umetrip.plugin
 #!date=2026-11-02
-#!version=20261102-2
+#!version=20261102-3
 # 来源：https://github.com/fmz200/wool_scripts/blob/4b7830670baf235ed945085cb926dc499cf619e0/Loon/plugin/blockAdsV2.plugin
 # GPL-3.0；许可证见 Script/Umetrip/LICENSE
 # 本地适配于 2026-11-02：转换为 Loon 分节语法，修正协议和域名匹配边界。
@@ -13,8 +13,11 @@
 ^https:\/\/oss\.umetrip\.com\/fs\/advert\/polite reject-404
 ^https?:\/\/(discardrp|startup)\.umetrip\.com\/gateway\/api\/umetrip\/native reject-404
 
+# 会员权益图片及会员推广素材
+^https:\/\/oss\.umetrip\.com\/fs\/(equityCenter\/static|membership\/rights)\/ reject-404
+
 [Script]
-http-response ^https?:\/\/(114\.115\.217\.129|home\.umetrip\.com|umehome\.umetrip\.com|sns\.umetrip\.com|opactivity\.umetrip\.com)\/gateway\/api\/umetrip\/native(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Umetrip/umetrip_ads.js?v=20261102-2, requires-body=true, binary-body-mode=true, timeout=60, tag=航旅纵横
+http-response ^https?:\/\/(114\.115\.217\.129|umerp\.umetrip\.com|home\.umetrip\.com|umehome\.umetrip\.com|sns\.umetrip\.com|opactivity\.umetrip\.com)\/gateway\/api\/umetrip\/native(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Umetrip/umetrip_ads.js?v=20261102-3, requires-body=true, binary-body-mode=true, timeout=60, tag=航旅纵横
 
 [MITM]
-hostname = home.umetrip.com, umehome.umetrip.com, sns.umetrip.com, opactivity.umetrip.com, discardrp.umetrip.com, startup.umetrip.com, oss.umetrip.com
+hostname = umerp.umetrip.com, home.umetrip.com, umehome.umetrip.com, sns.umetrip.com, opactivity.umetrip.com, discardrp.umetrip.com, startup.umetrip.com, oss.umetrip.com

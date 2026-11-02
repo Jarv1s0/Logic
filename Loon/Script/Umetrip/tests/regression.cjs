@@ -51,6 +51,25 @@ assert.ok(rule.test(waterUrl));
 assert.ok(!rule.test('https://example.com/gateway/api/umetrip/native'));
 assert.ok(plugin.includes('binary-body-mode=true'));
 
+const mineUrl = url.replace('umehome.', 'umerp.');
+const mineWrap = page => join(text(5, '1100001'), field(7, field(1, field(11, page))), text(90, 'unknown'));
+assert.deepEqual(Buffer.from(run(mineWrap(join(field(5, group(1297)), field(5, group(111310)), kept)), '1100001', mineUrl).body), mineWrap(kept));
+const service = {children:[{cardId:'a',title:'航旅会',department:'equity'}, {cardId:'b',title:'常客卡'}, {cardId:'c',title:'里程兑会员'}, {cardId:'d',title:'客服'}], childrenIndex:{a:0,b:1,c:2,d:3}, unknown:'keep'};
+const serviceWrap = data => wrap(field(5, join(integer(3,111280), field(8, text(7, JSON.stringify(data))))));
+const expectedService = {children:[service.children[1],service.children[3]], childrenIndex:{b:0,d:1}, unknown:'keep'};
+assert.deepEqual(Buffer.from(run(serviceWrap(service)).body), serviceWrap(expectedService));
+assert.equal(Object.keys(run(serviceWrap(expectedService))).length,0);
+const malformedJson = wrap(field(5, join(integer(3,111280),field(8,text(7,'{invalid')))));
+assert.equal(Object.keys(run(malformedJson)).length,0);
+const memberWrap = value => join(text(5,'1370286'),field(7,field(1,value)),text(90,'unknown'));
+assert.deepEqual(Buffer.from(run(memberWrap(join(text(2,'member payload'),text(88,'keep'))),'1370286',mineUrl).body),memberWrap(text(88,'keep')));
+assert.equal(Object.keys(run(memberWrap(text(2,'member payload')),'1370286',url)).length,0);
+assert.ok(rule.test(mineUrl));
+const rejects = plugin.split(/\r?\n/).filter(line=>line.startsWith('^')).map(line=>new RegExp(line.split(' ')[0]));
+for(const asset of ['equityCenter/static/test','membership/rights/test'])assert.ok(rejects.some(re=>re.test('https://oss.umetrip.com/fs/'+asset)));
+assert.ok(!rejects.some(re=>re.test('https://oss.umetrip.com/fs/airline/logo/test')));
+assert.ok(!rejects.some(re=>re.test('https://oss.umetrip.com/fs/user/profilePicture/test')));
+
 // 独立读取 Protobuf 字段，用真实 HAR 验证完整字节差异；不存储任何抓包数据。
 function read(bytes) {
   let offset = 0;
@@ -78,14 +97,48 @@ function read(bytes) {
   }
   return out;
 }
-function oracle(bytes, rpid, route = [7, 1, rpid === '1000002' ? 2 : 1]) {
+function memberJson(raw) {
+  let value;try {value=JSON.parse(raw.toString());}catch{return raw;}
+  const isMember = item => item && typeof item === 'object' && (item.department === 'equity' ||
+    ['title','serviceName','businessTitle'].some(k=>typeof item[k]==='string'&&/会员|航旅会/.test(item[k])) ||
+    ['parameter','weexParams'].some(k=>item[k]&&/payMember|memberCardbag|memberequity\.umetrip\.com/i.test(JSON.stringify(item[k]))));
+  if(isMember(value))return null;
+  let changed=false;
+  function visit(v){
+    if(!v||!Array.isArray(v.children))return;
+    const original=v.children;
+    const retained=original.map((child,i)=>({child,i})).filter(x=>!isMember(x.child));
+    if(retained.length!==original.length){
+      changed=true;
+      if(v.childrenIndex&&typeof v.childrenIndex==='object'&&!Array.isArray(v.childrenIndex))for(const key of Object.keys(v.childrenIndex)){
+        const old=v.childrenIndex[key];if(!Number.isInteger(old)||old<0||old>=original.length)continue;
+        const next=retained.findIndex(x=>x.i===old);if(next<0)delete v.childrenIndex[key];else v.childrenIndex[key]=next;
+      }
+      v.children=retained.map(x=>x.child);
+    }
+    retained.forEach(x=>visit(x.child));
+  }
+  visit(value);return changed?Buffer.from(JSON.stringify(value)):raw;
+}
+function oracle(bytes, rpid, route = [7, 1, rpid === '1100001' ? 11 : rpid === '1000002' ? 2 : 1]) {
   return Buffer.concat(read(bytes).flatMap(f => {
+    if(route.length===1&&rpid==='1000002'&&f.n===27&&f.w===2)return [];
+    if(route.length===1&&rpid==='1370286'&&f.n===2&&f.w===2)return [];
     if (route.length) return f.n === route[0] && f.w === 2 ? [field(f.n, oracle(f.value, rpid, route.slice(1)))] : [f.raw];
     if (f.n !== 5 || f.w !== 2) return [f.raw];
     const g = read(f.value), id = g.find(x => x.n === 3 && x.w === 0)?.value;
-    if (rpid === '1000002') {
+    if (rpid === '1000002' || rpid === '1100001') {
       const advert = g.some(x => x.n === 37 && x.w === 2 && x.value.toString() === 'ADVERT');
-      return advert || [111288, 111281, 111326, 1296].includes(id) ? [] : [f.raw];
+      if(advert || [111288, 111281, 111326, 1296].includes(id) || (rpid==='1100001'&&[1297,111310].includes(id)))return [];
+      return [field(5,Buffer.concat(g.flatMap(c=>{
+        if(c.n!==8||c.w!==2)return [c.raw];
+        let drop=false;
+        const parts=read(c.value).map(j=>{
+          if(j.n!==7||j.w!==2)return j.raw;
+          const next=memberJson(j.value);if(next===null){drop=true;return j.raw;}return field(7,next);
+        });
+        return drop?[]:[field(8,Buffer.concat(parts))];
+      })))];
     }
     if (id !== 111286) return [f.raw];
     return [field(5, Buffer.concat(g.filter(c => c.n !== 8 || c.w !== 2 ||
@@ -94,14 +147,14 @@ function oracle(bytes, rpid, route = [7, 1, rpid === '1000002' ? 2 : 1]) {
 }
 if (process.argv[2]) {
   const entries = JSON.parse(fs.readFileSync(process.argv[2], 'utf8')).log.entries;
-  let homes = 0, waterfalls = 0, launches = 0, untouched = 0;
+  let homes = 0, waterfalls = 0, launches = 0, untouched = 0, members = 0;
   const old = cp.execFileSync('git', ['show', 'e4dae21:Loon/Script/Umetrip/umetrip_ads.js'], { encoding: 'utf8' });
   for (const e of entries) {
     const u = new URL(e.request.url);
     if (!/(^|\.)umetrip\.com$/.test(u.hostname)) continue;
     const rpid = e.request.headers.find(h => h.name.toLowerCase() === 'rpid')?.value;
     const c = e.response.content, bytes = c.encoding === 'base64' ? Buffer.from(c.text || '', 'base64') : Buffer.from(c.text || '');
-    const result = run(bytes, rpid, e.request.url);
+    const result = run(bytes, rpid ?? null, e.request.url);
     if (rpid === '1000002' && u.hostname === 'umehome.umetrip.com') {
       assert.ok(!new RegExp('^https?:\\/\\/(114\\.115\\.217\\.129|home\\.umetrip\\.com)\\/').test(e.request.url));
       assert.notDeepEqual(Buffer.from(run(bytes, rpid, e.request.url, old).body || bytes), oracle(bytes, rpid));
@@ -111,10 +164,17 @@ if (process.argv[2]) {
       assert.deepEqual(Buffer.from(result.body), oracle(bytes, rpid)); waterfalls++;
     } else if (rpid === '1000019' && u.hostname === 'sns.umetrip.com') {
       assert.equal(result.status, 'HTTP/1.1 404 Not Found'); launches++;
+    } else if(['1100001','1370286'].includes(rpid)&&u.hostname==='umerp.umetrip.com'){
+      const expected=oracle(bytes,rpid,rpid==='1370286'?[7,1,2]:[7,1,11]);
+      assert.deepEqual(Buffer.from(result.body),expected);
+      const previous=cp.execFileSync('git',['show','31e86e4:Loon/Script/Umetrip/umetrip_ads.js'],{encoding:'utf8'});
+      assert.notDeepEqual(Buffer.from(run(bytes,rpid,e.request.url,previous).body||bytes),expected);
+      members++;
     } else { assert.equal(Object.keys(result).length, 0); untouched++; }
     if (result.body) assert.equal(Object.keys(run(result.body, rpid, e.request.url)).length, 0);
+    if(result.body&&['1000002','1100001','1370286'].includes(rpid))assert.ok(!/会员|航旅会|memberequity|payMember/i.test(Buffer.from(result.body).toString()));
   }
-  assert.ok(homes && waterfalls && launches);
-  console.log(`HAR: home=${homes}, waterfall=${waterfalls}, splash=${launches}, passthrough=${untouched}; old failure confirmed`);
+  assert.ok(homes && waterfalls && launches && members);
+  console.log(`HAR: home=${homes}, waterfall=${waterfalls}, splash=${launches}, members=${members}, passthrough=${untouched}; old failure confirmed`);
 }
 console.log(`${checks} script executions passed`);
