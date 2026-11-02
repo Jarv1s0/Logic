@@ -7,6 +7,8 @@
 
 另维护独立的 Loon 插件，不能导入 Mihomo / Clash。
 
+- [Google 搜索重定向](Loon/GoogleRedirect.lpx)：将指定 Google 地区搜索入口重定向到 `www.google.com`，保留搜索词和参数；[支持域名、安装与验证边界](Loon/Docs/google-redirect.md)。
+
 - [航旅纵横去广告](Loon/umetrip.plugin)：基于 fmz200 合集，适配新版域名，过滤首页 Protobuf 广告、推广卡片及会员模块；[安装、来源与验证边界](Loon/Docs/umetrip.md)。该插件及脚本使用 GPL-3.0，见其独立许可证。
 
 - [高德地图净化插件](Loon/Amap_remove_ads.lpx)：清理广告与推广，保留正常搜索结果及服务功能。

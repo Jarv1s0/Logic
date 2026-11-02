@@ -1,0 +1,15 @@
+#!name=Google 搜索重定向
+#!desc=将指定 Google 地区域名的首页及搜索入口重定向到 www.google.com，保留路径与查询参数。需启用 MitM 并信任证书；不固定搜索地区。
+#!author=Jarv1s0
+#!homepage=https://github.com/Jarv1s0/Logic/blob/master/Loon/Docs/google-redirect.md
+#!raw-url=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/GoogleRedirect.lpx
+#!tag=Google
+#!date=2026-11-02
+
+# 仅处理首页、/search 和 /webhp；不匹配账户、地图等其他路径或子域名。
+# 目标不包含 www.google.com，避免本插件产生重定向循环。
+[Rewrite]
+^https?://(?:www\.)?(?:g\.cn|google\.(?:cn|com\.hk|co\.jp|co\.uk|fr|de|com\.tw|com\.sg|com\.au|co\.kr|co\.in|ca))((?:/(?:search|webhp)?)?(?:\?[^#]*)?)$ 302 https://www.google.com$1
+
+[MitM]
+hostname = g.cn, www.g.cn, google.cn, www.google.cn, google.com.hk, www.google.com.hk, google.co.jp, www.google.co.jp, google.co.uk, www.google.co.uk, google.fr, www.google.fr, google.de, www.google.de, google.com.tw, www.google.com.tw, google.com.sg, www.google.com.sg, google.com.au, www.google.com.au, google.co.kr, www.google.co.kr, google.co.in, www.google.co.in, google.ca, www.google.ca
