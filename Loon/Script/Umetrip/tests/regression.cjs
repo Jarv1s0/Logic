@@ -92,6 +92,14 @@ const tripMember={trackParam:{department:'equity'},lottieAndVideo:'{"text":"会�
 const tripNormal={trackParam:{department:'train'},lottieAndVideo:'{"text":"打开轨迹图","isShow":1}'};
 assert.deepEqual(Buffer.from(run(trip([tripMember,tripNormal]),'1370126',tripUrl).body),trip([tripNormal]));
 assert.equal(Object.keys(run(trip([tripMember,tripNormal]),'1370126',url)).length,0);
+const resourceUrl='https://user.umetrip.com/weex/userCenter/userCenter.wume';
+const resourceRecord=(name='userCenter',hash='35de5869c1b8b4dbf3a09b81cf1c53c5',download=resourceUrl)=>
+  join(text(3,name),text(4,hash),text(5,download),integer(9,10214),text(14,'keep Harmony URL'),text(15,'keep Harmony MD5'),text(60,'unknown metadata'));
+const resourceWrap=record=>join(text(5,'1000015'),field(7,join(field(1,record),text(50,'unknown envelope'))),text(90,'unknown root'));
+const resourceInput=resourceWrap(resourceRecord());
+assert.deepEqual(Buffer.from(run(resourceInput,'1000015',mineUrl).body),resourceWrap(resourceRecord('userCenter','687060e35bdf2c0d03dab71c44c7e7dd',resourceUrl+'?logic_uc=20261102-8')));
+for(const record of [resourceRecord('otherPage'),resourceRecord('userCenter','unknown checksum')])assert.equal(Object.keys(run(resourceWrap(record),'1000015',mineUrl)).length,0);
+assert.equal(Object.keys(run(resourceInput,'1000015',url)).length,0);
 
 // 独立读取 Protobuf 字段，用真实 HAR 验证完整字节差异；不存储任何抓包数据。
 function read(bytes) {
@@ -224,6 +232,10 @@ if (process.argv[2]) {
       const previous=cp.execFileSync('git',['show','4ad7528:Loon/Script/Umetrip/umetrip_ads.js'],{encoding:'utf8'});
       assert.equal(Object.keys(run(bytes,rpid,e.request.url,previous)).length,0);
       tripBanners++;
+    } else if(rpid==='1000015'&&u.hostname==='umerp.umetrip.com'&&bytes.includes(Buffer.from('userCenter'))){
+      assert.ok(result.body);
+      assert.ok(Buffer.from(result.body).includes(Buffer.from('687060e35bdf2c0d03dab71c44c7e7dd')));
+      assert.ok(Buffer.from(result.body).includes(Buffer.from('?logic_uc=20261102-8')));
     } else { assert.equal(Object.keys(result).length, 0); untouched++; }
     if (result.body) assert.equal(Object.keys(run(result.body, rpid, e.request.url)).length, 0);
     if(result.body&&['1000002','1100001','1370286'].includes(rpid))assert.ok(!/会员|航旅会|memberequity|payMember/i.test(Buffer.from(result.body).toString()));
