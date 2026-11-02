@@ -1,7 +1,7 @@
 /**
  * 航旅纵横；基于 fmz200/wool_scripts 的 umetrip_ads.js，GPL-3.0，见 LICENSE。
  * 上游：4b7830670baf235ed945085cb926dc499cf619e0。
- * 本地修改（2026-11-02，20261102-4）：适配新域名与 Protobuf，清理会员模块及个人页条幅，
+ * 本地修改（2026-11-02，20261102-5）：按截图清理会员模块及个人页下半区推广，
  * 过滤 HAR 确认的推广组，保留首页服务和未知字段；异常响应透传。
  */
 
@@ -145,7 +145,8 @@ function cleanPage(bytes, waterfall, mine = false) {
       const advert = group.some(f => f.number === 37 && f.wire === 2 && matchesAscii(f.value, 'ADVERT'));
       // 商城虚拟卡、机票直销、发现目的地、回归礼包；保留服务入口和飞行回忆。
       if (advert || [111288, 111281, 111326, 1296].includes(template)) return null;
-      if (mine && [1297, 111310, 111249].includes(template)) return null;
+      // “我的”页：会员、礼金中心、广告条幅、票券权益及底部三个推广入口。
+      if (mine && [1297, 111310, 111249, 111311, 111312].includes(template)) return null;
       const cleaned = rewrite(field.value, card => card.number === 8 && card.wire === 2 ? cleanServiceCard(card.value) : card.value);
       // 所有可见卡片均被过滤时移除空广告组，避免留下条幅占位。
       if (cleaned !== field.value && !fields(cleaned).some(card => card.number === 8 && card.wire === 2)) return null;

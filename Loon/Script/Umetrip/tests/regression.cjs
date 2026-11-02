@@ -78,6 +78,8 @@ for(const ad of [{trackParam:{department:'advert'}},{serviceTrack:'advert_123_no
 }
 const onlyAd=wrap(field(5,join(integer(3,999999),field(8,text(7,'{"trackParam":{"department":"advert"}}')))));
 assert.deepEqual(Buffer.from(run(onlyAd).body),wrap(Buffer.alloc(0)));
+const lowerPage=mineWrap(join(field(5,group(111311)),field(5,group(111312)),field(5,group(111309)),field(5,group(999999))));
+assert.deepEqual(Buffer.from(run(lowerPage,'1100001',mineUrl).body),mineWrap(join(field(5,group(111309)),field(5,group(999999)))));
 
 // 独立读取 Protobuf 字段，用真实 HAR 验证完整字节差异；不存储任何抓包数据。
 function read(bytes) {
@@ -138,7 +140,7 @@ function oracle(bytes, rpid, route = [7, 1, rpid === '1100001' ? 11 : rpid === '
     const g = read(f.value), id = g.find(x => x.n === 3 && x.w === 0)?.value;
     if (rpid === '1000002' || rpid === '1100001') {
       const advert = g.some(x => x.n === 37 && x.w === 2 && x.value.toString() === 'ADVERT');
-      if(advert || [111288, 111281, 111326, 1296].includes(id) || (rpid==='1100001'&&[1297,111310,111249].includes(id)))return [];
+      if(advert || [111288, 111281, 111326, 1296].includes(id) || (rpid==='1100001'&&[1297,111310,111249,111311,111312].includes(id)))return [];
       let removedCard=false,retainedCards=0;
       const output=Buffer.concat(g.flatMap(c=>{
         if(c.n!==8||c.w!==2)return [c.raw];
@@ -186,6 +188,15 @@ if (process.argv[2]) {
         const priorBody=Buffer.from(run(bytes,rpid,e.request.url,prior).body);
         assert.ok(priorBody.includes(Buffer.from('advert_1016582_no')));
         assert.ok(!Buffer.from(result.body).includes(Buffer.from('advert_1016582_no')));
+        const last=cp.execFileSync('git',['show','85456cc:Loon/Script/Umetrip/umetrip_ads.js'],{encoding:'utf8'});
+        const lastBody=Buffer.from(run(bytes,rpid,e.request.url,last).body);
+        for(const title of ['票券权益','特价专区','买三送一','超值券包']){
+          assert.ok(lastBody.includes(Buffer.from(title)));
+          assert.ok(!Buffer.from(result.body).includes(Buffer.from(title)));
+        }
+        const content=read(read(read(Buffer.from(result.body)).find(f=>f.n===7).value).find(f=>f.n===1).value).find(f=>f.n===11).value;
+        const templates=read(content).filter(f=>f.n===5&&f.w===2).map(g=>read(g.value).find(f=>f.n===3&&f.w===0)?.value);
+        assert.deepEqual(templates,[111318,111309]);
       }
       members++;
     } else { assert.equal(Object.keys(result).length, 0); untouched++; }
