@@ -1,7 +1,7 @@
 #!name = 小红书净化增强
 #!desc = 合并广告净化、搜索清理、去水印、下载解锁与画质增强
 #!author = Jarv1s0
-#!date = 2026-11-02 04:41:11
+#!date = 2026-11-02 11:42:35
 
 [Argument]
 xhs_enable = switch,true,false,tag=小红书脚本开关
