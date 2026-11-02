@@ -1,7 +1,7 @@
 /**
  * 航旅纵横；基于 fmz200/wool_scripts 的 umetrip_ads.js，GPL-3.0，见 LICENSE。
  * 上游：4b7830670baf235ed945085cb926dc499cf619e0。
- * 本地修改（2026-11-02，20261102-8）：清理会员模块、个人页推广及行程页会员条幅，
+ * 本地修改（2026-11-02，20261102-9）：清理会员模块、个人页推广及行程页会员条幅，
  * 过滤 HAR 确认的推广组，保留首页服务和未知字段；异常响应透传。
  */
 
@@ -80,31 +80,6 @@ function rewrite(bytes, visitor) {
     return concat([encodeVarint(field.number * 8 + 2), encodeVarint(next.length), next]);
   });
   return changed ? concat(parts) : bytes;
-}
-
-// 已核实的个人页包；资源脚本构建时复用此记录，避免清单与包各自维护。
-const usercenterPackage = {
-  originalMd5: '35de5869c1b8b4dbf3a09b81cf1c53c5',
-  md5: '687060e35bdf2c0d03dab71c44c7e7dd',
-  size: 356282,
-  etag: '"6ae21651-54aa0"'
-};
-
-function cleanResourceMetadata(bytes) {
-  return rewrite(bytes, envelope => envelope.number !== 7 || envelope.wire !== 2 ? envelope.value :
-    rewrite(envelope.value, data => {
-      if (data.number !== 1 || data.wire !== 2) return data.value;
-      const items = fields(data.value);
-      const ascii = (number, text) => items.some(f => f.number === number && f.wire === 2 && matchesAscii(f.value, text));
-      // 仅改已核实的个人页wume记录，其他资源及Harmony包信息逐字节保留。
-      if (!ascii(3, 'userCenter') || !ascii(4, usercenterPackage.originalMd5) ||
-          !ascii(5, 'https://user.umetrip.com/weex/userCenter/userCenter.wume')) return data.value;
-      return rewrite(data.value, f => {
-        if (f.number === 4 && f.wire === 2) return new Uint8Array([...usercenterPackage.md5].map(c => c.charCodeAt(0)));
-        if (f.number === 5 && f.wire === 2) return concat([f.value, new Uint8Array([...'?logic_uc=20261102-8'].map(c => c.charCodeAt(0)))]);
-        return f.value;
-      });
-    }));
 }
 
 function isMember(item) {
@@ -219,12 +194,11 @@ function main() {
   const waterfall = rpid === '1000029' && host === 'opactivity.umetrip.com';
   const member = ['1100001', '1370286'].includes(rpid) && host === 'umerp.umetrip.com';
   const tripBanner = rpid === '1370126' && host === 'activity.umetrip.com';
-  const resource = rpid === '1000015' && host === 'umerp.umetrip.com';
-  if (!home && !waterfall && !member && !tripBanner && !resource) return {};
+  if (!home && !waterfall && !member && !tripBanner) return {};
   const body = $response.body;
   if (!(body instanceof Uint8Array) && !(body instanceof ArrayBuffer)) return {};
   const bytes = body instanceof Uint8Array ? body : new Uint8Array(body);
-  const cleaned = resource ? cleanResourceMetadata(bytes) : cleanEnvelope(bytes, rpid);
+  const cleaned = cleanEnvelope(bytes, rpid);
   return cleaned === bytes ? {} : { body: cleaned };
 }
 
