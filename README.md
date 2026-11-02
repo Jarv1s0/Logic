@@ -7,6 +7,8 @@
 
 另维护独立的 Loon 插件，不能导入 Mihomo / Clash。
 
+- [航旅纵横去广告](Loon/umetrip.plugin)：同步 fmz200 合集中的请求拦截及响应脚本；[安装、来源与首页横幅误杀风险](Loon/Docs/umetrip.md)。该插件及脚本使用 GPL-3.0，见其独立许可证。
+
 - [高德地图净化插件](Loon/Amap_remove_ads.lpx)：清理广告与推广，保留正常搜索结果及服务功能。
 - [安装、修改边界与上游来源](Loon/Docs/amap.md)。
 - [YouTube 插件](Loon/YouTube.lpx)：去广告、后台播放、已有字幕翻译及频道屏蔽；[安装说明与上游来源](Loon/Docs/youtube.md)。
