@@ -1,7 +1,7 @@
 /**
  * 航旅纵横；基于 fmz200/wool_scripts 的 umetrip_ads.js，GPL-3.0，见 LICENSE。
  * 上游：4b7830670baf235ed945085cb926dc499cf619e0。
- * 本地修改（2026-11-02，20261102-3）：适配新域名与 Protobuf，清理会员模块，
+ * 本地修改（2026-11-02，20261102-4）：适配新域名与 Protobuf，清理会员模块及个人页条幅，
  * 过滤 HAR 确认的推广组，保留首页服务和未知字段；异常响应透传。
  */
 
@@ -89,13 +89,20 @@ function isMember(item) {
   return ['parameter', 'weexParams'].some(key => item[key] && /payMember|memberCardbag|memberequity\.umetrip\.com/i.test(JSON.stringify(item[key])));
 }
 
+function isAdvertising(item) {
+  return item && typeof item === 'object' && (
+    item.trackParam?.department === 'advert' ||
+    (typeof item.serviceTrack === 'string' && /^advert_/.test(item.serviceTrack))
+  );
+}
+
 function cleanChildren(item) {
   if (!item || typeof item !== 'object' || !Array.isArray(item.children)) return false;
   const indices = new Map();
   let changed = false;
   const kept = [];
   item.children.forEach((child, index) => {
-    if (isMember(child)) { changed = true; return; }
+    if (isMember(child) || isAdvertising(child)) { changed = true; return; }
     indices.set(index, kept.length);
     if (cleanChildren(child)) changed = true;
     kept.push(child);
@@ -114,19 +121,19 @@ function cleanChildren(item) {
 }
 
 function cleanServiceCard(bytes) {
-  let member = false;
+  let blocked = false;
   const cleaned = rewrite(bytes, field => {
     if (field.number !== 7 || field.wire !== 2) return field.value;
     // Loon 环境无需 TextDecoder；仅解码已确认的 UTF-8 JSON 字段。
     let item;
     try { item = JSON.parse(decodeURIComponent(Array.from(field.value, byte => '%' + byte.toString(16).padStart(2, '0')).join(''))); }
     catch (_) { return field.value; }
-    if (isMember(item)) { member = true; return field.value; }
+    if (isMember(item) || isAdvertising(item)) { blocked = true; return field.value; }
     if (!cleanChildren(item)) return field.value;
     const encoded = encodeURIComponent(JSON.stringify(item));
     return new Uint8Array(encoded.match(/%[0-9A-F]{2}|./g).map(char => char[0] === '%' ? parseInt(char.slice(1), 16) : char.charCodeAt(0)));
   });
-  return member ? null : cleaned;
+  return blocked ? null : cleaned;
 }
 
 function cleanPage(bytes, waterfall, mine = false) {
@@ -138,8 +145,11 @@ function cleanPage(bytes, waterfall, mine = false) {
       const advert = group.some(f => f.number === 37 && f.wire === 2 && matchesAscii(f.value, 'ADVERT'));
       // 商城虚拟卡、机票直销、发现目的地、回归礼包；保留服务入口和飞行回忆。
       if (advert || [111288, 111281, 111326, 1296].includes(template)) return null;
-      if (mine && [1297, 111310].includes(template)) return null;
-      return rewrite(field.value, card => card.number === 8 && card.wire === 2 ? cleanServiceCard(card.value) : card.value);
+      if (mine && [1297, 111310, 111249].includes(template)) return null;
+      const cleaned = rewrite(field.value, card => card.number === 8 && card.wire === 2 ? cleanServiceCard(card.value) : card.value);
+      // 所有可见卡片均被过滤时移除空广告组，避免留下条幅占位。
+      if (cleaned !== field.value && !fields(cleaned).some(card => card.number === 8 && card.wire === 2)) return null;
+      return cleaned;
     } else if (template === 111286) {
       // 保留机场概览和未来未知卡，过滤已确认的酒店、特价机票、租车、权益及内容推荐。
       return rewrite(field.value, card => {

@@ -69,6 +69,15 @@ const rejects = plugin.split(/\r?\n/).filter(line=>line.startsWith('^')).map(lin
 for(const asset of ['equityCenter/static/test','membership/rights/test'])assert.ok(rejects.some(re=>re.test('https://oss.umetrip.com/fs/'+asset)));
 assert.ok(!rejects.some(re=>re.test('https://oss.umetrip.com/fs/airline/logo/test')));
 assert.ok(!rejects.some(re=>re.test('https://oss.umetrip.com/fs/user/profilePicture/test')));
+const bannerPage = mineWrap(join(field(5,group(111249)),kept));
+assert.deepEqual(Buffer.from(run(bannerPage,'1100001',mineUrl).body),mineWrap(kept));
+for(const ad of [{trackParam:{department:'advert'}},{serviceTrack:'advert_123_no'}]){
+  const mixed = wrap(field(5,join(integer(3,999999),field(8,text(7,JSON.stringify(ad))),field(8,text(7,'{"title":"客服"}')))));
+  const expected = wrap(field(5,join(integer(3,999999),field(8,text(7,'{"title":"客服"}')))));
+  assert.deepEqual(Buffer.from(run(mixed).body),expected);
+}
+const onlyAd=wrap(field(5,join(integer(3,999999),field(8,text(7,'{"trackParam":{"department":"advert"}}')))));
+assert.deepEqual(Buffer.from(run(onlyAd).body),wrap(Buffer.alloc(0)));
 
 // 独立读取 Protobuf 字段，用真实 HAR 验证完整字节差异；不存储任何抓包数据。
 function read(bytes) {
@@ -99,7 +108,7 @@ function read(bytes) {
 }
 function memberJson(raw) {
   let value;try {value=JSON.parse(raw.toString());}catch{return raw;}
-  const isMember = item => item && typeof item === 'object' && (item.department === 'equity' ||
+  const isMember = item => item && typeof item === 'object' && (item.department === 'equity' || item.trackParam?.department==='advert' || /^advert_/.test(item.serviceTrack||'') ||
     ['title','serviceName','businessTitle'].some(k=>typeof item[k]==='string'&&/会员|航旅会/.test(item[k])) ||
     ['parameter','weexParams'].some(k=>item[k]&&/payMember|memberCardbag|memberequity\.umetrip\.com/i.test(JSON.stringify(item[k]))));
   if(isMember(value))return null;
@@ -129,16 +138,19 @@ function oracle(bytes, rpid, route = [7, 1, rpid === '1100001' ? 11 : rpid === '
     const g = read(f.value), id = g.find(x => x.n === 3 && x.w === 0)?.value;
     if (rpid === '1000002' || rpid === '1100001') {
       const advert = g.some(x => x.n === 37 && x.w === 2 && x.value.toString() === 'ADVERT');
-      if(advert || [111288, 111281, 111326, 1296].includes(id) || (rpid==='1100001'&&[1297,111310].includes(id)))return [];
-      return [field(5,Buffer.concat(g.flatMap(c=>{
+      if(advert || [111288, 111281, 111326, 1296].includes(id) || (rpid==='1100001'&&[1297,111310,111249].includes(id)))return [];
+      let removedCard=false,retainedCards=0;
+      const output=Buffer.concat(g.flatMap(c=>{
         if(c.n!==8||c.w!==2)return [c.raw];
         let drop=false;
         const parts=read(c.value).map(j=>{
           if(j.n!==7||j.w!==2)return j.raw;
           const next=memberJson(j.value);if(next===null){drop=true;return j.raw;}return field(7,next);
         });
-        return drop?[]:[field(8,Buffer.concat(parts))];
-      })))];
+        if(drop){removedCard=true;return [];}
+        retainedCards++;return [field(8,Buffer.concat(parts))];
+      }));
+      return removedCard&&!retainedCards?[]:[field(5,output)];
     }
     if (id !== 111286) return [f.raw];
     return [field(5, Buffer.concat(g.filter(c => c.n !== 8 || c.w !== 2 ||
@@ -169,6 +181,12 @@ if (process.argv[2]) {
       assert.deepEqual(Buffer.from(result.body),expected);
       const previous=cp.execFileSync('git',['show','31e86e4:Loon/Script/Umetrip/umetrip_ads.js'],{encoding:'utf8'});
       assert.notDeepEqual(Buffer.from(run(bytes,rpid,e.request.url,previous).body||bytes),expected);
+      if(rpid==='1100001'){
+        const prior=cp.execFileSync('git',['show','93af833:Loon/Script/Umetrip/umetrip_ads.js'],{encoding:'utf8'});
+        const priorBody=Buffer.from(run(bytes,rpid,e.request.url,prior).body);
+        assert.ok(priorBody.includes(Buffer.from('advert_1016582_no')));
+        assert.ok(!Buffer.from(result.body).includes(Buffer.from('advert_1016582_no')));
+      }
       members++;
     } else { assert.equal(Object.keys(result).length, 0); untouched++; }
     if (result.body) assert.equal(Object.keys(run(result.body, rpid, e.request.url)).length, 0);
