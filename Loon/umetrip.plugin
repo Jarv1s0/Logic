@@ -1,9 +1,10 @@
 #!name=航旅纵横去广告
-#!desc=版本20261102-7；更新于2026-11-02 13:08:56（北京时间）；过滤广告及会员模块，移除个人页推广容器和行程页会员航延险条幅
+#!desc=版本20261102-7；更新于2026-11-02 13:12:09（北京时间）；过滤广告及会员模块，移除个人页推广容器和行程页会员航延险条幅
 #!author=fmz200, Jarv1s0
+#!icon=https://raw.githubusercontent.com/lige47/lige_icon/main/icon/03CNSoft/hanglvzonghengumetrip.png
 #!homepage=https://github.com/Jarv1s0/Logic/blob/master/Loon/Docs/umetrip.md
 #!raw-url=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/umetrip.plugin
-#!date=2026-11-02 13:08:56
+#!date=2026-11-02 13:12:09
 #!version=20261102-7
 # 来源：https://github.com/fmz200/wool_scripts/blob/4b7830670baf235ed945085cb926dc499cf619e0/Loon/plugin/blockAdsV2.plugin
 # GPL-3.0；许可证见 Script/Umetrip/LICENSE
