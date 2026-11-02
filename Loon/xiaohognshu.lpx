@@ -1,7 +1,7 @@
 #!name = 小红书净化增强
 #!desc = 合并广告净化、搜索清理、去水印、下载解锁与画质增强
 #!author = Jarv1s0
-#!date = 2026-10-26 00:00:00
+#!date = 2026-11-02 04:41:11
 
 [Argument]
 xhs_enable = switch,true,false,tag=小红书脚本开关
@@ -26,13 +26,14 @@ AND,((PROTOCOL,QUIC),(DOMAIN-SUFFIX,xiaohongshu.com)),REJECT
 ^https?:\/\/referee\.xiaohongshu\.com\/v\d+\/(?:stateReport|third\/collect) reject
 
 [Script]
-http-response ^https?:\/\/(?:edith|rec|www)\.(?:xiaohongshu|rnote)\.com\/api\/sns\/v\d+\/(?:homefeed|localfeed|followfeed)\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Xiaohongshu/xiaohongshu.js,requires-body=true,timeout=60,tag=小红书信息流,enable={xhs_enable}
-http-response ^https?:\/\/(?:edith|rec|www)\.(?:xiaohongshu|rnote)\.com\/api\/sns\/v\d+\/note\/(?:imagefeed|videofeed|feed|live_photo\/save)\?? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Xiaohongshu/xiaohongshu.js,requires-body=true,timeout=60,tag=小红书下载与去水印,enable={xhs_enable}
-http-response ^https?:\/\/(?:edith|rec|www)\.(?:xiaohongshu|rnote)\.com\/api\/sns\/v\d+\/search\/(?:banner|hot_list|hint|trending|notes)\?? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Xiaohongshu/xiaohongshu.js,requires-body=true,timeout=60,tag=小红书搜索,enable={xhs_enable}
+http-response ^https?:\/\/(?:edith|rec|www)\.(?:xiaohongshu|rnote)\.com\/api\/sns\/v\d+\/(?:homefeed|localfeed|followfeed|user\/followings\/followfeed)\? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Xiaohongshu/xiaohongshu.js,requires-body=true,timeout=60,tag=小红书信息流,enable={xhs_enable}
+http-response ^https?:\/\/(?:edith|rec|www)\.(?:xiaohongshu|rnote)\.com\/api\/sns\/v\d+\/note\/(?:imagefeed|videofeed|feed|live_photo\/save|video\/save)\?? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Xiaohongshu/xiaohongshu.js,requires-body=true,timeout=60,tag=小红书下载与去水印,enable={xhs_enable}
+http-response ^https?:\/\/(?:edith|rec|www|so)\.(?:xiaohongshu|rnote)\.com\/api\/sns\/v\d+\/search\/(?:banner|hot_list|hint|trending|notes)\?? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Xiaohongshu/xiaohongshu.js,requires-body=true,timeout=60,tag=小红书搜索,enable={xhs_enable}
 http-response ^https?:\/\/edith\.(?:xiaohongshu|rnote)\.com\/api\/sns\/v\d+\/system_service\/(?:config|splash_config)\?? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Xiaohongshu/xiaohongshu.js,requires-body=true,timeout=60,tag=小红书开屏,enable={xhs_enable}
 http-response ^https?:\/\/edith\.(?:xiaohongshu|rnote)\.com\/api\/sns\/v\d+\/note\/widgets\?? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Xiaohongshu/xiaohongshu.js,requires-body=true,timeout=60,tag=小红书详情,enable={xhs_enable}
 http-response ^https?:\/\/edith\.(?:xiaohongshu|rnote)\.com\/api\/sns\/v\d+\/note\/comment\/(?:list|sub_comments)\?? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Xiaohongshu/xiaohongshu.js,requires-body=true,timeout=60,tag=小红书评论,enable={xhs_enable}
 http-response ^https?:\/\/edith\.(?:xiaohongshu|rnote)\.com\/api\/sns\/v\d+\/recommend\/user\/follow_recommend\?? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Xiaohongshu/xiaohongshu.js,requires-body=true,timeout=60,tag=小红书推荐,enable={xhs_enable}
+http-response ^https?:\/\/edith\.(?:xiaohongshu|rnote)\.com\/api\/sns\/v\d+\/interaction\/comment\/video\/download\?? script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Xiaohongshu/xiaohongshu.js,requires-body=true,timeout=60,tag=小红书评论媒体去水印,enable={xhs_enable}
 
 [MitM]
 hostname = edith.xiaohongshu.com,rec.xiaohongshu.com,www.xiaohongshu.com,so.xiaohongshu.com,ci.xiaohongshu.com,live-go.xiaohongshu.com,live-mall.xiaohongshu.com,live-room.xiaohongshu.com,referee.xiaohongshu.com,search.xiaohongshu.com,edith.rnote.com,rec.rnote.com,www.rnote.com,ci.rnote.com,so.rnote.com
