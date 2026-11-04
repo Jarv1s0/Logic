@@ -8,7 +8,7 @@
 #!system = iOS, iPadOS
 #!system_version =
 #!loon_version =
-#!date=2026-10-28
+#!date=2026-11-04 11:57:38
 #############################################
 # > reject(404)       返回 HTTP 404，不附带额外内容
 # > reject(200)       返回 HTTP 200，不附带额外内容

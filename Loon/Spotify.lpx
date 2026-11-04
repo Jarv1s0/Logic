@@ -6,7 +6,7 @@
 #!loon_version = 3.5.1(978)
 #!homepage = https://github.com/Jarv1s0/Logic/tree/master/Loon
 #!icon = https://raw.githubusercontent.com/devchristian1337/loon-plugins/refs/heads/main/App-Icons/spotify.png
-#!date = 2026-10-09
+#!date = 2026-11-04 11:57:38
 
 # 上游来源：https://github.com/devchristian1337/loon-plugins/tree/7ae0a25b2de75746dc602bfa890b9737d3847a9f
 # 六个脚本原样收录到本仓库；原 Spotify.Crack.Dev.js 保留，但不再被本插件调用。
