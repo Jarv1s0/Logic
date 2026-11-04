@@ -1,9 +1,10 @@
 #!name=闲鱼广告净化
 #!desc=拦截开屏广告，过滤首页、搜索、详情推荐及我的页面推广。需启用 MitM 并信任证书；未验证真机效果，缓存广告和倒计时可能仍存在。
 #!author=Jarv1s0
+#!icon=https://raw.githubusercontent.com/lige47/lige_icon/main/icon/03CNSoft/xianyu.png
 #!homepage=https://github.com/Jarv1s0/Logic/blob/master/Loon/Docs/xianyu.md
 #!loon_version=3.5.1(998)
-#!date=2026-11-04
+#!date=2026-11-04 11:40:29
 #!tag=去广告,闲鱼
 
 # 开屏接口参考 ddgksf2013，来源及验证边界见说明文档。
