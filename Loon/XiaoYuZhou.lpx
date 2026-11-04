@@ -1,18 +1,24 @@
 #!name=小宇宙去广告
-#!desc=移除开屏广告、搜索推广、搜索预设词、每日建议、首页推广、品牌推广及活动横幅，关闭付费会员引导；保留我的页面 Plus 入口及正常跳转。
+#!desc=移除开屏广告、搜索推广、搜索预设词、每日建议、首页推广、品牌推广及活动横幅，关闭付费会员引导，屏蔽 AI 总结、相关单集推荐及运营资源；保留我的页面 Plus 入口及正常跳转。
 #!author=Jarv1s0
 #!homepage=https://github.com/Jarv1s0/Logic
 #!raw-url=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/XiaoYuZhou.lpx
 #!loon_version=3.5.1(998)
-#!date=2026-11-04 13:20:51
+#!date=2026-11-04 13:50:45
 #!tag=去广告,小宇宙
 
 # 参考来源：ddgksf2013、fmz200（奶思）；在其规则基础上收紧路径并适配新版 Rewrite。
 # https://raw.githubusercontent.com/ddgksf2013/Rewrite/refs/heads/master/AdBlock/XiaoYuZhouAds.conf
 # https://raw.githubusercontent.com/fmz200/wool_scripts/main/Loon/plugin/split/partX/XiaoYuZhou.lpx
-# 不采用上游对 ai、related-episode、operation-resource 等接口的屏蔽，保留正常功能。
+# 按用户要求增加上游的 AI、相关单集及运营资源过滤；这些接口也包含非广告功能。
 
 [Rewrite]
+# AI 接口返回空字典，停用对应的单集总结及 AI 功能。
+response if ${url} ~= /^https?:\/\/api\.xiaoyuzhoufm\.com\/v\d+\/ai(?:\/|\?|$)/ then response.body.mock("json", `{}`, 200)
+
+# 沿用上游 list 前缀范围，包含 list-missed；仅清空成功响应中的数据数组。
+response if ${url} ~= /^https?:\/\/api\.xiaoyuzhoufm\.com\/v1\/(?:related-episode|operation-resource)\/list/ && ${response.status} == 200 then response.json.jq("if (.data | type) == \"array\" then .data = [] else . end")
+
 # 保留 membership/platform/app-entry 原始响应，使我的页面 Plus 入口正常跳转。
 # 关闭独立的付费会员引导开关；该字段具体覆盖的其他页面尚未完成真机验证。
 response if ${request.method} == "GET" && ${url} ~= /^https:\/\/api\.xiaoyuzhoufm\.com\/v1\/user-config\/get\/?(?:\?|$)/ && ${response.status} == 200 then response.json.jq("if (.showPayPodcastMembershipGuide | type) == \"boolean\" then .showPayPodcastMembershipGuide = false else . end")
