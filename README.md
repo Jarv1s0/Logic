@@ -7,6 +7,8 @@
 
 另维护独立的 Loon 插件，不能导入 Mihomo / Clash。
 
+- [闲鱼开屏广告拦截](Loon/Xianyu_remove_ads.lpx)：拦截开屏接口及已确认的广告视频路径；[安装、来源与验证边界](Loon/Docs/xianyu.md)。未完成真机验证。
+
 - [好轻去广告](Loon/Haoqing_remove_ads.lpx)：清理开屏、轮播、商品推荐和悬浮推广，采用新版 Rewrite 语法；[安装与验证边界](Loon/Docs/haoqing.md)。
 
 - [Google 搜索重定向](Loon/GoogleRedirect.lpx)：将指定 Google 地区搜索入口重定向到 `www.google.com`，保留搜索词和参数；[支持域名、安装与验证边界](Loon/Docs/google-redirect.md)。
