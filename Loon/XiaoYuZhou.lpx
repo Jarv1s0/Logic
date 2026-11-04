@@ -1,0 +1,23 @@
+#!name=小宇宙去广告
+#!desc=拦截开屏、搜索推广、搜索预设词与每日建议，过滤首页推广横幅及推广头部。需启用 MitM 并信任证书；未验证真机效果。
+#!author=Jarv1s0
+#!homepage=https://github.com/Jarv1s0/Logic
+#!raw-url=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/XiaoYuZhou.lpx
+#!loon_version=3.5.1(998)
+#!date=2026-11-04 12:02:26
+#!tag=去广告,小宇宙
+
+# 参考来源：ddgksf2013、fmz200（奶思）；在其规则基础上收紧路径并适配新版 Rewrite。
+# https://raw.githubusercontent.com/ddgksf2013/Rewrite/refs/heads/master/AdBlock/XiaoYuZhouAds.conf
+# https://raw.githubusercontent.com/fmz200/wool_scripts/main/Loon/plugin/split/partX/XiaoYuZhou.lpx
+# 不采用上游对 ai、related-episode、operation-resource 等接口的屏蔽，保留正常功能。
+
+[Rewrite]
+# 专用接口返回空 JSON；不匹配普通搜索、其他 category 接口或相似路径。
+response if ${url} ~= /^https?:\/\/api\.xiaoyuzhoufm\.com\/v\d+\/(?:flash-screen\/list|search\/(?:get-express|get-preset)|category\/list-daily-suggestion)\/?(?:\?|$)/ then response.body.mock("json", `{}`, 200)
+
+# 仅在成功响应的 data 为数组时过滤上游标记的推广类型，保留其他条目及未知结构。
+response if ${url} ~= /^https?:\/\/api\.xiaoyuzhoufm\.com\/v\d+\/discovery-feed\/list\/?(?:\?|$)/ && ${response.status} == 200 then response.json.jq("if (.data | type) == \"array\" then .data |= map(select(.type != \"DISCOVERY_HEADER\" and .type != \"DISCOVERY_BANNER\")) else . end")
+
+[MitM]
+hostname = api.xiaoyuzhoufm.com

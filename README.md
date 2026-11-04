@@ -7,6 +7,8 @@
 
 另维护独立的 Loon 插件，不能导入 Mihomo / Clash。
 
+- [小宇宙去广告](Loon/XiaoYuZhou.lpx)：拦截开屏及搜索推广，过滤首页推广横幅与头部；参考 ddgksf2013、fmz200，需启用 MitM，未完成真机验证。
+
 - [闲鱼广告净化](Loon/Xianyu_remove_ads.lpx)：拦截开屏，过滤首页、搜索、详情推荐及我的页面推广；[安装、来源与验证边界](Loon/Docs/xianyu.md)。未完成真机验证。
 
 - [好轻去广告](Loon/Haoqing_remove_ads.lpx)：清理开屏、轮播、商品推荐和悬浮推广，采用新版 Rewrite 语法；[安装与验证边界](Loon/Docs/haoqing.md)。
