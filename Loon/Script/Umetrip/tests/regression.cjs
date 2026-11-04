@@ -5,7 +5,8 @@ const assert = require('node:assert/strict');
 const cp = require('node:child_process');
 const source = fs.readFileSync(path.join(__dirname, '../umetrip_ads.js'), 'utf8');
 const plugin = fs.readFileSync(path.join(__dirname, '../../../umetrip.plugin'), 'utf8');
-const rule = new RegExp(plugin.match(/^http-response (\S+)/m)[1]);
+const [, pattern, flags] = plugin.match(/^response if \$\{url\} ~= \/(.+)\/([ims]*) then script\(/m);
+const rule = new RegExp(pattern, flags);
 const url = 'https://umehome.umetrip.com/gateway/api/umetrip/native';
 let checks = 0;
 function run(body, rpid = '1000002', requestUrl = url, code = source) {
@@ -49,7 +50,7 @@ assert.equal(run(Buffer.alloc(0), '1000019', url.replace('umehome.', 'sns.')).st
 assert.ok(rule.test(url));
 assert.ok(rule.test(waterUrl));
 assert.ok(!rule.test('https://example.com/gateway/api/umetrip/native'));
-assert.ok(plugin.includes('binary-body-mode=true'));
+assert.ok(plugin.includes('binary_body_mode=true'));
 
 const mineUrl = url.replace('umehome.', 'umerp.');
 const mineWrap = page => join(text(5, '1100001'), field(7, field(1, field(11, page))), text(90, 'unknown'));
@@ -65,7 +66,8 @@ const memberWrap = value => join(text(5,'1370286'),field(7,field(1,value)),text(
 assert.deepEqual(Buffer.from(run(memberWrap(join(text(2,'member payload'),text(88,'keep'))),'1370286',mineUrl).body),memberWrap(text(88,'keep')));
 assert.equal(Object.keys(run(memberWrap(text(2,'member payload')),'1370286',url)).length,0);
 assert.ok(rule.test(mineUrl));
-const rejects = plugin.split(/\r?\n/).filter(line=>line.startsWith('^')).map(line=>new RegExp(line.split(' ')[0]));
+const rejects = [...plugin.matchAll(/^request if \$\{url\} ~= \/(.+)\/([ims]*) then reject\(404\)$/gm)].map(match=>new RegExp(match[1], match[2]));
+assert.equal(rejects.length, 3, '必须读取全部资源拦截规则');
 for(const asset of ['equityCenter/static/test','membership/rights/test'])assert.ok(rejects.some(re=>re.test('https://oss.umetrip.com/fs/'+asset)));
 assert.ok(!rejects.some(re=>re.test('https://oss.umetrip.com/fs/airline/logo/test')));
 assert.ok(!rejects.some(re=>re.test('https://oss.umetrip.com/fs/user/profilePicture/test')));

@@ -16,8 +16,13 @@ const source = process.argv.includes('--baseline')
 const pluginSource = process.argv.includes('--baseline')
   ? cp.execFileSync('git', ['show', 'HEAD:Loon/xiaohognshu.lpx'], { encoding: 'utf8' })
   : fs.readFileSync(path.join(__dirname, '..', '..', '..', 'xiaohognshu.lpx'), 'utf8');
-const rules = pluginSource.split(/\r?\n/).filter(line => line.startsWith('http-response '))
-  .map(line => new RegExp(line.split(/\s+/)[1]));
+// --baseline 兼容旧版和新版 HEAD 中的规则声明。
+const rules = [
+  ...[...pluginSource.matchAll(/^http-response (\S+)/gm)].map(match => new RegExp(match[1], 'i')),
+  ...[...pluginSource.matchAll(/^response if \$\{url\} ~= \/(.+)\/([ims]*) then script\(/gm)]
+    .map(match => new RegExp(match[1], match[2]))
+];
+assert.equal(rules.length, 8, '必须读取全部信息流、详情和媒体规则');
 function run(endpoint, input, store = new Map(), host = 'edith.xiaohongshu.com') {
   const url = `https://${host}/api/sns/${/^v\d+\//.test(endpoint) ? endpoint : `v6/${endpoint}`}?test=1`;
   assert.ok(rules.some(rule => rule.test(url)) || endpoint === 'unknown', `缺少拦截规则：${url}`);

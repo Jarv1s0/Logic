@@ -4,7 +4,8 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const source = fs.readFileSync(path.join(__dirname, '../xianyu.js'), 'utf8');
 const plugin = fs.readFileSync(path.join(__dirname, '../../../Xianyu_remove_ads.lpx'), 'utf8');
-const rule = new RegExp(plugin.match(/^http-response (\S+)/m)[1]);
+const [, pattern, flags] = plugin.match(/^response if \$\{url\} ~= \/(.+)\/([ims]*) then script\(/m);
+const rule = new RegExp(pattern, flags);
 const url = api => `https://acs.m.goofish.com/gw/${api}/1.0/`;
 let checks = 0;
 function run(api, data, options = {}) {

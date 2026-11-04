@@ -1,9 +1,9 @@
 #!name=好轻去广告
-#!desc=清理开屏、轮播、横幅、商品推荐、下拉广告和悬浮推广，保留健康数据与正常文章。需启用 MitM 并信任证书。
+#!desc=移除开屏、轮播、横幅、商品推荐、下拉广告和悬浮推广。
 #!author=Jarv1s0
 #!homepage=https://github.com/Jarv1s0/Logic/blob/master/Loon/Docs/haoqing.md
 #!loon_version=3.5.1(998)
-#!date=2026-11-04 11:57:38
+#!date=2026-11-04 12:17:13
 #!tag=去广告,好轻
 
 [Rule]

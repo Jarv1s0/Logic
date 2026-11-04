@@ -7,7 +7,8 @@ const source = fs.readFileSync(path.join(__dirname, '../usercenter.js'), 'utf8')
 const plugin = fs.readFileSync(path.join(__dirname, '../../../umetrip.plugin'), 'utf8');
 const ads = fs.readFileSync(path.join(__dirname, '../umetrip_ads.js'), 'utf8');
 const urls = ['https://user.umetrip.com/weex/userCenter/userCenter.wume', 'https://static.umetrip.com/weex/userCenter/userCenter.wume?logic_uc=20261102-8', 'https://user.umetrip.com/weex/userCenter/pages/index/entry.js'];
-const rules = [...plugin.matchAll(/^http-(?:request|response) (\S+) script-path=/gm)].map(r=>new RegExp(r[1]));
+const rules = [...plugin.matchAll(/^(?:request|response) if \$\{url\} ~= \/(.+)\/([ims]*) then script\(/gm)].map(r=>new RegExp(r[1], r[2]));
+assert.equal(rules.length, 1, '必须读取到当前接口脚本规则，避免空列表误通过');
 for (const url of urls) assert.ok(!rules.some(r=>r.test(url)), 'plugin must not intercept page resources');
 function run(code, request, response) {
   const done=[];

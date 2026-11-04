@@ -1,12 +1,12 @@
 #!name = YouTube
-#!desc = 移除 YouTube 应用广告，支持后台播放及已有字幕翻译（简体中文或美式英语，无字幕视频无法翻译）。日志默认仅采集媒体响应头，完整采样可能增加延迟。需要启用 MITM 并信任证书。
+#!desc = 移除视频播放、信息流和搜索广告。
 #!openUrl = https://loon-plugins.vercel.app
 #!author = devchristian1337, Jarv1s0
 #!tag = YouTube, 去广告
 #!loon_version = 3.5.1(983)
 #!homepage = https://github.com/Jarv1s0/Logic/tree/master/Loon
 #!icon = https://raw.githubusercontent.com/devchristian1337/loon-plugins/refs/heads/main/App-Icons/youtube.png
-#!date = 2026-11-04 11:57:38
+#!date = 2026-11-04 12:17:13
 #!raw-url = https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/YouTube.lpx
 
 # 上游来源：https://raw.githubusercontent.com/devchristian1337/loon-plugins/refs/heads/main/Plugins/YouTube.lpx
@@ -40,30 +40,30 @@ AND,((DOMAIN-SUFFIX,googlevideo.com),(PROTOCOL,UDP),(DEST-PORT,443)),REJECT
 request if ${url} ~= /^https:\/\/[a-z0-9-]+\.googlevideo\.com\/initplayback(?:\?[^#]*)?$/i && ${request.method} == "POST" && ${request.header['User-Agent']} ~= /(?:^|\s)com\.google\.ios\.youtube\//i then reject_video(200)
 # 仅修改响应头：清除媒体源的备用连接提示，减少拦截 QUIC 后的重试。
 # 上游更新于 2026-10-05；实际启动延迟仍需真机验证，客户端可能使用其他 HTTP/3 发现方式。
-^https://(?:[\w-]+\.)*googlevideo\.com(?::443)?/ response-header-replace Alt-Svc clear
+response if ${url} ~= /^https:\/\/(?:[\w-]+\.)*googlevideo\.com(?::443)?\//i then response.header.set("Alt-Svc", "clear")
 
 [Script]
 # 独立刷新频道列表缓存；信息流脚本仅读取缓存，不等待远程下载。
 # 上游更新于 2026-10-07。
-cron "0 * * * *" script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js,timeout=10,argument=[{blocked_channels_url}],tag=YouTube 定时更新屏蔽频道
-generic script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js,timeout=10,argument=[{blocked_channels_url}],tag=YouTube 更新屏蔽频道,img-url=person.crop.circle.badge.xmark.system
-http-request ^https:\/\/(?:www\.|m\.)?youtube\.com\/api\/timedtext\?[^#]+$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js,requires-body=false,timeout=10,enable={translation_enabled},argument=[{translation_enabled},{translation_target}],tag=YouTube 字幕目标语言
+cron "0 * * * *" then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js", {${blocked_channels_url}}) with timeout=10, tag="YouTube 定时更新屏蔽频道"
+generic then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js", {${blocked_channels_url}}) with timeout=10, tag="YouTube 更新屏蔽频道", img_url="person.crop.circle.badge.xmark.system"
+request if ${url} ~= /^https:\/\/(?:www\.|m\.)?youtube\.com\/api\/timedtext\?[^#]+$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js", {${translation_enabled}, ${translation_target}}) with requires_body=false, timeout=10, enable=${translation_enabled}, tag="YouTube 字幕目标语言"
 # 仅在明确开启日志和画质研究时读取 videoplayback POST；不匹配空白初始化视频。
 # 上游更新于 2026-10-07；必须位于常规日志规则之前，默认不缓冲请求体。
 request if ${url} ~= /^https:\/\/[\w-]+\.googlevideo\.com\/videoplayback(?:\?[^#]*)?$/i && ${request.method} == "POST" && ${log_enabled} == true && ${quality_research} == true then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js", {${log_enabled}, ${log_level}, ${capture_budget}, ${quality_research}}) with requires_body=true, binary_body_mode=true, timeout=10, tag="YouTube 画质研究请求采样"
-http-request ^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/(?:browse|next|search|reel\/reel_watch_sequence)(?:\?[^#]*)?$|^https:\/\/[\w-]+\.googlevideo\.com\/videoplayback\?[^#]*$|^http:\/\/youtube-logs\.invalid(?::80)?(?:\/[^#]*)?$|^https:\/\/[\w-]+\.googlevideo\.com\/initplayback(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js,requires-body=false,timeout=10,enable={log_enabled},argument=[{log_enabled},{log_level},{capture_budget},{background_playback},{media_capture_mode},{quality_research}],tag=YouTube 日志与导出
-http-request ^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.)?youtube\.com)\/youtubei\/v1\/log_event(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js,requires-body=true,binary-body-mode=true,timeout=10,argument=[{log_enabled},{log_level},{capture_budget},{playback_region}],tag=YouTube 配置请求处理
+request if ${url} ~= /^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/(?:browse|next|search|reel\/reel_watch_sequence)(?:\?[^#]*)?$|^https:\/\/[\w-]+\.googlevideo\.com\/videoplayback\?[^#]*$|^http:\/\/youtube-logs\.invalid(?::80)?(?:\/[^#]*)?$|^https:\/\/[\w-]+\.googlevideo\.com\/initplayback(?:\?[^#]*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js", {${log_enabled}, ${log_level}, ${capture_budget}, ${background_playback}, ${media_capture_mode}, ${quality_research}}) with requires_body=false, timeout=10, enable=${log_enabled}, tag="YouTube 日志与导出"
+request if ${url} ~= /^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.)?youtube\.com)\/youtubei\/v1\/log_event(?:\?[^#]*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js", {${log_enabled}, ${log_level}, ${capture_budget}, ${playback_region}}) with requires_body=true, binary_body_mode=true, timeout=10, tag="YouTube 配置请求处理"
 # 媒体采样由日志总开关控制；关闭后 headers 和 full 均不运行。已保存的模式不代表正在采样。
 # 完整采样需在接收响应体前选定；每个响应仅运行首条匹配脚本。默认响应头规则不传入 full，避免误读响应体。
 response if ${url} ~= /^https:\/\/[\w-]+\.googlevideo\.com\/(?:videoplayback|initplayback)(?:\?[^#]*)?$/i && ${log_enabled} == true && ${media_capture_mode} == "full" then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/response.min.js", {${log_enabled}, ${log_level}, ${capture_budget}, ${media_capture_mode}}) with requires_body=true, binary_body_mode=true, timeout=30, tag="YouTube 完整媒体开发采样"
-http-response ^https:\/\/[\w-]+\.googlevideo\.com\/(?:videoplayback|initplayback)(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/response.min.js,requires-body=false,timeout=10,enable={log_enabled},argument=[{log_enabled},{log_level},{capture_budget}],tag=YouTube 媒体响应日志
-http-response ^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.)?youtube\.com)\/youtubei\/v1\/(?:config|log_event)(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/response.min.js,requires-body=true,binary-body-mode=true,timeout=10,argument=[{log_enabled},{log_level},{capture_budget}],tag=YouTube Onesie 配置缓存
+response if ${url} ~= /^https:\/\/[\w-]+\.googlevideo\.com\/(?:videoplayback|initplayback)(?:\?[^#]*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/response.min.js", {${log_enabled}, ${log_level}, ${capture_budget}}) with requires_body=false, timeout=10, enable=${log_enabled}, tag="YouTube 媒体响应日志"
+response if ${url} ~= /^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.)?youtube\.com)\/youtubei\/v1\/(?:config|log_event)(?:\?[^#]*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/response.min.js", {${log_enabled}, ${log_level}, ${capture_budget}}) with requires_body=true, binary_body_mode=true, timeout=10, tag="YouTube Onesie 配置缓存"
 
-http-request ^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/(?:player|get_watch)(?:\?[^#]*)?$|^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/player\/ad_break(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js,requires-body=true,binary-body-mode=true,timeout=10,argument=[{log_enabled},{log_level},{capture_budget},{playback_region}],tag=YouTube 播放请求与广告配置处理
+request if ${url} ~= /^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/(?:player|get_watch)(?:\?[^#]*)?$|^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/player\/ad_break(?:\?[^#]*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/request.min.js", {${log_enabled}, ${log_level}, ${capture_budget}, ${playback_region}}) with requires_body=true, binary_body_mode=true, timeout=10, tag="YouTube 播放请求与广告配置处理"
 
 # 同时清理 iOS 应用的 Protobuf 搜索响应中的赞助结果及其分隔线；上游更新于 2026-10-17。
-http-response ^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/(browse|next|search)(\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/response.min.js,requires-body=true,binary-body-mode=true,timeout=10,argument=[{log_enabled},{log_level},{capture_budget},{hide_home_shorts},{blocked_channels},{blocked_channels_url}],tag=YouTube 信息流广告与首页 Shorts 处理
-http-response ^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/(player|get_watch)(\?[^#]*)?$|^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/reel\/reel_watch_sequence(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/response.min.js,requires-body=true,binary-body-mode=true,timeout=10,argument=[{log_enabled},{log_level},{capture_budget},{background_playback},{quality_research}],tag=YouTube 播放响应与后台播放
+response if ${url} ~= /^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/(browse|next|search)(\?[^#]*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/response.min.js", {${log_enabled}, ${log_level}, ${capture_budget}, ${hide_home_shorts}, ${blocked_channels}, ${blocked_channels_url}}) with requires_body=true, binary_body_mode=true, timeout=10, tag="YouTube 信息流广告与首页 Shorts 处理"
+response if ${url} ~= /^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/(player|get_watch)(\?[^#]*)?$|^https:\/\/(?:youtubei(?:-att)?\.googleapis\.com|(?:www\.|m\.|music\.)?youtube\.com)\/youtubei\/v1\/reel\/reel_watch_sequence(?:\?[^#]*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/YouTube/response.min.js", {${log_enabled}, ${log_level}, ${capture_budget}, ${background_playback}, ${quality_research}}) with requires_body=true, binary_body_mode=true, timeout=10, tag="YouTube 播放响应与后台播放"
 
 [Mitm]
 hostname = youtubei.googleapis.com, youtubei-att.googleapis.com, youtube.com, www.youtube.com, m.youtube.com, music.youtube.com, *.googlevideo.com

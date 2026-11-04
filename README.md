@@ -7,6 +7,8 @@
 
 另维护独立的 Loon 插件，不能导入 Mihomo / Clash。
 
+Loon 插件统一使用官方新版 [Rewrite](https://nsloon.app/docs/Rewrite/rewrite_v2) 和 [Script](https://nsloon.app/docs/Script/script_v2) 语法，参数按[插件文档](https://nsloon.app/docs/Plugin/)传入；新版脚本配置至少需要 Loon 3.5.1 (983)，具体最低版本以插件头部为准。
+
 - [小宇宙去广告](Loon/XiaoYuZhou.lpx)：拦截开屏及搜索推广，过滤首页推广横幅与头部；参考 ddgksf2013、fmz200，需启用 MitM，未完成真机验证。
 
 - [闲鱼广告净化](Loon/Xianyu_remove_ads.lpx)：拦截开屏，过滤首页、搜索、详情推荐及我的页面推广；[安装、来源与验证边界](Loon/Docs/xianyu.md)。未完成真机验证。
