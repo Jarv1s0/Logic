@@ -1,10 +1,10 @@
 #!name=小宇宙去广告
-#!desc=移除开屏广告、搜索推广、搜索预设词、每日建议、首页推广和我的页面 Plus 推广入口。
+#!desc=移除开屏广告、搜索推广、搜索预设词、每日建议、首页推广、品牌推广及活动横幅，关闭付费会员引导；保留我的页面 Plus 入口及正常跳转。
 #!author=Jarv1s0
 #!homepage=https://github.com/Jarv1s0/Logic
 #!raw-url=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/XiaoYuZhou.lpx
 #!loon_version=3.5.1(998)
-#!date=2026-11-04 12:17:13
+#!date=2026-11-04 13:20:51
 #!tag=去广告,小宇宙
 
 # 参考来源：ddgksf2013、fmz200（奶思）；在其规则基础上收紧路径并适配新版 Rewrite。
@@ -13,20 +13,18 @@
 # 不采用上游对 ai、related-episode、operation-resource 等接口的屏蔽，保留正常功能。
 
 [Rewrite]
+# 保留 membership/platform/app-entry 原始响应，使我的页面 Plus 入口正常跳转。
+# 关闭独立的付费会员引导开关；该字段具体覆盖的其他页面尚未完成真机验证。
+response if ${request.method} == "GET" && ${url} ~= /^https:\/\/api\.xiaoyuzhoufm\.com\/v1\/user-config\/get\/?(?:\?|$)/ && ${response.status} == 200 then response.json.jq("if (.showPayPodcastMembershipGuide | type) == \"boolean\" then .showPayPodcastMembershipGuide = false else . end")
+
 # HAR 确认的品牌专题、外链和赞助展示字段；保留节目配置及其他全局设置。
 response if ${request.method} == "GET" && ${url} ~= /^https:\/\/api\.xiaoyuzhoufm\.com\/v1\/app-config\/get\/?(?:\?|$)/ && ${response.status} == 200 then response.json.jq("if (.customizedShows | type) == \"array\" then .customizedShows |= map(if type == \"object\" then del(.brandTopic, .brandLink, .sponsorOnDetailPage) else . end) else . end")
-
-# 只关闭已存在的布尔会员推广开关，不改会员状态及其他用户设置。
-response if ${request.method} == "GET" && ${url} ~= /^https:\/\/api\.xiaoyuzhoufm\.com\/v1\/user-config\/get\/?(?:\?|$)/ && ${response.status} == 200 then response.json.jq("if (.showPayPodcastMembershipGuide | type) == \"boolean\" then .showPayPodcastMembershipGuide = false else . end")
 
 # 发现页活动图标及跳转是独立接口，清空其入口数据。
 response if ${request.method} == "GET" && ${url} ~= /^https:\/\/api\.xiaoyuzhoufm\.com\/v1\/discovery-tab-icon\/get\/?(?:\?|$)/ then response.body.mock("json", `{"data":null}`, 200)
 
 # 仅删除运动电台顶部推广横幅，保留主题颜色及其他播放列表配置。
 response if ${request.method} == "GET" && ${url} ~= /^https:\/\/api\.xiaoyuzhoufm\.com\/v1\/custom-playlist\/config\/get\/?(?:\?|$)/ && ${response.status} == 200 then response.json.jq("if (.data.sportsRadio | type) == \"object\" then del(.data.sportsRadio.topBanner) else . end")
-
-# HAR 中 app-entry 返回 Plus 推广文案和开通按钮；仅清空入口，不修改会员身份及权益。
-response if ${request.method} == "POST" && ${url} ~= /^https:\/\/api\.xiaoyuzhoufm\.com\/v1\/membership\/platform\/app-entry\/?(?:\?|$)/ then response.body.mock("json", `{"data":null}`, 200)
 
 # 专用接口返回空 JSON；不匹配普通搜索、其他 category 接口或相似路径。
 response if ${url} ~= /^https?:\/\/api\.xiaoyuzhoufm\.com\/v\d+\/(?:flash-screen\/list|search\/(?:get-express|get-preset)|category\/list-daily-suggestion)\/?(?:\?|$)/ then response.body.mock("json", `{}`, 200)
