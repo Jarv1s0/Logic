@@ -32,6 +32,24 @@ expect('mtop.taobao.idlehome.home.nextfresh',
   {sections: [normal, {data: {bizType: 'AD'}}, unknown, null], cursor: 'next'},
   {sections: [normal, unknown, null], cursor: 'next'});
 const buyFeeds = 'mtop.taobao.idle.item.buy.feeds';
+const local = 'mtop.taobao.idle.local.home';
+expect(local, {sections: [normal, {data: {bizType: 'AD'}}, unknown, null], cursor: 'next'},
+  {sections: [normal, unknown, null], cursor: 'next'});
+const extra = [
+  ['mtop.taobao.idle.user.strategy.list', 'strategies'],
+  ['mtop.taobao.idlemtopsearch.search.shade', 'singleShadeWords'],
+  ['mtop.taobao.idlemtopsearch.item.search.activate', 'cardList'],
+  ['mtop.taobao.idlemtopsearch.search.discover', 'resultList'],
+];
+for (const [api, key] of extra) {
+  const remove = key === 'resultList';
+  expect(api, {[key]: [{id: '推广'}], keep: 1}, remove ? {keep: 1} : {[key]: [], keep: 1});
+  assert.deepEqual(run(api, {[key]: {future: true}}).result, {});
+  assert.deepEqual(run(api, {}, {raw: JSON.stringify({ret: ['FAIL::错误'], data: {[key]: [normal]}})}).result, {});
+}
+const circle = 'mtop.taobao.idlehome.home.circle.list';
+expect(circle, {circleList: [{bizCode: 'main'}, {bizCode: 'saveMoney'}, unknown, null], keep: 1},
+  {circleList: [{bizCode: 'main'}, unknown, null], keep: 1});
 expect(buyFeeds, {sections: [normal, {data: {bizType: 'AD'}}, unknown], cursor: 'next'}, {cursor: 'next'});
 expect(buyFeeds, {sections: [normal], cursor: 'next'}, {cursor: 'next'});
 for (const data of [{sections: 'unknown'}, {unexpected: true}]) assert.deepEqual(run(buyFeeds, data).result, {});
@@ -63,7 +81,7 @@ for (const raw of ['bad json', '<html>error</html>', 'null', '[]',
 assert.deepEqual(run(search, {resultList: [marked(true)]}, {status: 500}).result, {});
 assert.deepEqual(run(search, {resultList: [marked(true)]}, {url: url(search + '.extra')}).result, {});
 const apis = ['mtop.taobao.idlehome.home.nextfresh', search, 'mtop.taobao.idle.item.recommend',
-  'mtop.taobao.idle.item.recommend.list', 'mtop.taobao.idle.item.buy.feeds', mine];
+  'mtop.taobao.idle.item.recommend.list', buyFeeds, mine, local, circle, ...extra.map(([api]) => api)];
 const hosts = plugin.match(/^hostname = (.+)$/m)[1].split(', ');
 for (const api of apis) {
   for (const host of ['acs.m.goofish.com', 'g-acs.m.goofish.com']) {
@@ -73,7 +91,35 @@ for (const api of apis) {
   assert(!rule.test(url(api + '.extra')));
   assert(!rule.test(url(api) + 'extra'));
 }
-for (const api of ['mtop.taobao.idlemtopsearch.search.shade', 'mtop.idle.message.chat', 'mtop.idle.trade.order']) assert(!rule.test(url(api)));
+for (const api of ['mtop.taobao.idlemtopsearch.search.delete', 'mtop.idle.message.chat', 'mtop.idle.trade.order']) assert(!rule.test(url(api)));
 assert(!rule.test(url(search).replace('goofish.com', 'goofish.com.evil.test')));
 assert(fs.existsSync(path.join(__dirname, '../xianyu.js')));
+const mocks = [...plugin.matchAll(/~= \/(.+)\/ then response\.body\.mock/g)].map(match => new RegExp(match[1]));
+assert.equal(mocks.length, 4);
+for (const host of ['video-zb.cloudvideocdn.taobao.com', 'video-sh.cloudvideocdn.taobao.com']) {
+  assert(mocks[2].test(`https://${host}/mama_searchad_algo_upload/123/a.mp4`));
+  assert(!mocks[2].test(`https://${host}/normal/a.mp4`));
+  assert(!mocks[2].test(`https://${host}/mama_searchad_algo_upload_other/a.mp4`));
+  assert(hosts.includes(host));
+}
+assert(mocks[3].test('https://df.tanx.com/spf3?e=1'));
+assert(!mocks[3].test('https://df.tanx.com/spf3other'));
+assert(!mocks[3].test('https://df.tanx.com.evil.test/spf3'));
+for (const file of process.argv.slice(2)) {
+  const entries = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '')).log.entries;
+  const counts = mocks.map(() => 0);
+  let pages = 0;
+  for (const entry of entries) {
+    const requestUrl = entry.request.url;
+    if (rule.test(requestUrl)) pages++;
+    mocks.forEach((mock, index) => {
+      if (!mock.test(requestUrl)) return;
+      counts[index]++;
+      assert(hosts.includes(new URL(requestUrl).hostname));
+      if (index === 2) assert(new URL(requestUrl).pathname.startsWith('/mama_searchad_algo_upload/'));
+      if (index === 3) assert.equal(new URL(requestUrl).pathname, '/spf3');
+    });
+  }
+  console.log(`${path.basename(file)}: 请求=${entries.length}, 页面接口=${pages}, 开屏/曝光/视频/跟踪=${counts.join('/')}`);
+}
 console.log(`通过 ${checks} 次脚本执行检查，以及接口边界和 MitM 覆盖检查；使用合成数据，不代表真机验证。`);

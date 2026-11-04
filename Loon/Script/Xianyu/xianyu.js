@@ -27,7 +27,23 @@
     };
     switch (match[1]) {
       case "mtop.taobao.idlehome.home.nextfresh":
+      case "mtop.taobao.idle.local.home":
         filter(data, "sections", sectionAd);
+        break;
+      case "mtop.taobao.idle.user.strategy.list":
+        if (Array.isArray(data.strategies)) data.strategies = [];
+        break;
+      case "mtop.taobao.idlehome.home.circle.list":
+        filter(data, "circleList", item => item?.bizCode === "saveMoney");
+        break;
+      case "mtop.taobao.idlemtopsearch.search.shade":
+        if (Array.isArray(data.singleShadeWords)) data.singleShadeWords = [];
+        break;
+      case "mtop.taobao.idlemtopsearch.item.search.activate":
+        if (Array.isArray(data.cardList)) data.cardList = [];
+        break;
+      case "mtop.taobao.idlemtopsearch.search.discover":
+        if (Array.isArray(data.resultList)) delete data.resultList;
         break;
       case "mtop.taobao.idle.item.buy.feeds":
         if (Array.isArray(data.sections)) delete data.sections;

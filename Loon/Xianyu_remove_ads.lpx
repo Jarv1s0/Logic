@@ -1,10 +1,10 @@
 #!name=闲鱼广告净化
-#!desc=拦截开屏广告，过滤首页、搜索和详情广告，移除我的页面推荐商品流。需启用 MitM 并信任证书；未验证真机效果，缓存广告和倒计时可能仍存在。
+#!desc=拦截开屏及广告视频，清理首页推广、搜索推荐、本地信息流和详情广告，移除我的推荐商品流。需启用 MitM 并信任证书；未验证真机效果。
 #!author=Jarv1s0
 #!icon=https://raw.githubusercontent.com/lige47/lige_icon/main/icon/03CNSoft/xianyu.png
 #!homepage=https://github.com/Jarv1s0/Logic/blob/master/Loon/Docs/xianyu.md
 #!loon_version=3.5.1(998)
-#!date=2026-11-04 12:00:12
+#!date=2026-11-04 12:03:34
 #!tag=去广告,闲鱼
 
 # 开屏接口参考 ddgksf2013，来源及验证边界见说明文档。
@@ -14,10 +14,12 @@ response if ${url} ~= /^https:\/\/(?:g-)?acs\.m\.goofish\.com\/gw\/mtop(?:\.[a-z
 # 开屏曝光接口；拦截曝光本身不代表跳过开屏。
 response if ${url} ~= /^https:\/\/(?:g-)?acs\.m\.goofish\.com\/gw\/mtop\.idle\.ad\.expose\/\d+(?:\.\d+)*(?:\/)?(?:\?|$)/ then response.body.mock("text", "", 200)
 # HAR 确认的广告视频目录；保留同一 CDN 的其他视频路径。
-response if ${url} ~= /^https:\/\/video-zb\.cloudvideocdn\.taobao\.com\/mama_searchad_algo_upload\// then response.body.mock("text", "", 200)
+response if ${url} ~= /^https:\/\/video-(?:zb|sh)\.cloudvideocdn\.taobao\.com\/mama_searchad_algo_upload\// then response.body.mock("text", "", 200)
+# HAR 中反复出现的跟踪像素；不代表能移除广告卡片。
+response if ${url} ~= /^https:\/\/df\.tanx\.com\/spf3(?:\?|$)/ then response.body.mock("text", "", 200)
 
 [Script]
-http-response ^https:\/\/(?:g-)?acs\.m\.goofish\.com\/gw\/(?:mtop\.taobao\.idlehome\.home\.nextfresh|mtop\.taobao\.idlemtopsearch\.search|mtop\.taobao\.idle\.item\.recommend(?:\.list)?|mtop\.taobao\.idle\.item\.buy\.feeds|mtop\.idle\.user\.page\.my\.adapter)\/\d+(?:\.\d+)*\/?(?:\?|$) script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Xianyu/xianyu.js?v=20261104-2,requires-body=true,timeout=10,tag=闲鱼页面广告过滤
+http-response ^https:\/\/(?:g-)?acs\.m\.goofish\.com\/gw\/(?:mtop\.taobao\.idlehome\.home\.(?:nextfresh|circle\.list)|mtop\.taobao\.idlemtopsearch\.(?:search(?:\.(?:shade|discover))?|item\.search\.activate)|mtop\.taobao\.idle\.(?:item\.(?:recommend(?:\.list)?|buy\.feeds)|user\.strategy\.list|local\.home)|mtop\.idle\.user\.page\.my\.adapter)\/\d+(?:\.\d+)*\/?(?:\?|$) script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Xianyu/xianyu.js?v=20261104-3,requires-body=true,timeout=10,tag=闲鱼页面广告过滤
 
 [MitM]
-hostname = acs.m.goofish.com, g-acs.m.goofish.com, video-zb.cloudvideocdn.taobao.com
+hostname = acs.m.goofish.com, g-acs.m.goofish.com, video-zb.cloudvideocdn.taobao.com, video-sh.cloudvideocdn.taobao.com, df.tanx.com
