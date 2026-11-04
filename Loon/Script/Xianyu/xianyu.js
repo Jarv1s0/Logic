@@ -1,5 +1,6 @@
 // Logic 原创实现；接口与字段参考来源见 Loon/Docs/xianyu.md。
-// 仅删除已知标记，解析失败、错误响应及未知结构均透传。
+// 广告按已知标记过滤；我的商品流按用户要求移除全部推荐。
+// 解析失败、错误响应及未知结构均透传。
 (() => {
   const original = $response.body;
   let result = original;
@@ -26,8 +27,10 @@
     };
     switch (match[1]) {
       case "mtop.taobao.idlehome.home.nextfresh":
-      case "mtop.taobao.idle.item.buy.feeds":
         filter(data, "sections", sectionAd);
+        break;
+      case "mtop.taobao.idle.item.buy.feeds":
+        if (Array.isArray(data.sections)) delete data.sections;
         break;
       case "mtop.taobao.idlemtopsearch.search":
         filter(data, "resultList", item => {

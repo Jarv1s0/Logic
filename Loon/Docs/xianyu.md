@@ -13,13 +13,15 @@
 - 搜索结果 `mtop.taobao.idlemtopsearch.search`：删除 `data.item.main.exContent.isAliMaMaAD` 为布尔值 `true` 或字符串 `"true"` 的结果，也删除同一卡片 `clickParam.args.biz_type` 为 `AD` 或 `mamaAD` 的结果；保留正常结果、筛选模块、搜索填词和未知结构。
 - 商品详情推荐 `mtop.taobao.idle.item.recommend` 及 `.list`：仅从 `data.cardList` 删除 `cardData.bizType` 为 `AD` 或 `mamaAD` 的卡片，不修改商品详情正文、价格或交易接口。
 - “我的”页面 `mtop.idle.user.page.my.adapter`：清空数组类型的底部推荐 `data.ability`（含普通推荐），从 `data.container.sections` 删除明确带上述广告类型的卡片。保留未标记的账户、订单、工具、回收及菜单模块，不按索引批量删除。
-- “我的”页面商品流 `mtop.taobao.idle.item.buy.feeds`：按首页同样的类型标记过滤 `data.sections`，保留普通推荐商品和分页字段。
+- “我的”页面商品流 `mtop.taobao.idle.item.buy.feeds`：数组类型的 `data.sections` 整体删除，移除其中全部推荐商品（包含普通推荐），保留其他字段。此项按照用户要求去掉“猜你喜欢”，不局限于带广告标记的商品；该接口是否对应当前 App 的“猜你喜欢”仍未得到真实抓包验证。
 
-解析失败、业务错误、未知结构和没有命中广告的响应保持原文；不递归删除任意名称含 `ad` 的字段。不覆盖无标记的推广、详情内其他广告接口或接口改版。
+解析失败、业务错误、未知结构和没有命中过滤目标的响应保持原文；不递归删除任意名称含 `ad` 的字段。不覆盖其他无标记的推广、详情内其他广告接口或接口改版。
 
 ## 来源与验证边界
 
-接口与详情推荐 `mamaAD` 字段参考 [ddgksf2013 小黄鱼净化规则](https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf)（2026-11-04 读取，文件标注更新时间 2025-09-06）；首页 `AD`、搜索 `isAliMaMaAD` 和“我的”页面 `ability` 字段同时参考 [ishowshu/qx goofish.js](https://github.com/ishowshu/qx/blob/main/script/goofish.js)（同日读取，文件标注 2026-10-24）。页面脚本为本仓库独立编写，未采用上游仅保留白名单商品类型、按页面索引删菜单或清空全部推荐商品列表的做法，不加载第三方脚本或 AMDC 脚本。
+接口与详情推荐 `mamaAD` 字段参考 [ddgksf2013 小黄鱼净化规则](https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf)（2026-11-04 读取，文件标注更新时间 2025-09-06）；首页 `AD`、搜索 `isAliMaMaAD` 和“我的”页面 `ability` 字段同时参考 [ishowshu/qx goofish.js](https://github.com/ishowshu/qx/blob/main/script/goofish.js)（同日读取，文件标注 2026-10-24）。页面脚本为本仓库独立编写，未采用上游仅保留白名单商品类型或批量删菜单的做法，不加载第三方脚本或 AMDC 脚本。
+
+2026-11-04 用户明确提供墨鱼规则作为参考后，将 `item.buy.feeds` 从按广告标记过滤改为删除整个商品流数组，与参考规则 `del(.data.sections)` 的目标一致；对非数组结构仍透传。更新插件时需同时更新脚本，本次脚本引用版本为 `20261104-2`。
 
 视频路径来自用户提供的 HAR：153 条请求中，同一广告视频有 10 次直接访问，另有 6 次视频入口请求通过 HTTP 302 指向它。路径包含 `mama_searchad_algo_upload`，但 HAR 无法证明该视频对应开屏还是其他广告位。HAR 未捕获上述开屏 API；接口当前版本的适用性无法从此抓包确认。HAR、账号、签名和设备标识不纳入仓库。
 

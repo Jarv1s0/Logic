@@ -28,10 +28,14 @@ function expect(api, data, expected) {
 }
 const normal = {data: {bizType: 'item'}, id: '商品'};
 const unknown = {data: {bizType: 'future'}, id: '未知模块'};
-for (const api of ['mtop.taobao.idlehome.home.nextfresh', 'mtop.taobao.idle.item.buy.feeds']) {
-  expect(api, {sections: [normal, {data: {bizType: 'AD'}}, unknown, null], cursor: 'next'},
-    {sections: [normal, unknown, null], cursor: 'next'});
-}
+expect('mtop.taobao.idlehome.home.nextfresh',
+  {sections: [normal, {data: {bizType: 'AD'}}, unknown, null], cursor: 'next'},
+  {sections: [normal, unknown, null], cursor: 'next'});
+const buyFeeds = 'mtop.taobao.idle.item.buy.feeds';
+expect(buyFeeds, {sections: [normal, {data: {bizType: 'AD'}}, unknown], cursor: 'next'}, {cursor: 'next'});
+expect(buyFeeds, {sections: [normal], cursor: 'next'}, {cursor: 'next'});
+for (const data of [{sections: 'unknown'}, {unexpected: true}]) assert.deepEqual(run(buyFeeds, data).result, {});
+assert.deepEqual(run(buyFeeds, {}, {raw: JSON.stringify({ret: ['FAIL::错误'], data: {sections: [normal]}})}).result, {});
 const search = 'mtop.taobao.idlemtopsearch.search';
 const marked = flag => ({data: {item: {main: {exContent: {isAliMaMaAD: flag}}}}});
 expect(search, {resultList: [marked(true), marked('true'), marked(false), marked('false'), unknown, null], total: 6},
