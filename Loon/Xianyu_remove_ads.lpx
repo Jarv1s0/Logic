@@ -1,5 +1,5 @@
-#!name=闲鱼开屏广告拦截
-#!desc=拦截开屏广告接口及已确认的广告视频路径。需启用 MitM 并信任证书；未验证真机效果，缓存广告和倒计时可能仍存在。
+#!name=闲鱼广告净化
+#!desc=拦截开屏广告，过滤首页、搜索、详情推荐及我的页面推广。需启用 MitM 并信任证书；未验证真机效果，缓存广告和倒计时可能仍存在。
 #!author=Jarv1s0
 #!homepage=https://github.com/Jarv1s0/Logic/blob/master/Loon/Docs/xianyu.md
 #!loon_version=3.5.1(998)
@@ -14,6 +14,9 @@ response if ${url} ~= /^https:\/\/(?:g-)?acs\.m\.goofish\.com\/gw\/mtop(?:\.[a-z
 response if ${url} ~= /^https:\/\/(?:g-)?acs\.m\.goofish\.com\/gw\/mtop\.idle\.ad\.expose\/\d+(?:\.\d+)*(?:\/)?(?:\?|$)/ then response.body.mock("text", "", 200)
 # HAR 确认的广告视频目录；保留同一 CDN 的其他视频路径。
 response if ${url} ~= /^https:\/\/video-zb\.cloudvideocdn\.taobao\.com\/mama_searchad_algo_upload\// then response.body.mock("text", "", 200)
+
+[Script]
+http-response ^https:\/\/(?:g-)?acs\.m\.goofish\.com\/gw\/(?:mtop\.taobao\.idlehome\.home\.nextfresh|mtop\.taobao\.idlemtopsearch\.search|mtop\.taobao\.idle\.item\.recommend(?:\.list)?|mtop\.taobao\.idle\.item\.buy\.feeds|mtop\.idle\.user\.page\.my\.adapter)\/\d+(?:\.\d+)*\/?(?:\?|$) script-path=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Xianyu/xianyu.js?v=20261104-1,requires-body=true,timeout=10,tag=闲鱼页面广告过滤
 
 [MitM]
 hostname = acs.m.goofish.com, g-acs.m.goofish.com, video-zb.cloudvideocdn.taobao.com

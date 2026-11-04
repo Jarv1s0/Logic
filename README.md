@@ -7,7 +7,7 @@
 
 另维护独立的 Loon 插件，不能导入 Mihomo / Clash。
 
-- [闲鱼开屏广告拦截](Loon/Xianyu_remove_ads.lpx)：拦截开屏接口及已确认的广告视频路径；[安装、来源与验证边界](Loon/Docs/xianyu.md)。未完成真机验证。
+- [闲鱼广告净化](Loon/Xianyu_remove_ads.lpx)：拦截开屏，过滤首页、搜索、详情推荐及我的页面推广；[安装、来源与验证边界](Loon/Docs/xianyu.md)。未完成真机验证。
 
 - [好轻去广告](Loon/Haoqing_remove_ads.lpx)：清理开屏、轮播、商品推荐和悬浮推广，采用新版 Rewrite 语法；[安装与验证边界](Loon/Docs/haoqing.md)。
 
