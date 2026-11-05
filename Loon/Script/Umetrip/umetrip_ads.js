@@ -1,8 +1,9 @@
 /**
  * 航旅纵横；基于 fmz200/wool_scripts 的 umetrip_ads.js，GPL-3.0，见 LICENSE。
  * 上游：4b7830670baf235ed945085cb926dc499cf619e0。
- * 本地修改（2026-11-02，20261102-9）：清理会员模块、个人页推广及行程页会员条幅，
+ * 本地修改（20261105-1）：合并 xingjiu29/Umetrip 的模块识别及接口覆盖，
  * 过滤 HAR 确认的推广组，保留首页服务和未知字段；异常响应透传。
+ * 参考：https://github.com/xingjiu29/Umetrip/blob/main/umetrip.js
  */
 
 // 只解读已确认路径，其他字段保留原始字节及顺序。
@@ -66,6 +67,24 @@ function matchesAscii(bytes, text) {
 function valueOf(items, number) {
   const field = items.find(field => field.number === number && field.wire === 0);
   return field && field.value;
+}
+
+// 在二进制消息中查找明确的 UTF-8 文案，不将整包误解码为文本。
+function containsText(bytes, text) {
+  const encoded = encodeURIComponent(text).match(/%[0-9A-F]{2}|./g).map(char => char[0] === '%' ? parseInt(char.slice(1), 16) : char.charCodeAt(0));
+  return bytes.some((_, index) => index + encoded.length <= bytes.length && encoded.every((byte, i) => bytes[index + i] === byte));
+}
+
+function referenceTarget(bytes, group, mine) {
+  if (mine) {
+    // groupId 位于 JSON 配置中，与 Protobuf 字段3的模板编号不同。
+    const ascii = Array.from(bytes, byte => String.fromCharCode(byte)).join('');
+    return /"groupId"\s*:\s*(?:111402|111403|111404)\s*[,}]/.test(ascii) ||
+      containsText(bytes, '会员卡片') || (containsText(bytes, '我的页') && containsText(bytes, '腰部'));
+  }
+  const hasCard = group.some(field => [8, 32].includes(field.number) && field.wire === 2);
+  return hasCard && ([111353, 111435, 111357, 111442, 10673].includes(valueOf(group, 2)) ||
+    ['无行程机票直销卡片', '发现目的地', '本地服务标题', '新人券包'].some(text => containsText(bytes, text)));
 }
 
 // 原对象表示不变，null 表示删除；仅为修改的父字段重写长度。
@@ -136,11 +155,12 @@ function cleanServiceCard(bytes) {
   return blocked ? null : cleaned;
 }
 
-function cleanPage(bytes, waterfall, mine = false) {
+function cleanPage(bytes, waterfall, mine = false, home = false) {
   return rewrite(bytes, field => {
     if (field.number !== 5 || field.wire !== 2) return field.value;
     const group = fields(field.value);
     const template = valueOf(group, 3);
+    if ((mine || home) && referenceTarget(field.value, group, mine)) return null;
     if (!waterfall) {
       const advert = group.some(f => f.number === 37 && f.wire === 2 && matchesAscii(f.value, 'ADVERT'));
       // 商城虚拟卡、机票直销、发现目的地、回归礼包；保留服务入口和飞行回忆。
@@ -174,7 +194,7 @@ function cleanEnvelope(bytes, rpid) {
         if (rpid === '1370286') return page.number === 2 ? null : page.value;
         if (rpid === '1000002' && page.number === 27) return null; // 会员权益图片配置
         const number = rpid === '1100001' ? 11 : rpid === '1000002' ? 2 : 1;
-        return page.number === number ? cleanPage(page.value, rpid === '1000029', rpid === '1100001') : page.value;
+        return page.number === number ? cleanPage(page.value, rpid === '1000029', rpid === '1100001', rpid === '1000002') : page.value;
       })
       : payload.value)
     : outer.value);
@@ -183,22 +203,34 @@ function cleanEnvelope(bytes, rpid) {
 function main() {
   const headers = $request.headers || {};
   const key = Object.keys(headers).find(key => key.toLowerCase() === 'rpid');
-  const rpid = headers[key];
-  const native = /^https?:\/\/(home\.umetrip\.com|umehome\.umetrip\.com|umerp\.umetrip\.com|sns\.umetrip\.com|opactivity\.umetrip\.com|activity\.umetrip\.com|114\.115\.217\.129)\/gateway\/api\/umetrip\/native(?:\?[^#]*)?$/i.exec($request.url || '');
+  const query = /[?&]rpid=([^&#]*)/i.exec($request.url || '');
+  const rpid = typeof headers[key] === 'string' && headers[key].trim() || (query ? decodeURIComponent(query[1]).trim() : '');
+  const native = /^https?:\/\/(114\.115\.217\.129|(?:home|umehome|umerp|sns|bkclient|appmsg)\.umetrip\.com(?:\.cn)?|(?:opactivity|activity)\.umetrip\.com)\/gateway\/api\/umetrip\/native(?:\?[^#]*)?$/i.exec($request.url || '');
   if (!native || typeof rpid !== 'string') return {};
   const host = native[1].toLowerCase();
-  if (rpid === '1000019' && ['home.umetrip.com', 'umehome.umetrip.com', 'sns.umetrip.com', '114.115.217.129'].includes(host)) {
+  const referenceHost = /^(home|umehome|umerp|sns|bkclient|appmsg)\.umetrip\.com(?:\.cn)?$/.test(host);
+  if (rpid === '1000019' && (referenceHost || host === '114.115.217.129')) {
     return { status: 'HTTP/1.1 404 Not Found' };
   }
-  const home = rpid === '1000002' && ['home.umetrip.com', 'umehome.umetrip.com', '114.115.217.129'].includes(host);
+  const home = rpid === '1000002' && (referenceHost || host === '114.115.217.129');
   const waterfall = rpid === '1000029' && host === 'opactivity.umetrip.com';
-  const member = ['1100001', '1370286'].includes(rpid) && host === 'umerp.umetrip.com';
+  const member = ['1100001', '1370286'].includes(rpid) && referenceHost;
+  const empty = ['1420002', '1430064'].includes(rpid) && referenceHost;
   const tripBanner = rpid === '1370126' && host === 'activity.umetrip.com';
-  if (!home && !waterfall && !member && !tripBanner) return {};
+  if (!home && !waterfall && !member && !tripBanner && !empty) return {};
   const body = $response.body;
   if (!(body instanceof Uint8Array) && !(body instanceof ArrayBuffer)) return {};
   const bytes = body instanceof Uint8Array ? body : new Uint8Array(body);
-  const cleaned = cleanEnvelope(bytes, rpid);
+  // 参考脚本的空载荷结构；要求协议内 rpid 与请求一致，避免处理错误业务响应。
+  const cleaned = empty
+    ? (fields(bytes).some(field => field.number === 5 && field.wire === 2 && matchesAscii(field.value, rpid))
+      ? rewrite(bytes, field => {
+        if (field.number !== 7 || field.wire !== 2) return field.value;
+        const page = new Uint8Array([10, 0, 16, 0, 32, 0]);
+        return field.value.length === page.length && page.every((byte, i) => field.value[i] === byte) ? field.value : page;
+      })
+      : bytes)
+    : cleanEnvelope(bytes, rpid);
   return cleaned === bytes ? {} : { body: cleaned };
 }
 

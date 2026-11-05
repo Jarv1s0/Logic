@@ -6,7 +6,21 @@
 https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/umetrip.plugin
 ```
 
-启用插件、脚本及 MITM，并安装、信任 Loon 的 CA 证书。插件沿用现有路径，已安装该地址的用户需更新插件配置和两份脚本（接口脚本、个人页资源脚本），确认说明中显示版本 `20261102-9` 和北京时间 `2026-11-02 13:33:43`。更新时间精确到秒，并写入说明及 `#!date`。
+启用插件、脚本及 MITM，并安装、信任 Loon 的 CA 证书。更新插件配置和接口脚本，确认插件版本 `20261105-1`，`#!date` 为北京时间 `2026-11-05 14:55:37`。当前仅使用接口脚本，不再引用个人页资源修改脚本。
+
+## 合并杏九规则：20261105-1
+
+参考 [xingjiu29/Umetrip 插件](https://raw.githubusercontent.com/xingjiu29/Umetrip/refs/heads/main/umetrip.plugin)及其 `umetrip.js?v=4`，将目标识别逻辑合并到现有脚本，保留原有首页、瀑布流、个人页和行程页过滤：
+
+- 首页沿已知路径 `7.1.2.5`，补充字段2的 groupId `111353/111435/111357/111442/10673`，及“无行程机票直销卡片／发现目的地／本地服务标题／新人券包”文案识别；仅处理存在字段8或32卡片的组。字段3仍按原有模板编号处理。
+- 个人页沿 `7.1.11.5`，补充 JSON 中 groupId `111402/111403/111404`、“会员卡片”或“我的页＋腰部”的识别。
+- 接口覆盖 `home/umehome/umerp/sns/bkclient/appmsg.umetrip.com` 及对应 `.com.cn` 主机，保留现有 `activity/opactivity` 和 IP 匹配；支持大小写不敏感的请求头及 URL 查询参数中的 rpid，优先使用非空请求头。
+- 补入 `sensors.umetrip.com.cn`、`analytics.umetrip.com` 域名拒绝规则；参照上游对 `1420002/1430064` 将字段7替换为空页面结构，保留其他外层字段，并要求响应内 rpid 与请求一致。开屏保留原有404行为，会员权益页保留原有定点字段过滤。
+- 不引入上游的首页白名单删除和全包递归猜测，未知模块继续保留。未恢复 Weex 资源包、清单或 entry.js 改写。
+
+新增模块编号和两个空载荷接口来自参考源码，尚无对应的新 HAR 或真机验证；无法确认它们在当前客户端的全部用途、是否消除个人页空框或底部标志。模拟回归不能代替设备验证。
+
+本轮运行 `node Loon/Script/Umetrip/tests/regression.cjs`，176次脚本执行通过，覆盖新增编号及文案过滤、字段2与字段3区分、未知模块保留、主机边界、URL参数回退、空载荷幂等和异常透传；`node Loon/Script/Umetrip/tests/usercenter.cjs` 的资源透传检查通过，脚本语法与 `git diff --check` 通过。未提供 HAR 参数，未执行本轮真实抓包重放。
 
 ## 白屏紧急撤回：20261102-9
 

@@ -9,11 +9,11 @@ const [, pattern, flags] = plugin.match(/^response if \$\{url\} ~= \/(.+)\/([ims
 const rule = new RegExp(pattern, flags);
 const url = 'https://umehome.umetrip.com/gateway/api/umetrip/native';
 let checks = 0;
-function run(body, rpid = '1000002', requestUrl = url, code = source) {
+function run(body, rpid = '1000002', requestUrl = url, code = source, headers = { RPID: rpid }) {
   const results = [];
   vm.runInNewContext(code, {
     Uint8Array, ArrayBuffer,
-    $request: { url: requestUrl, headers: { RPID: rpid } },
+    $request: { url: requestUrl, headers },
     $response: { body }, $done: result => results.push(result),
   });
   assert.equal(results.length, 1);
@@ -64,7 +64,7 @@ const malformedJson = wrap(field(5, join(integer(3,111280),field(8,text(7,'{inva
 assert.equal(Object.keys(run(malformedJson)).length,0);
 const memberWrap = value => join(text(5,'1370286'),field(7,field(1,value)),text(90,'unknown'));
 assert.deepEqual(Buffer.from(run(memberWrap(join(text(2,'member payload'),text(88,'keep'))),'1370286',mineUrl).body),memberWrap(text(88,'keep')));
-assert.equal(Object.keys(run(memberWrap(text(2,'member payload')),'1370286',url)).length,0);
+assert.deepEqual(Buffer.from(run(memberWrap(text(2,'member payload')),'1370286',url).body),memberWrap(Buffer.alloc(0)));
 assert.ok(rule.test(mineUrl));
 const rejects = [...plugin.matchAll(/^request if \$\{url\} ~= \/(.+)\/([ims]*) then reject\(404\)$/gm)].map(match=>new RegExp(match[1], match[2]));
 assert.equal(rejects.length, 3, '必须读取全部资源拦截规则');
@@ -94,6 +94,55 @@ const tripMember={trackParam:{department:'equity'},lottieAndVideo:'{"text":"会�
 const tripNormal={trackParam:{department:'train'},lottieAndVideo:'{"text":"打开轨迹图","isShow":1}'};
 assert.deepEqual(Buffer.from(run(trip([tripMember,tripNormal]),'1370126',tripUrl).body),trip([tripNormal]));
 assert.equal(Object.keys(run(trip([tripMember,tripNormal]),'1370126',url)).length,0);
+
+// 合并规则：字段2的组编号与字段3模板编号必须分开识别。
+const refGroup = (id, label = '', template = 999999) => join(integer(2,id),integer(3,template),field(8,text(7,JSON.stringify({title:label}))));
+for (const id of [111353,111435,111357,111442,10673]) {
+  const input=wrap(join(field(5,refGroup(id)),kept));
+  assert.deepEqual(Buffer.from(run(input).body),wrap(kept));
+  assert.equal(Object.keys(run(wrap(field(5,refGroup(999999,'',id))))).length,0);
+}
+for (const label of ['无行程机票直销卡片','发现目的地','本地服务标题','新人券包']) {
+  assert.deepEqual(Buffer.from(run(wrap(join(field(5,refGroup(999999,label)),kept))).body),wrap(kept));
+}
+// 未知模块及无卡片记录保留，不引入首页白名单误杀。
+for(const g of [refGroup(999999,'航班动态'),join(integer(2,111353),text(40,'发现目的地'))]) {
+  assert.equal(Object.keys(run(wrap(field(5,g)))).length,0);
+}
+for(const config of ['{"groupId":111402}', '{ "groupId" : 111403, "title":"推广" }','{"groupId":\n111404}', '{"title":"会员卡片"}', '{"title":"我的页-腰部 banner"}']) {
+  const record=field(5,join(integer(3,999999),field(8,text(7,config))));
+  assert.deepEqual(Buffer.from(run(mineWrap(join(record,kept)),'1100001',mineUrl).body),mineWrap(kept));
+}
+const unknownMine=mineWrap(field(5,refGroup(999999,'普通客服')));
+assert.equal(Object.keys(run(unknownMine,'1100001',mineUrl)).length,0);
+const prefixId=mineWrap(field(5,join(integer(3,999999),field(8,text(7,'{"groupId":1114020}')))));
+assert.equal(Object.keys(run(prefixId,'1100001',mineUrl)).length,0);
+const mitm=plugin.match(/^hostname = (.+)$/m)[1].split(/,\s*/);
+for(const sub of ['home','umehome','umerp','sns','bkclient','appmsg'])for(const suffix of ['', '.cn']) {
+  const host=sub+'.umetrip.com'+suffix;
+  const target='https://'+host+'/gateway/api/umetrip/native';
+  assert.ok(rule.test(target));assert.ok(mitm.includes(host));
+  assert.deepEqual(Buffer.from(run(dirty,'1000002',target).body),wrap(kept));
+  assert.deepEqual(Buffer.from(run(bannerPage,'1100001',target).body),mineWrap(kept));
+  for(const id of ['1420002','1430064']) {
+    const input=join(text(5,id),field(7,text(1,'payload')),text(90,'keep'));
+    const expected=join(text(5,id),field(7,Buffer.from([10,0,16,0,32,0])),text(90,'keep'));
+    assert.deepEqual(Buffer.from(run(input,id,target).body),expected);
+    assert.equal(Object.keys(run(expected,id,target)).length,0);
+    assert.equal(Object.keys(run(wrap(kept),id,target)).length,0);
+    assert.equal(Object.keys(run(Buffer.from([0xff]),id,target)).length,0);
+  }
+}
+for(const headers of [{},{rPiD:' 1000002 '},{RPID:''}]) {
+  assert.deepEqual(Buffer.from(run(dirty,null,url+'?rpid=%31%30%30%30%30%30%32',source,headers).body),wrap(kept));
+}
+assert.equal(Object.keys(run(dirty,null,url+'?rpid=%ZZ',source,{})).length,0);
+assert.equal(Object.keys(run(dirty,'other',url+'?rpid=1000002')).length,0);
+for(const bad of ['https://appmsg.umetrip.com.evil.test/gateway/api/umetrip/native',url+'/other']) {
+  assert.ok(!rule.test(bad));assert.equal(Object.keys(run(dirty,'1000002',bad)).length,0);
+}
+assert.ok(plugin.includes('DOMAIN,sensors.umetrip.com.cn,REJECT'));
+assert.ok(plugin.includes('DOMAIN,analytics.umetrip.com,REJECT'));
 
 // 独立读取 Protobuf 字段，用真实 HAR 验证完整字节差异；不存储任何抓包数据。
 function read(bytes) {

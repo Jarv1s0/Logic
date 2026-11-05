@@ -1,15 +1,21 @@
 #!name=航旅纵横去广告
 #!desc=移除开屏广告、首页推广、个人页会员推广和行程页推广条幅。
-#!author=fmz200, Jarv1s0
+#!author=fmz200, 杏九, Jarv1s0
 #!icon=https://raw.githubusercontent.com/lige47/lige_icon/main/icon/03CNSoft/hanglvzonghengumetrip.png
 #!homepage=https://github.com/Jarv1s0/Logic/blob/master/Loon/Docs/umetrip.md
 #!raw-url=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/umetrip.plugin
-#!date=2026-11-04 12:17:13
+#!date=2026-11-05 14:55:37
 #!loon_version=3.5.1(983)
-#!version=20261102-9
+#!version=20261105-1
 # 来源：https://github.com/fmz200/wool_scripts/blob/4b7830670baf235ed945085cb926dc499cf619e0/Loon/plugin/blockAdsV2.plugin
 # GPL-3.0；许可证见 Script/Umetrip/LICENSE
 # 本地适配于 2026-11-02：转换为 Loon 分节语法，修正协议和域名匹配边界。
+
+# 规则识别参考：https://github.com/xingjiu29/Umetrip（umetrip.js v=4）
+
+[Rule]
+DOMAIN,sensors.umetrip.com.cn,REJECT
+DOMAIN,analytics.umetrip.com,REJECT
 
 [Rewrite]
 request if ${url} ~= /^https:\/\/oss\.umetrip\.com\/fs\/advert\/polite/i then reject(404)
@@ -19,7 +25,7 @@ request if ${url} ~= /^https?:\/\/(discardrp|startup)\.umetrip\.com\/gateway\/ap
 request if ${url} ~= /^https:\/\/oss\.umetrip\.com\/fs\/(equityCenter\/static|membership\/rights)\//i then reject(404)
 
 [Script]
-response if ${url} ~= /^https?:\/\/(114\.115\.217\.129|umerp\.umetrip\.com|home\.umetrip\.com|umehome\.umetrip\.com|sns\.umetrip\.com|opactivity\.umetrip\.com|activity\.umetrip\.com)\/gateway\/api\/umetrip\/native(?:\?[^#]*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Umetrip/umetrip_ads.js?v=20261102-9") with requires_body=true, binary_body_mode=true, timeout=60, tag="航旅纵横"
+response if ${url} ~= /^https?:\/\/(114\.115\.217\.129|(?:home|umehome|umerp|sns|bkclient|appmsg)\.umetrip\.com(?:\.cn)?|(?:opactivity|activity)\.umetrip\.com)\/gateway\/api\/umetrip\/native(?:\?[^#]*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Umetrip/umetrip_ads.js?v=20261105-1") with requires_body=true, binary_body_mode=true, timeout=60, tag="航旅纵横"
 
 [MITM]
-hostname = umerp.umetrip.com, home.umetrip.com, umehome.umetrip.com, sns.umetrip.com, opactivity.umetrip.com, activity.umetrip.com, discardrp.umetrip.com, startup.umetrip.com, oss.umetrip.com
+hostname = home.umetrip.com, home.umetrip.com.cn, umehome.umetrip.com, umehome.umetrip.com.cn, umerp.umetrip.com, umerp.umetrip.com.cn, sns.umetrip.com, sns.umetrip.com.cn, bkclient.umetrip.com, bkclient.umetrip.com.cn, appmsg.umetrip.com, appmsg.umetrip.com.cn, opactivity.umetrip.com, activity.umetrip.com, discardrp.umetrip.com, startup.umetrip.com, oss.umetrip.com
