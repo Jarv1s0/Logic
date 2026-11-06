@@ -1,6 +1,6 @@
 {
   "upstream": "kokoryh/Sparkle",
-  "revision": "2ec4e812e4be8886cfed7650d0030eb6cdcdae4f",
+  "revision": "d513a2eeab382c640ccd5d6ecd76e07c4828b1ed",
   "files": {
     "release/loon/plugin/bilibili.lpx": "Loon/bilibili.lpx",
     "dist/bilibili.json.js": "Loon/Script/Bilibili/bilibili.json.js",
@@ -12,10 +12,10 @@
     "LICENSE": "Loon/Script/Bilibili/LICENSE"
   },
   "sha256": {
-    "Loon/bilibili.lpx": "b8b4337546d519da4122ef4e623487e66f1e0c3caf60703b0b6a63d674572518",
+    "Loon/bilibili.lpx": "872c58af6432d837eebe298e958e7b70312a769b83bb3fb4e0e000b852c219bc",
     "Loon/Script/Bilibili/bilibili.json.js": "09749a95e96d4b5847d5d6a07476b3ff70b3dc11d8cda2b00e80bd8681594c6e",
-    "Loon/Script/Bilibili/bilibili.protobuf.request.js": "02135da7471f1f5d0e2592b6f8cee88ef4c122084fc151849c2fe07d51f3cf55",
-    "Loon/Script/Bilibili/bilibili.protobuf.response.js": "6fcfb97e8b46ea7d2fcbd8deb913099f37727fc5c5c3cf6440d2a0ef7577f8e3",
+    "Loon/Script/Bilibili/bilibili.protobuf.request.js": "61fc5eaded4cb28d2c21796d3fb92ae8b8c3896346bf16ad3f4f29f6e1db53d2",
+    "Loon/Script/Bilibili/bilibili.protobuf.response.js": "bfcc0970105056b51a02eb643931c8d4a8d9656f25a5c3f0d6fe9cf6b4d15f8e",
     "Loon/Script/Bilibili/webpage.bilibili.js": "51ac0153239c8ccfbcfa7207cdba4ad6affb6c95e4201f3d54754d17dfeb50c1",
     "Loon/Script/Bilibili/bilibili.mine.jq": "917e567c58ae7971baa93879b4044dd6dc165ffe711fc91d1d846e67e353b8e9",
     "Loon/Script/Bilibili/bilibili.tab.jq": "1d274236688408619754136cbf72b605346af1cafa65fa087a3638b00ab47453",
