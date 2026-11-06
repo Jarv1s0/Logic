@@ -42,6 +42,8 @@ node --check Loon/Script/Amap/amap-new.js
 
 ## 修改边界
 
+`20261106-1` 按用户要求引入 [ddgksf2013 的 AMDC 处理](https://raw.githubusercontent.com/ddgksf2013/Scripts/refs/heads/master/amdc.js)，独立维护为 `Loon/Script/Amap/amdc.js`。仅匹配 `http://amdc.m.taobao.com/` 下的响应，沿用原脚本的 User-Agent 条件（AMap、Cainiao、编码后的闲鱼/飞猪旅行/喵街/天猫、Alibaba、MovieApp、Hema4iPhone、Moon、DMPortal），命中时将响应正文替换为字符串 `Jarvis`，未命中或缺少 User-Agent 时透传。不扩展到 HTTPS、IP 地址或其他调度域名，也不需要新增 MitM 域名。此改动会干预符合条件的其他应用的 AMDC 调度，可能影响其连接；不能保证解决高德久未启动后偶发开屏，需真机验证。更新插件后会加载新增脚本；远程文件须推送后才可用。HAR 不入库。
+
 `20261021-1` 根据新增 HAR 的两条首页 SSE 成功响应，确认目的地打车推荐改由独立的 `C2TaxiBizContainer` 提供，其 `data.cardData.dataList` 包含目的地及“去打车”按钮，不在此前的动态子卡片过滤范围内。仅在首页 `aiPmtGenerate` 模板下清空该容器的推荐列表，保留容器、布局引用、UI schema、全部事件与序号，继续保留常用地点。插件四处脚本版本参数同步更新。旧版在新增回归中失败，且两条真实响应均原样透传；新版重放两条响应时仅目标列表变化，未知卡片、其他模板、异常或未完成流透传及重复处理检查通过。Loon 真机效果待确认；HAR 不入库。
 
 本次首页回归可执行 `node Loon/Script/Amap/tests/home-stream.cjs`；可附本地 HAR 路径重放本次抓包（要求每条首页响应均包含目标推荐，且其他字段无需改写）。
@@ -75,7 +77,7 @@ node --check Loon/Script/Amap/amap-new.js
 - 解除评价、问题反馈、地图渲染、顶部通知、公共出行推荐和其他 AI 推荐接口处理；用途或结构不足以支持整段删除。
 - 解除 `/ws/fluorite/resource` 整段拦截及支付成功信息接口拦截，避免在无真实响应证据时屏蔽整段资源或支付页面信息。
 - 保留上游明确标记的开屏、营销搜索、广告提示、附近店铺推荐、签到推广及路线打车导流规则，并限制完整路径边界。
-- HTTP 调度拦截不再迁入：没有验证其必要性与影响，避免干预非广告调度请求。
+- HTTP AMDC 调度处理按用户要求于 `20261106-1` 加入；仅采用上述域名、协议及 User-Agent 条件，未确认其他调度请求用途，不扩大匹配。
 - 以上取舍可能保留更多推广内容，以减少正常功能误删。后续扩展应先取得脱敏真实响应，确认字段用途。
 
 ## 上游来源
