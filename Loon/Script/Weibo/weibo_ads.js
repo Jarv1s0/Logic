@@ -6,9 +6,14 @@
 
 let url = $request.url;
 let body = $response.body;
-let resp_data = JSON.parse(body);
+let resp_data;
 
 try {
+  resp_data = JSON.parse(body);
+  if (!resp_data || typeof resp_data !== 'object' || Array.isArray(resp_data)) {
+    throw new Error('非对象响应');
+  }
+  const before = JSON.stringify(resp_data);
   // 1、首次点击发现按钮
   if (url.includes("/search/finder?")) {
     console.log('进入发现页...');
@@ -42,7 +47,7 @@ try {
 
   // 3、微博热搜页面刷新
   if (url.includes("/2/page?") && resp_data.cards && resp_data.cards[0].card_group) {
-    resp_data.cards[0].card_group = resp_data.cards[0].card_group.filter(group => group.promotion == null);
+    resp_data.cards[0].card_group = resp_data.cards[0].card_group.filter(group => group.ad_marked !== true && group.promotion == null);
     console.log('处理微博热搜页面广告结束💕💕');
   }
 
@@ -52,17 +57,17 @@ try {
     resp_data.pageHeader = {};
     for (let subItem of resp_data.items) {
       if (subItem.itemId === "hotword") {
-        subItem.items = subItem.items.filter(group => group.data.promotion == null && !group.data.itemid.includes("c_type:51"));
+        subItem.items = subItem.items.filter(group => group.data.ad_marked !== true && group.data.promotion == null && !group.data.itemid.includes("c_type:51"));
         break;
       } else if (subItem.items) {
-        subItem.items = subItem.items.filter(group => group.data.promotion == null && !group.data.itemid.includes("c_type:51") && !group.data.itemid.includes("region_data"));
+        subItem.items = subItem.items.filter(group => group.data.ad_marked !== true && group.data.promotion == null && !group.data.itemid.includes("c_type:51") && !group.data.itemid.includes("region_data"));
       }
     }
   }
 
   // 4、微博超话页面
   if (url.includes("/statuses/container_timeline_topicpage?") && resp_data.items) {
-    resp_data.items = resp_data.items.filter(item => !item.data || item.data.mblogtypename !== "广告");
+    resp_data.items = resp_data.items.filter(item => !item.data || (item.data.ad_marked !== true && item.data.mblogtypename !== "广告"));
     console.log('处理微博超话页面广告结束💕💕');
   }
 
@@ -79,9 +84,11 @@ try {
     console.log('处理微博详情页面广告结束💕💕');
   }
   if (url.includes("/statuses/container_detail?")) {
-    resp_data.pageHeader.data.items = resp_data.pageHeader.data.items.filter(item =>
+    if (Array.isArray(resp_data.pageHeader?.data?.items)) resp_data.pageHeader.data.items = resp_data.pageHeader.data.items.filter(item =>
       item?.category !== 'card' && item?.category !== "group" && item?.category !== "wboxcard" && item?.type !== 'share'
     );
+    // 参考 ddgksf2013/weibo_json.js：新版详情正文中的广告、推荐和 AI 卡片。
+    filterDetailComments(resp_data);
     // 详情页面的关注悬浮横幅
     if (resp_data.detailInfo?.extend?.follow_data) {
       delete resp_data.detailInfo.extend.follow_data;
@@ -102,7 +109,7 @@ try {
   // 7、话题页面 微博话题页面
   if (url.includes("/2/searchall?")) {
     for (let i = 0; i < resp_data.items.length; i++) {
-      if (resp_data.items[i].data?.mblogtypename === "广告" || resp_data.items[i].data?.ad_state === 1) {
+      if (resp_data.items[i].data?.ad_marked === true || resp_data.items[i].data?.mblogtypename === "广告" || resp_data.items[i].data?.ad_state === 1) {
         console.log('处理话题页面广告');
         resp_data.items[i] = {};
         continue;
@@ -112,7 +119,7 @@ try {
 
       if (resp_data.items[i].items) {
         for (let j = 0; j < resp_data.items[i].items.length; j++) {
-          if (resp_data.items[i].items[j].data?.card_type === 22
+          if (resp_data.items[i].items[j].data?.ad_marked === true || resp_data.items[i].items[j].data?.card_type === 22
             || resp_data.items[i].items[j].data?.ad_state === 1
             || resp_data.items[i].items[j].data?.content_auth_info?.content_auth_title === "广告") {
             resp_data.items[i].items[j] = {};
@@ -131,7 +138,7 @@ try {
     const cardTypes = [19, 179]; // 19：热帖/必刷/分类，31：热搜词，179：关注的超话
     for (let i = 0; i < resp_data.items.length; i++) {
       const item = resp_data.items[i];
-      if (item.data?.is_ad === 1 || item.data?.mblogtypename === "广告") {
+      if (item.data?.ad_marked === true || item.data?.is_ad === 1 || item.data?.mblogtypename === "广告") {
         resp_data.items[i] = {};
         continue;
       }
@@ -171,7 +178,7 @@ try {
     console.log('处理评论区广告结束💕💕');
   }
   if (url.includes("/statuses/container_detail_comment?") || url.includes("/statuses/container_detail_mix?")) {
-    resp_data.items = resp_data.items.filter(item => item.type !== "trend" && !item.commentAdType);
+    filterDetailComments(resp_data);
     console.log('处理评论区广告结束💕💕');
   }
 
@@ -181,12 +188,19 @@ try {
     console.log('处理转发区广告结束💕💕');
   }
 
+  let storedConfig;
+  try { storedConfig = JSON.parse($persistentStore.read('mainConfig')); } catch (_) {}
+  const interfaceConfig = Object.assign({ hideFeedAiButton: true, hidePlaybackCompletionActions: true },
+    storedConfig && typeof storedConfig === 'object' && !Array.isArray(storedConfig) ? storedConfig : {});
+  cleanPostInterface(resp_data, interfaceConfig);
+  const after = JSON.stringify(resp_data);
+  if (after !== before) body = after;
   console.log('广告数据处理完毕🧧🧧');
 } catch (e) {
   console.log('脚本运行出现错误，部分广告未去除⚠️');
   console.log('错误信息：' + e.message);
 }
-$done({body:JSON.stringify(resp_data)});
+$done({body});
 /***************************方法主体end*********************************/
 
 function processPayload(payload) {
@@ -243,7 +257,7 @@ function removeCommonAds(items) {
     const item = items[i];
     const data = item?.data;
     const card_type = Number(data?.card_type);
-    if ([118, 247].includes(card_type)
+    if (data?.ad_marked === true || [118, 247].includes(card_type)
       || data?.mblogtypename === "广告"
       || data?.content_auth_info?.content_auth_title === "广告"
       || Number(data?.ad_state) === 1
@@ -293,7 +307,7 @@ function removeHotSearchAds(groups) {
   console.log('移除发现页热搜广告开始💕');
   for (let i = groups.length - 1; i >= 0; i--) {
     const group = groups[i];
-    if (group.itemid?.includes("is_ad_pos") || group.itemid?.includes("city_code") || group.promotion) {
+    if (group.ad_marked === true || group.itemid?.includes("is_ad_pos") || group.itemid?.includes("city_code") || group.promotion) {
       groups.splice(i, 1);
     }
   }
@@ -405,5 +419,37 @@ function deleteCommonAndSemanticBrandParams(item) {
   }
   if (item.data?.semantic_brand_params) {
     delete item.data.semantic_brand_params;
+  }
+}
+
+// 保留普通评论及未知结构，只移除上游已识别的推广类型。
+function filterDetailComments(data) {
+  if (!Array.isArray(data.items)) return;
+  const adTypes = ['广告', '廣告', '相关内容', '推荐', '热推', '推薦', '荐读'];
+  data.items = data.items.filter(item => item?.type !== 'trend' && !item?.commentAdType
+    && item?.data?.ad_marked !== true
+    && !adTypes.includes(item?.data?.adType || item?.adType)
+    && ![6, 236].includes(Number(item?.data?.card_type)));
+  delete data.tip_msg;
+}
+
+// 参考 WeiboEnhanced 0.1.55：只处理已识别的帖子字段和响应容器。
+function cleanPostInterface(payload, config) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return;
+  const cells = payload.bottom_bar_dyna?.cell_item;
+  if (config.hideFeedAiButton && cells?.ai_search && typeof cells.ai_search === 'object' && !Array.isArray(cells.ai_search)) {
+    delete cells.ai_search;
+  }
+  const media = payload.page_info?.media_info;
+  if (config.hidePlaybackCompletionActions && Array.isArray(media?.play_completion_actions)) {
+    media.play_completion_actions = [];
+  }
+  for (const key of ['items', 'statuses', 'lists', 'cards', 'datas', 'reposts', 'hot_reposts', 'channels']) {
+    if (Array.isArray(payload[key])) {
+      for (const item of payload[key]) cleanPostInterface(item, config);
+    }
+  }
+  for (const key of ['data', 'status', 'mblog', 'detailInfo', 'payload', 'header', 'channelInfo']) {
+    cleanPostInterface(payload[key], config);
   }
 }

@@ -11,7 +11,7 @@ let storeMainConfig = $.getdata('mainConfig');
 let storeItemMenusConfig = $.getdata('itemMenusConfig');
 
 //主要的选项配置
-const mainConfig = storeMainConfig ? JSON.parse(storeMainConfig) : {
+const mainConfig = Object.assign({
 	isDebug: true,						//开启调试，会打印运行中部分日志
 	//个人中心配置，其中多数是可以直接在更多功能里直接移除
 	removeHomeVip: true,				//个人中心的vip栏
@@ -27,6 +27,12 @@ const mainConfig = storeMainConfig ? JSON.parse(storeMainConfig) : {
 	removeRewardItem: false,	//微博详情页打赏模块
 
 	removeLiveMedia: true,		//首页顶部直播
+	homeAutoRefresh: true,				// 默认开启；null 保持原样，false 关闭
+	hideHomeTabAvatar: true,			// 首页 TAB 头像提示
+	hideHomeTabRedDot: true,			// 首页更新红点
+	hideMessageTabNumber: true,		// 消息汇总数字
+	hideFeedAiButton: true,			// 帖子底部 AI 入口
+	hidePlaybackCompletionActions: true,	// 视频播放完成动作
 	removeNextVideo: false,					//关闭自动播放下一个视频
 
 	removePinedTrending: true,		//删除热搜列表置顶条目
@@ -42,11 +48,11 @@ const mainConfig = storeMainConfig ? JSON.parse(storeMainConfig) : {
 	profileSkin2: null,						//用户页：自定义图标2
 	tabIconVersion: 0,						//配置大于100的数
 	tabIconPath: ''							//配置图标路径
-}
+}, readStoredConfig(storeMainConfig));
 
 
 //菜单配置
-const itemMenusConfig = storeItemMenusConfig ? JSON.parse(storeItemMenusConfig) : {
+const itemMenusConfig = readStoredConfig(storeItemMenusConfig) || {
 	creator_task: false,					//转发任务
 	mblog_menus_custom: false,				//寄微博
 	mblog_menus_video_later: true,			//可能是稍后再看？没出现过
@@ -74,7 +80,7 @@ const itemMenusConfig = storeItemMenusConfig ? JSON.parse(storeItemMenusConfig) 
 }
 
 const modifyCardsUrls = ['/cardlist', 'video/community_tab', '/searchall'];
-const modifyStatusesUrls = ['statuses/friends/timeline', 'statuses/unread_friends_timeline', 'statuses/unread_hot_timeline', 'groups/timeline', 'flowlist'];
+const modifyStatusesUrls = ['guest/statuses_unread_hot_timeline', 'guest/timeline', 'statuses/friends/timeline', 'statuses/unread_friends_timeline', 'statuses/unread_hot_timeline', 'groups/timeline', 'flowlist'];
 
 const otherUrls = {
 	'/profile/me': 'removeHome',						//个人页模块
@@ -85,7 +91,8 @@ const otherUrls = {
 	'/comments/build_comments': 'removeComments',		//微博详情页评论区相关内容
 	'/container/get_item': 'containerHandler',			//列表相关
 	'/profile/container_timeline': 'userHandler',					//用户主页
-	'/video/tiny_stream_video_list': 'nextVideoHandler',	//取消自动播放下一个视频
+	'/video/tiny_stream_video_list': 'nextVideoHandler',
+	'/video/tiny_stream_mid_detail': 'nextVideoHandler',	//视频广告及续播设置
 	'/2/statuses/video_mixtimeline': 'nextVideoHandler',
 	'/!/client/light_skin': 'tabSkinHandler',
 	'/littleskin/preview': 'skinPreviewHandler',
@@ -94,24 +101,48 @@ const otherUrls = {
 	'/search/container_discover': 'removeSearch',
 	'/2/messageflow': 'removeMsgAd',
 	'/2/page?': 'removePage',	//超话签到的按钮 /2/page/button 加?区别
-	'/statuses/container_timeline_topic?': 'topicHandler',	//超话tab
+	'/statuses/container_timeline_topic?': 'topicHandler',
+	'/statuses/unread_topic_timeline': 'unreadTopicHandler',	//未读超话
 	'/statuses/container_timeline?': 'removeMain',	//首页
 	'/statuses/container_timeline_unread': 'removeMain',	//首页
 	'/statuses/container_timeline_hot?': 'removeMain',	//推荐页，fmz200
 	'/statuses/repost_timeline': 'removeRepost',	//转发流
+	'/guest/container_timeline_hot': 'removeMain',
+	'/video/flow_stream_cache': 'removeVideoCache',
+	'/video/flow_stream': 'removeVideoFlow',
+	'/client/abserver_list': 'modifyHomeAutoRefresh',
+	'/remind/hometab_dot': 'removeHomeTabAvatar',
+	'/remind/unread_count': 'removeUnreadHints',
+	'/push/daily': 'removeDailyAds',	//日配置广告
 }
 
 let url = $request.url;
 let body = $response.body;
 let method = getModifyMethod(url);
 console.log("匹配方法：" + method);
-let data = JSON.parse(body);
-if (method) {
-	let func = eval(method);
-	new func(data);
+try {
+	const data = JSON.parse(body);
+	if (data && typeof data === 'object' && !Array.isArray(data) && method) {
+		const before = JSON.stringify(data);
+		const func = eval(method);
+		func(data);
+		cleanPostInterface(data, mainConfig);
+		const after = JSON.stringify(data);
+		if (after !== before) body = after;
+	}
+} catch (error) {
+	console.log('微博净化跳过异常响应：' + error.message);
 }
+$.done({body});
 
-$.done({body: JSON.stringify(data)});
+function readStoredConfig(value) {
+	try {
+		const config = JSON.parse(value);
+		return config && typeof config === 'object' && !Array.isArray(config) ? config : null;
+	} catch (_) {
+		return null;
+	}
+}
 
 
 function getModifyMethod(url) {
@@ -142,7 +173,7 @@ function isAd(data) {
 	if (data.mblogtypename?.includes('广告') || data.mblogtypename?.includes('热推')) {
 		return true;
 	}
-	if (data.promotion?.type === 'ad') {
+	if (data.ad_marked === true || data.page_info?.actionlog?.source === 'ad' || data.promotion?.type === 'ad') {
 		return true;
 	}
 	if (data.content_auth_info?.content_auth_title?.includes("广告")) {
@@ -240,6 +271,84 @@ function removeMain(data) {
   data.items = newItems;
   log('removeMain success');
   return data;
+}
+
+// 参考 WeiboEnhanced 0.1.55：新版接口、广告配置和界面净化。
+// https://ddgksf2013.top/rewrite/WeiboEnhanced.conf
+// https://ddgksf2013.top/scripts/weibo_json.js
+function removeVideoFlow(data) {
+	if (!Array.isArray(data.items)) return;
+	data.items = data.items.filter(item => !isAd(item?.data));
+	for (const item of data.items) {
+		if (item && typeof item === 'object') removeVideoFlow(item);
+	}
+}
+
+function removeVideoCache(data) {
+	if (!Array.isArray(data.lists)) return;
+	for (const list of data.lists) {
+		if (list && typeof list === 'object') removeVideoFlow(list);
+	}
+}
+
+// 与增强版保持相同结构条件，避免改写普通消息、私信和未知提示。
+function removeHomeTabAvatar(data) {
+	if (mainConfig.hideHomeTabAvatar && data.bubble_type === 0 && data.scene === 0
+		&& data.group_type === 1 && typeof data.text === 'string' && typeof data.extparams === 'string'
+		&& typeof data.image === 'string' && /^https:\/\/tvax[1-9]\d*\.sinaimg\.cn\//.test(data.image)) {
+		data.image = '';
+	}
+}
+
+function removeUnreadHints(data) {
+	if (!Number.isSafeInteger(data.timeStamp) || !data.remind_settings
+		|| typeof data.remind_settings !== 'object' || Array.isArray(data.remind_settings)) return;
+	if (mainConfig.hideHomeTabRedDot) {
+		for (const key of ['status_home', 'status_hot_home']) {
+			if (Number.isSafeInteger(data[key]) && data[key] >= 0) data[key] = 0;
+		}
+	}
+	if (mainConfig.hideMessageTabNumber && Number.isSafeInteger(data.folder_total_unread) && data.folder_total_unread >= 0) {
+		data.folder_total_unread = 0;
+	}
+}
+
+function modifyHomeAutoRefresh(data) {
+	if (typeof mainConfig.homeAutoRefresh !== 'boolean') return;
+	const key = 'p_feed_home_auto_refresh_ea1';
+	const value = data.value?.[key];
+	if (value === 'true' || value === 'false') data.value[key] = String(mainConfig.homeAutoRefresh);
+	else if (typeof value === 'boolean') data.value[key] = mainConfig.homeAutoRefresh;
+}
+
+function removeDailyAds(data) {
+	function disable(target, key) {
+		if (!target || typeof target !== 'object') return;
+		if (target[key] === true) target[key] = false;
+		else if (target[key] === 1) target[key] = 0;
+		else if (target[key] === '1') target[key] = '0';
+	}
+	const ads = data.ug_adv;
+	if (!ads || typeof ads !== 'object') return;
+	disable(ads.screen_ad, 'effective');
+	disable(ads.feed_ad, 'effective');
+	for (const entry of Array.isArray(ads.feed_ad_arr) ? ads.feed_ad_arr : []) disable(entry, 'effective');
+	for (const entry of Array.isArray(ads.hot_ad?.screen_ad) ? ads.hot_ad.screen_ad : []) disable(entry, 'effective');
+	disable(ads.intercept_ad, 'switch');
+}
+
+// 旧版超话使用 cards，新版使用 items，分别保留普通帖子与正常卡片。
+function unreadTopicHandler(data) {
+  if (Array.isArray(data.cards)) {
+    data.cards = data.cards.filter(card => !isAd(card.mblog)
+      && !(mainConfig.removeUnfollowTopic && card.mblog?.buttons?.[0]?.type === 'follow'));
+  }
+  if (Array.isArray(data.items)) {
+    removeMain(data);
+    if (mainConfig.removeUnfollowTopic) {
+      data.items = data.items.filter(item => item?.data?.buttons?.[0]?.type !== 'follow');
+    }
+  }
 }
 
 function topicHandler(data) {
@@ -837,7 +946,16 @@ function userHandler(data) {
 }
 
 
+// 合并 ddgksf2013/weibo_json.js 的视频推广过滤，保留原有自动续播设置。
 function nextVideoHandler(data) {
+	if (Array.isArray(data.statuses)) {
+		data.statuses = data.statuses.filter(status => !isAd(status));
+		for (const status of data.statuses) {
+			for (const key of ['forward_redpacket_info', 'shopping', 'float_info', 'tags']) {
+				if (status.video_info) delete status.video_info[key];
+			}
+		}
+	}
 	if (mainConfig.removeNextVideo) {
 		data.statuses = [];
 		data.tab_list = [];
@@ -888,3 +1006,24 @@ function log(data) {
 /*********************************** API *************************************/
 function Env(t,e){class s{constructor(t){this.env=t}send(t,e="GET"){t="string"==typeof t?{url:t}:t;let s=this.get;"POST"===e&&(s=this.post);const i=new Promise(((e,i)=>{s.call(this,t,((t,s,o)=>{t?i(t):e(s)}))}));return t.timeout?((t,e=1e3)=>Promise.race([t,new Promise(((t,s)=>{setTimeout((()=>{s(new Error("请求超时"))}),e)}))]))(i,t.timeout):i}get(t){return this.send.call(this.env,t)}post(t){return this.send.call(this.env,t,"POST")}}return new class{constructor(t,e){this.logLevels={debug:0,info:1,warn:2,error:3},this.logLevelPrefixs={debug:"[DEBUG] ",info:"[INFO] ",warn:"[WARN] ",error:"[ERROR] "},this.logLevel="info",this.name=t,this.http=new s(this),this.data=null,this.dataFile="box.dat",this.logs=[],this.isMute=!1,this.isNeedRewrite=!1,this.logSeparator="\n",this.encoding="utf-8",this.startTime=(new Date).getTime(),Object.assign(this,e),this.log("",`🔔${this.name}, 开始!`)}getEnv(){return"undefined"!=typeof $environment&&$environment["surge-version"]?"Surge":"undefined"!=typeof $environment&&$environment["stash-version"]?"Stash":"undefined"!=typeof module&&module.exports?"Node.js":"undefined"!=typeof $task?"Quantumult X":"undefined"!=typeof $loon?"Loon":"undefined"!=typeof $rocket?"Shadowrocket":void 0}isNode(){return"Node.js"===this.getEnv()}isQuanX(){return"Quantumult X"===this.getEnv()}isSurge(){return"Surge"===this.getEnv()}isLoon(){return"Loon"===this.getEnv()}isShadowrocket(){return"Shadowrocket"===this.getEnv()}isStash(){return"Stash"===this.getEnv()}toObj(t,e=null){try{return JSON.parse(t)}catch{return e}}toStr(t,e=null,...s){try{return JSON.stringify(t,...s)}catch{return e}}getjson(t,e){let s=e;if(this.getdata(t))try{s=JSON.parse(this.getdata(t))}catch{}return s}setjson(t,e){try{return this.setdata(JSON.stringify(t),e)}catch{return!1}}getScript(t){return new Promise((e=>{this.get({url:t},((t,s,i)=>e(i)))}))}runScript(t,e){return new Promise((s=>{let i=this.getdata("@chavy_boxjs_userCfgs.httpapi");i=i?i.replace(/\n/g,"").trim():i;let o=this.getdata("@chavy_boxjs_userCfgs.httpapi_timeout");o=o?1*o:20,o=e&&e.timeout?e.timeout:o;const[r,a]=i.split("@"),n={url:`http://${a}/v1/scripting/evaluate`,body:{script_text:t,mock_type:"cron",timeout:o},headers:{"X-Key":r,Accept:"*/*"},policy:"DIRECT",timeout:o};this.post(n,((t,e,i)=>s(i)))})).catch((t=>this.logErr(t)))}loaddata(){if(!this.isNode())return{};{this.fs=this.fs?this.fs:require("fs"),this.path=this.path?this.path:require("path");const t=this.path.resolve(this.dataFile),e=this.path.resolve(process.cwd(),this.dataFile),s=this.fs.existsSync(t),i=!s&&this.fs.existsSync(e);if(!s&&!i)return{};{const i=s?t:e;try{return JSON.parse(this.fs.readFileSync(i))}catch(t){return{}}}}}writedata(){if(this.isNode()){this.fs=this.fs?this.fs:require("fs"),this.path=this.path?this.path:require("path");const t=this.path.resolve(this.dataFile),e=this.path.resolve(process.cwd(),this.dataFile),s=this.fs.existsSync(t),i=!s&&this.fs.existsSync(e),o=JSON.stringify(this.data);s?this.fs.writeFileSync(t,o):i?this.fs.writeFileSync(e,o):this.fs.writeFileSync(t,o)}}lodash_get(t,e,s){const i=e.replace(/\[(\d+)\]/g,".$1").split(".");let o=t;for(const t of i)if(o=Object(o)[t],void 0===o)return s;return o}lodash_set(t,e,s){return Object(t)!==t||(Array.isArray(e)||(e=e.toString().match(/[^.[\]]+/g)||[]),e.slice(0,-1).reduce(((t,s,i)=>Object(t[s])===t[s]?t[s]:t[s]=Math.abs(e[i+1])>>0==+e[i+1]?[]:{}),t)[e[e.length-1]]=s),t}getdata(t){let e=this.getval(t);if(/^@/.test(t)){const[,s,i]=/^@(.*?)\.(.*?)$/.exec(t),o=s?this.getval(s):"";if(o)try{const t=JSON.parse(o);e=t?this.lodash_get(t,i,""):e}catch(t){e=""}}return e}setdata(t,e){let s=!1;if(/^@/.test(e)){const[,i,o]=/^@(.*?)\.(.*?)$/.exec(e),r=this.getval(i),a=i?"null"===r?null:r||"{}":"{}";try{const e=JSON.parse(a);this.lodash_set(e,o,t),s=this.setval(JSON.stringify(e),i)}catch(e){const r={};this.lodash_set(r,o,t),s=this.setval(JSON.stringify(r),i)}}else s=this.setval(t,e);return s}getval(t){switch(this.getEnv()){case"Surge":case"Loon":case"Stash":case"Shadowrocket":return $persistentStore.read(t);case"Quantumult X":return $prefs.valueForKey(t);case"Node.js":return this.data=this.loaddata(),this.data[t];default:return this.data&&this.data[t]||null}}setval(t,e){switch(this.getEnv()){case"Surge":case"Loon":case"Stash":case"Shadowrocket":return $persistentStore.write(t,e);case"Quantumult X":return $prefs.setValueForKey(t,e);case"Node.js":return this.data=this.loaddata(),this.data[e]=t,this.writedata(),!0;default:return this.data&&this.data[e]||null}}initGotEnv(t){this.got=this.got?this.got:require("got"),this.cktough=this.cktough?this.cktough:require("tough-cookie"),this.ckjar=this.ckjar?this.ckjar:new this.cktough.CookieJar,t&&(t.headers=t.headers?t.headers:{},t&&(t.headers=t.headers?t.headers:{},void 0===t.headers.cookie&&void 0===t.headers.Cookie&&void 0===t.cookieJar&&(t.cookieJar=this.ckjar)))}get(t,e=(()=>{})){switch(t.headers&&(delete t.headers["Content-Type"],delete t.headers["Content-Length"],delete t.headers["content-type"],delete t.headers["content-length"]),t.params&&(t.url+="?"+this.queryStr(t.params)),void 0===t.followRedirect||t.followRedirect||((this.isSurge()||this.isLoon())&&(t["auto-redirect"]=!1),this.isQuanX()&&(t.opts?t.opts.redirection=!1:t.opts={redirection:!1})),this.getEnv()){case"Surge":case"Loon":case"Stash":case"Shadowrocket":default:this.isSurge()&&this.isNeedRewrite&&(t.headers=t.headers||{},Object.assign(t.headers,{"X-Surge-Skip-Scripting":!1})),$httpClient.get(t,((t,s,i)=>{!t&&s&&(s.body=i,s.statusCode=s.status?s.status:s.statusCode,s.status=s.statusCode),e(t,s,i)}));break;case"Quantumult X":this.isNeedRewrite&&(t.opts=t.opts||{},Object.assign(t.opts,{hints:!1})),$task.fetch(t).then((t=>{const{statusCode:s,statusCode:i,headers:o,body:r,bodyBytes:a}=t;e(null,{status:s,statusCode:i,headers:o,body:r,bodyBytes:a},r,a)}),(t=>e(t&&t.error||"UndefinedError")));break;case"Node.js":let s=require("iconv-lite");this.initGotEnv(t),this.got(t).on("redirect",((t,e)=>{try{if(t.headers["set-cookie"]){const s=t.headers["set-cookie"].map(this.cktough.Cookie.parse).toString();s&&this.ckjar.setCookieSync(s,null),e.cookieJar=this.ckjar}}catch(t){this.logErr(t)}})).then((t=>{const{statusCode:i,statusCode:o,headers:r,rawBody:a}=t,n=s.decode(a,this.encoding);e(null,{status:i,statusCode:o,headers:r,rawBody:a,body:n},n)}),(t=>{const{message:i,response:o}=t;e(i,o,o&&s.decode(o.rawBody,this.encoding))}));break}}post(t,e=(()=>{})){const s=t.method?t.method.toLocaleLowerCase():"post";switch(t.body&&t.headers&&!t.headers["Content-Type"]&&!t.headers["content-type"]&&(t.headers["content-type"]="application/x-www-form-urlencoded"),t.headers&&(delete t.headers["Content-Length"],delete t.headers["content-length"]),void 0===t.followRedirect||t.followRedirect||((this.isSurge()||this.isLoon())&&(t["auto-redirect"]=!1),this.isQuanX()&&(t.opts?t.opts.redirection=!1:t.opts={redirection:!1})),this.getEnv()){case"Surge":case"Loon":case"Stash":case"Shadowrocket":default:this.isSurge()&&this.isNeedRewrite&&(t.headers=t.headers||{},Object.assign(t.headers,{"X-Surge-Skip-Scripting":!1})),$httpClient[s](t,((t,s,i)=>{!t&&s&&(s.body=i,s.statusCode=s.status?s.status:s.statusCode,s.status=s.statusCode),e(t,s,i)}));break;case"Quantumult X":t.method=s,this.isNeedRewrite&&(t.opts=t.opts||{},Object.assign(t.opts,{hints:!1})),$task.fetch(t).then((t=>{const{statusCode:s,statusCode:i,headers:o,body:r,bodyBytes:a}=t;e(null,{status:s,statusCode:i,headers:o,body:r,bodyBytes:a},r,a)}),(t=>e(t&&t.error||"UndefinedError")));break;case"Node.js":let i=require("iconv-lite");this.initGotEnv(t);const{url:o,...r}=t;this.got[s](o,r).then((t=>{const{statusCode:s,statusCode:o,headers:r,rawBody:a}=t,n=i.decode(a,this.encoding);e(null,{status:s,statusCode:o,headers:r,rawBody:a,body:n},n)}),(t=>{const{message:s,response:o}=t;e(s,o,o&&i.decode(o.rawBody,this.encoding))}));break}}time(t,e=null){const s=e?new Date(e):new Date;let i={"M+":s.getMonth()+1,"d+":s.getDate(),"H+":s.getHours(),"m+":s.getMinutes(),"s+":s.getSeconds(),"q+":Math.floor((s.getMonth()+3)/3),S:s.getMilliseconds()};/(y+)/.test(t)&&(t=t.replace(RegExp.$1,(s.getFullYear()+"").substr(4-RegExp.$1.length)));for(let e in i)new RegExp("("+e+")").test(t)&&(t=t.replace(RegExp.$1,1==RegExp.$1.length?i[e]:("00"+i[e]).substr((""+i[e]).length)));return t}queryStr(t){let e="";for(const s in t){let i=t[s];null!=i&&""!==i&&("object"==typeof i&&(i=JSON.stringify(i)),e+=`${s}=${i}&`)}return e=e.substring(0,e.length-1),e}msg(e=t,s="",i="",o={}){const r=t=>{const{$open:e,$copy:s,$media:i,$mediaMime:o}=t;switch(typeof t){case void 0:return t;case"string":switch(this.getEnv()){case"Surge":case"Stash":default:return{url:t};case"Loon":case"Shadowrocket":return t;case"Quantumult X":return{"open-url":t};case"Node.js":return}case"object":switch(this.getEnv()){case"Surge":case"Stash":case"Shadowrocket":default:{const r={};let a=t.openUrl||t.url||t["open-url"]||e;a&&Object.assign(r,{action:"open-url",url:a});let n=t["update-pasteboard"]||t.updatePasteboard||s;if(n&&Object.assign(r,{action:"clipboard",text:n}),i){let t,e,s;if(i.startsWith("http"))t=i;else if(i.startsWith("data:")){const[t]=i.split(";"),[,o]=i.split(",");e=o,s=t.replace("data:","")}else{e=i,s=(t=>{const e={JVBERi0:"application/pdf",R0lGODdh:"image/gif",R0lGODlh:"image/gif",iVBORw0KGgo:"image/png","/9j/":"image/jpg"};for(var s in e)if(0===t.indexOf(s))return e[s];return null})(i)}Object.assign(r,{"media-url":t,"media-base64":e,"media-base64-mime":o??s})}return Object.assign(r,{"auto-dismiss":t["auto-dismiss"],sound:t.sound}),r}case"Loon":{const s={};let o=t.openUrl||t.url||t["open-url"]||e;o&&Object.assign(s,{openUrl:o});let r=t.mediaUrl||t["media-url"];return i?.startsWith("http")&&(r=i),r&&Object.assign(s,{mediaUrl:r}),console.log(JSON.stringify(s)),s}case"Quantumult X":{const o={};let r=t["open-url"]||t.url||t.openUrl||e;r&&Object.assign(o,{"open-url":r});let a=t["media-url"]||t.mediaUrl;i?.startsWith("http")&&(a=i),a&&Object.assign(o,{"media-url":a});let n=t["update-pasteboard"]||t.updatePasteboard||s;return n&&Object.assign(o,{"update-pasteboard":n}),console.log(JSON.stringify(o)),o}case"Node.js":return}default:return}};if(!this.isMute)switch(this.getEnv()){case"Surge":case"Loon":case"Stash":case"Shadowrocket":default:$notification.post(e,s,i,r(o));break;case"Quantumult X":$notify(e,s,i,r(o));break;case"Node.js":break}if(!this.isMuteLog){let t=["","==============📣系统通知📣=============="];t.push(e),s&&t.push(s),i&&t.push(i),console.log(t.join("\n")),this.logs=this.logs.concat(t)}}debug(...t){this.logLevels[this.logLevel]<=this.logLevels.debug&&(t.length>0&&(this.logs=[...this.logs,...t]),console.log(`${this.logLevelPrefixs.debug}${t.map((t=>t??String(t))).join(this.logSeparator)}`))}info(...t){this.logLevels[this.logLevel]<=this.logLevels.info&&(t.length>0&&(this.logs=[...this.logs,...t]),console.log(`${this.logLevelPrefixs.info}${t.map((t=>t??String(t))).join(this.logSeparator)}`))}warn(...t){this.logLevels[this.logLevel]<=this.logLevels.warn&&(t.length>0&&(this.logs=[...this.logs,...t]),console.log(`${this.logLevelPrefixs.warn}${t.map((t=>t??String(t))).join(this.logSeparator)}`))}error(...t){this.logLevels[this.logLevel]<=this.logLevels.error&&(t.length>0&&(this.logs=[...this.logs,...t]),console.log(`${this.logLevelPrefixs.error}${t.map((t=>t??String(t))).join(this.logSeparator)}`))}log(...t){t.length>0&&(this.logs=[...this.logs,...t]),console.log(t.map((t=>t??String(t))).join(this.logSeparator))}logErr(t,e){switch(this.getEnv()){case"Surge":case"Loon":case"Stash":case"Shadowrocket":case"Quantumult X":default:this.log("",`❗️${this.name}, 错误!`,e,t);break;case"Node.js":this.log("",`❗️${this.name}, 错误!`,e,void 0!==t.message?t.message:t,t.stack);break}}wait(t){return new Promise((e=>setTimeout(e,t)))}done(t={}){const e=((new Date).getTime()-this.startTime)/1e3;switch(this.log("",`🔔${this.name}, 结束! 🕛 ${e} 秒`),this.log(),this.getEnv()){case"Surge":case"Loon":case"Stash":case"Shadowrocket":case"Quantumult X":default:$done(t);break;case"Node.js":process.exit(1)}}}(t,e)}
 /*****************************************************************************/
+
+// 参考 WeiboEnhanced 0.1.55：只处理已识别的帖子字段和响应容器。
+function cleanPostInterface(payload, config) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return;
+  const cells = payload.bottom_bar_dyna?.cell_item;
+  if (config.hideFeedAiButton && cells?.ai_search && typeof cells.ai_search === 'object' && !Array.isArray(cells.ai_search)) {
+    delete cells.ai_search;
+  }
+  const media = payload.page_info?.media_info;
+  if (config.hidePlaybackCompletionActions && Array.isArray(media?.play_completion_actions)) {
+    media.play_completion_actions = [];
+  }
+  for (const key of ['items', 'statuses', 'lists', 'cards', 'datas', 'reposts', 'hot_reposts', 'channels']) {
+    if (Array.isArray(payload[key])) {
+      for (const item of payload[key]) cleanPostInterface(item, config);
+    }
+  }
+  for (const key of ['data', 'status', 'mblog', 'detailInfo', 'payload', 'header', 'channelInfo']) {
+    cleanPostInterface(payload[key], config);
+  }
+}

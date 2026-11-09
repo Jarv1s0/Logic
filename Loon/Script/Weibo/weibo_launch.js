@@ -27,13 +27,24 @@ function modifyMain(url, data) {
 		}
 		return JSON.stringify(data);
 	}
+	if (/\/v\d+\/ad\/preload(?:\?|$)/.test(url)) {
+		data = JSON.parse(data);
+		// 参考 ddgksf2013/weibo_json.js：清理预加载缓存并延长广告展示间隔。
+		if (Array.isArray(data.ads)) data.ads = [];
+		data.last_ad_show_interval = 86400;
+		return JSON.stringify(data);
+	}
 	return data;
 }
 
 var body = $response.body;
 var url = $request.url;
 // if(needModify(url)) {
-body = modifyMain(url, body);
+try {
+  body = modifyMain(url, body);
+} catch (error) {
+  console.log('微博开屏净化跳过异常响应：' + error.message);
+}
 // }
 
 $done({ body });
