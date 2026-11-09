@@ -7,5 +7,5 @@
     "test": "node build.mjs && node --test tests/*.test.mjs"
   },
   "dependencies": { "fflate": "0.8.2" },
-  "devDependencies": { "esbuild": "0.25.12", "protobufjs": "7.5.4" }
+  "devDependencies": { "esbuild": "0.25.12", "protobufjs": "7.6.5" }
 }
