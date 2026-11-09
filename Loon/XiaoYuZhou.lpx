@@ -1,10 +1,11 @@
 #!name=小宇宙去广告
 #!desc=移除开屏广告、搜索推广、搜索预设词、每日建议、首页推广、品牌推广及活动横幅，关闭付费会员引导，屏蔽 AI 总结、相关单集推荐及运营资源；保留我的页面 Plus 入口及正常跳转。
 #!author=Jarv1s0
+#!icon=https://raw.githubusercontent.com/lige47/lige_icon/main/icon/03CNSoft/xiaoyuzhou.png
 #!homepage=https://github.com/Jarv1s0/Logic
 #!raw-url=https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/XiaoYuZhou.lpx
 #!loon_version=3.5.1(998)
-#!date=2026-11-04 13:50:45
+#!date=2026-11-09 15:31:20
 #!tag=去广告,小宇宙
 
 # 参考来源：ddgksf2013、fmz200（奶思）；在其规则基础上收紧路径并适配新版 Rewrite。
