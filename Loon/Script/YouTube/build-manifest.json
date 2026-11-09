@@ -1,0 +1,107 @@
+{
+  "feed.min.js": {
+    "bytes": 127535,
+    "sha256": "507fea7733e2cb252f1907cad1550faf98a2112e50fea84efaae37a5d38b2d22",
+    "modules": [
+      "src/legacy-runtime.mjs",
+      "src/legacy/response-YouTubeFeed.mjs",
+      "src/vendor/data.mjs",
+      "src/vendor/wire.mjs",
+      "src/vendor/protocol.mjs",
+      "src/vendor/elements.mjs",
+      "src/vendor/feed-envelope.mjs",
+      "src/vendor/edit.mjs",
+      "node_modules/fflate/esm/browser.js",
+      "src/vendor/body.mjs",
+      "src/settings.mjs",
+      "src/api.mjs",
+      "src/entries/feed.mjs"
+    ]
+  },
+  "feed-request.min.js": {
+    "bytes": 72774,
+    "sha256": "fad84c6a716f68e901e966006c8d103c620a4850156b70a2cfb105bd40e01e16",
+    "modules": [
+      "src/legacy-runtime.mjs",
+      "src/legacy/request-YouTubeLogger.mjs",
+      "src/log-control.mjs",
+      "src/entries/feed-request.mjs"
+    ]
+  },
+  "playback-request.min.js": {
+    "bytes": 98028,
+    "sha256": "a16547f91a991b04de5f72dded57069e4bde9404dd2268e8f856d04abe54d9d2",
+    "modules": [
+      "src/legacy-runtime.mjs",
+      "src/legacy/request-YouTubePlayback.mjs",
+      "src/legacy/request-YouTubeLogger.mjs",
+      "src/log-control.mjs",
+      "src/entries/playback-request.mjs"
+    ]
+  },
+  "playback-response.min.js": {
+    "bytes": 47682,
+    "sha256": "08c84decf9e4645b9cf0c25d4f56875a4244dc75110443d8503adc6bb99c02c4",
+    "modules": [
+      "src/legacy-runtime.mjs",
+      "src/legacy/response-YouTubePlayback.mjs",
+      "src/entries/playback-response.mjs"
+    ]
+  },
+  "config.min.js": {
+    "bytes": 26009,
+    "sha256": "c78201d3e4ea6a11721c81f3606feeaa9e58b9d088bb5408150ee0d0b518e830",
+    "modules": [
+      "src/legacy-runtime.mjs",
+      "src/legacy/request-YouTubeConfig.mjs",
+      "src/entries/config.mjs"
+    ]
+  },
+  "config-request.min.js": {
+    "bytes": 86524,
+    "sha256": "22676ad7b7e3b8312efdc152aa6cf741e8a75eaf801705a80170e3695390ed66",
+    "modules": [
+      "src/legacy-runtime.mjs",
+      "src/legacy/request-YouTubeConfig.mjs",
+      "src/legacy/request-YouTubeLogger.mjs",
+      "src/log-control.mjs",
+      "src/entries/config-request.mjs"
+    ]
+  },
+  "logger.min.js": {
+    "bytes": 72515,
+    "sha256": "af5fbda26e501b18dae7eb5a6355847d4e28ed18edb276c06c38dc575acf7918",
+    "modules": [
+      "src/legacy-runtime.mjs",
+      "src/legacy/request-YouTubeLogger.mjs",
+      "src/log-control.mjs",
+      "src/entries/logger.mjs"
+    ]
+  },
+  "channels.min.js": {
+    "bytes": 14887,
+    "sha256": "eb44a477ca83fe3a40332686233955098b35a5a296eb980c777f5ba197f9e1ff",
+    "modules": [
+      "src/legacy-runtime.mjs",
+      "src/legacy/request-YouTubeChannelList.mjs",
+      "src/entries/channels.mjs"
+    ]
+  },
+  "caption.min.js": {
+    "bytes": 39253,
+    "sha256": "7efe667b05923a54129ea35559235963707966a2adf4e68b5742bde704c6aa67",
+    "modules": [
+      "src/vendor/data.mjs",
+      "node_modules/fflate/esm/browser.js",
+      "src/vendor/wire.mjs",
+      "src/vendor/body.mjs",
+      "src/vendor/caption-layout.mjs",
+      "src/vendor/timeline.mjs",
+      "src/vendor/translation.mjs",
+      "src/vendor/captions.mjs",
+      "src/legacy-runtime.mjs",
+      "src/settings.mjs",
+      "src/entries/caption.mjs"
+    ]
+  }
+}

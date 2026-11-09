@@ -1,0 +1,41 @@
+Horatio YouTube Clean 1.2.12
+Copyright (c) 2026 Horatio Xu. MIT License.
+
+The protobuf wire editor, advertisement policies, subtitle parser and alignment,
+bottom-navigation controls, request handling and client adapters are written for
+this implementation. No prebuilt YouTube proxy plugin or generated plugin bundle
+is included or loaded.
+
+Protocol field graph: generated from davidzeng0/innertube protocol declarations,
+Copyright (c) 2024 David Zeng, MIT. https://github.com/davidzeng0/innertube
+Observed iOS pivot-bar wire paths were verified against an anonymous public
+YouTube guide response on 2026-10-16. Observed field facts are recorded in README.
+The native newElement/type/component/template URI path was observed in public
+iOS browse responses on 2026-10-17. Advertising template-name rules are this
+implementation's heuristics, not a claim that every served advertisement is known.
+The native advertising badge field number is from the same MIT protocol declarations.
+
+UMP framing and AES-CTR/HMAC format are documented by LuanRT/GoogleVideo.
+https://github.com/LuanRT/GoogleVideo/tree/main/examples/onesie-request
+The framing reader/writer and metadata editor in this project are independently
+implemented; no GoogleVideo runtime is bundled.
+
+General-purpose libraries used for cryptography and compression:
+@noble/ciphers 1.3.0 and @noble/hashes 1.8.0, MIT, Copyright Paul Miller.
+fflate 0.8.2, MIT, Copyright Arjun Barrett.
+
+esbuild and protobufjs are build-time tools. They are not runtime dependencies.
+
+The advertising classification of eleven complete video, image, carousel and brand display-template identifiers was cross-checked against PoomSmart/YouTube-X, commit 48b901532f9e12152684f3326d4250efcdea61e5 (MIT). No upstream tweak code is included. See licenses/youtube-x-MIT.txt.
+
+1.2.6 preserves native caption tracks, fetches a single companion transcript, and uses bounded rate-limit backoff. This implementation cannot override YouTube server-side caption availability or rate limits. No transcript, signed URL or account credential is persisted by the caption backoff mechanism.
+
+1.2.6 adds one bounded Google Translate webpage-service fallback request, with no SDK, API key or paid-account creation. Only subtitle text and language codes are sent; no signed YouTube URL or account credential is forwarded. The public endpoint can change or rate-limit requests. The batch planner, positional validation and native adapters are independently written.
+
+1.2.7 requests an identity-encoded fallback response, recognizes bounded gzip and explicit JSON protection prefixes, preserves empty translation slots without shifting neighboring captions, and reports only structural failure diagnostics. The user's 1.2.6 HTTP-200 invalid-batch response body was not captured; compatibility tests do not establish the device-side failure cause or acceptance.
+
+1.2.8 reduces allocations with exactly sized UTF-8 encoding, a lazy 4096-unit synchronous UTF-16 scratch buffer, allocation-free opaque-text classification, explicit JSON mutation tracking, forward XML subtitle rendering and incremental HMAC updates. All parsing, advertisement policies, caption fallback, privacy and size/time boundaries remain. Performance evidence is a desktop Node/V8 interface simulation, not native Loon/iPhone memory or VPN acceptance.
+
+1.2.9 adds independently written translation text layout: two bounded forward scans, punctuation-aware balanced wrapping and a native CAPTION_LAYOUT toggle. It does not change player fonts, backgrounds, screen position, subtitle timing, request counts or caches. Native target-only JSON3 append groups retain their original layout. Previously recorded memory measurements apply specifically to 1.2.8, not to this layout release.
+
+1.2.12 adds independent, bounded parsing inside the homepage field 474376530 observed in a real Loon diagnostic on 2026-10-28. Its undocumented inner schema is not assigned a guessed type: only verified native Element template paths and protocol-declared ad renderers are filtered, preserving neighboring entries. All new envelopes share a limit of 8192 parsed nodes and 24 MiB of cumulative input visits, at depth 24. These are work limits, not native host memory guarantees. The user response body was not provided; synthetic matching-envelope and public-envelope checks do not establish device-side ad removal.

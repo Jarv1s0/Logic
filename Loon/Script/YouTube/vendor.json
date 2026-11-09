@@ -1,0 +1,19 @@
+{
+  "source": "https://github.com/hhhoratioxu/Proxy",
+  "commit": "53e4351e1cbd892803554b698ef3e5fe46767d9a",
+  "path": "Surge/script/YouTubeClean",
+  "version": "1.2.12",
+  "files": {
+    "body.mjs": "e3b7692d3ad3b4c5249b3eeb11c49cfb3d138260de6119374e64f30668c5ef76",
+    "caption-layout.mjs": "81479f2cf232698601f54089e3b2045efd60802f7b6ebc4491bd610d99541f1d",
+    "captions.mjs": "1b042cd8e2b382cb7a252356abfff6b824279dee1af103418321d5e2ea50815a",
+    "data.mjs": "26deb4bc44c69c76f245ffd1a67575e17844d27d686ff73605fff7aa5dbfa98d",
+    "edit.mjs": "af4b2a5378a9355f4da4a6ce08ca679a8387c8768184f1935ae5037a52bde957",
+    "elements.mjs": "696fcf1dc97102e0b7becbcf21995a315ba25862ae4ccb374b3120fceec8ee30",
+    "feed-envelope.mjs": "2aabf0cb08e5f6920e3dd737319f8450dbacc8d07ac51cd13d253678f4ab6a0c",
+    "protocol.mjs": "bd2066716fb4ffd89969907ecae322bafa1d3477c4575e21a051cfb5a9be384d",
+    "timeline.mjs": "15bbf768790461c59395f5c7342784eb6115ef1d984f888c6e797d76b3b195fb",
+    "translation.mjs": "df893311f06082f4535d6aaa861b298535d32c11beaff007e78f78d2b918bac4",
+    "wire.mjs": "14fee7c811cb73025cb4f3e5292ff30af8235c0e4196f5afc877a9f6b68a2f61"
+  }
+}
