@@ -8,7 +8,7 @@
 #!system = iOS, iPadOS
 #!system_version =
 #!loon_version =3.5.1(983)
-#!date=2026-11-10 13:22:37
+#!date=2026-11-10 13:35:01
 #############################################
 # > reject(404)       返回 HTTP 404，不附带额外内容
 # > reject(200)       返回 HTTP 200，不附带额外内容
@@ -57,6 +57,9 @@ DOMAIN, datacollection.uve.weibo.com, REJECT
 DOMAIN, adpinpai.video.weibocdn.com, REJECT
 
 [Rewrite]
+# 首页左上角超话：关闭抓包中启用的入口实验，是否隐藏按钮待真机确认。
+response if ${url} ~= /^https:\/\/api\.weibo\.cn\/2\/client\/get_grayfeature(?:\?|$)/ then response.json.jq(`if type != "object" then . elif (.ab_data | type) != "object" then . elif .ab_data.p_sg_left_discovery_positive_a_enable == "true" then .ab_data.p_sg_left_discovery_positive_a_enable = "false" else . end`)
+
 # 热门视频 | 热推荐
 request if ${url} ~= /^https?:\/\/api\.weibo\.c(n|om)\/\d\/(cardlist\?v_f=[^#]*Weibo_intl|ad\/weibointl\?)/ then reject_dict(200)
 request if ${url} ~= /^https?:\/\/weibointl\.api\.weibo\.c(n|om)\/portal\.php\?a=hot_search_users/ then reject_dict(200)
