@@ -1,0 +1,13 @@
+#!name=悬浮时钟去广告
+#!desc=拦截抓包确认的推啊、Sigmob 和 1rtb 广告服务；域名规则也影响其他 App 对这些服务的访问。未完成真机验证。
+#!author=Jarv1s0
+#!homepage=https://github.com/Jarv1s0/Logic/blob/master/Loon/Docs/floating-clock.md
+#!date=2026-11-10 09:30:41
+#!tag=去广告,悬浮时钟
+
+[Rule]
+# HAR 中的 /ad/request、/waterfall/v1 和 /sdk/req_ad 广告请求。
+# 广告响应含加密文本或二进制数据，不伪造未知的成功响应。
+DOMAIN, s.tuia.cn, REJECT
+DOMAIN, tm.sigmob.cn, REJECT
+DOMAIN, sdk.1rtb.net, REJECT

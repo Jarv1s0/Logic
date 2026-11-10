@@ -13,6 +13,8 @@ Loon 插件统一使用官方新版 [Rewrite](https://nsloon.app/docs/Rewrite/re
 
 - [闲鱼广告净化](Loon/Xianyu_remove_ads.lpx)：拦截开屏，过滤首页、搜索、详情推荐及我的页面推广；[安装、来源与验证边界](Loon/Docs/xianyu.md)。未完成真机验证。
 
+- [悬浮时钟去广告](Loon/FloatingClock_remove_ads.lpx)：拦截抓包确认的推啊、Sigmob 和 1rtb 广告服务，无需 MitM；[安装与验证边界](Loon/Docs/floating-clock.md)。未完成真机验证。
+
 - [好轻去广告](Loon/Haoqing_remove_ads.lpx)：清理开屏、轮播、商品推荐和悬浮推广，采用新版 Rewrite 语法；[安装与验证边界](Loon/Docs/haoqing.md)。
 
 - [Google 搜索重定向](Loon/GoogleRedirect.lpx)：将指定 Google 地区搜索入口重定向到 `www.google.com`，保留搜索词和参数；[支持域名、安装与验证边界](Loon/Docs/google-redirect.md)。
