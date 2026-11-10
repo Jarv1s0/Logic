@@ -1,8 +1,9 @@
 #!name=悬浮时钟去广告
-#!desc=拦截抓包确认的推啊、Sigmob 和 1rtb 广告服务；域名规则也影响其他 App 对这些服务的访问。未完成真机验证。
+#!desc=拦截抓包确认的推啊、Sigmob 和 1rtb 广告服务，试验性清空抢购事件；域名规则也影响其他 App 对这些服务的访问。未完成真机验证。
 #!author=Jarv1s0
 #!homepage=https://github.com/Jarv1s0/Logic/blob/master/Loon/Docs/floating-clock.md
-#!date=2026-11-10 09:30:41
+#!date=2026-11-10 09:44:58
+#!loon_version=3.5.1(998)
 #!tag=去广告,悬浮时钟
 
 [Rule]
@@ -11,3 +12,10 @@
 DOMAIN, s.tuia.cn, REJECT
 DOMAIN, tm.sigmob.cn, REJECT
 DOMAIN, sdk.1rtb.net, REJECT
+
+[Rewrite]
+# 试验：清空抢购事件列表，观察客户端是否隐藏首页入口；也影响共用接口的页面。
+response if ${request.method} == "POST" && ${url} ~= /^https:\/\/hzjuzhi\.com\/api\/floating-clock\/client\/scheduled\/featured\/list(?:\?|$)/ && ${response.status} == 200 then response.json.jq("if .code == 0 and (.data.list | type) == \"array\" then .data |= (.list = [] | .size = 0 | .total = 0 | .pages = 0 | .startRow = 0 | .endRow = 0 | .prePage = 0 | .nextPage = 0 | .hasPreviousPage = false | .hasNextPage = false | .isFirstPage = true | .isLastPage = true | .navigatepageNums = [] | .navigateFirstPage = 0 | .navigateLastPage = 0) else . end")
+
+[MitM]
+hostname = hzjuzhi.com
