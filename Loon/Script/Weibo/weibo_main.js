@@ -1010,6 +1010,12 @@ function Env(t,e){class s{constructor(t){this.env=t}send(t,e="GET"){t="string"==
 // 参考 WeiboEnhanced 0.1.55：只处理已识别的帖子字段和响应容器。
 function cleanPostInterface(payload, config) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return;
+  // 原生推广可附在普通微博上；仅移除有明确广告标记的入口。
+  const nativeAd = payload.extend_info?.ad_nature?.ad_nature;
+  if (payload.ad_tag_nature?.otype === 'adFeedDarwinTag' && (nativeAd === true || nativeAd === 'true')) {
+    delete payload.ad_tag_nature;
+    delete payload.extend_info.ad_nature;
+  }
   const cells = payload.bottom_bar_dyna?.cell_item;
   if (config.hideFeedAiButton && cells?.ai_search && typeof cells.ai_search === 'object' && !Array.isArray(cells.ai_search)) {
     delete cells.ai_search;

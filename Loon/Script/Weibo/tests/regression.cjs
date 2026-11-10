@@ -302,6 +302,34 @@ for (const endpoint of ['search/finder', 'search/container_timeline', 'search/co
     assert.deepEqual(actual.items, [normal]);
   });
 }
+test('发现页移除问热搜横幅，保留普通热搜和其他图片卡片', () => {
+  const askHotSearch = { data: { card_type: 22,
+    scheme: 'sinaweibo://messagelist?nick=%E5%BE%AE%E5%8D%9A%E6%99%BA%E6%90%9C&send_from=trending_discover_zhisou&model=newAI' } };
+  const other = { data: { card_type: 22,
+    scheme: 'sinaweibo://messagelist?extjob_sendfrom=trending_discover_zhisou&send_from=other' } };
+  const hotSearch = { data: { card_type: 17, group: [{ itemid: 'normal' }] } };
+  const response = { header: { data: { items: [{ items: [askHotSearch, other, hotSearch] }] } } };
+  const output = run('weibo_ads.js', 'search/finder', response);
+  assert.deepEqual(output.header.data.items[0].items, [other, hotSearch]);
+});
+
+for (const [script, endpoint] of [
+  ['weibo_main.js', 'statuses/container_timeline'],
+  ['weibo_ads.js', 'search/container_timeline']
+]) {
+  test(`${endpoint} 移除原生推广标签并保留微博和普通话题标签`, () => {
+    const normal = { ...feed.data, tag_struct: [{ tag_name: '普通话题', promotion: { monitor_url: [] } }],
+      extend_info: { other: '保留' } };
+    const sponsored = { ...normal, ad_tag_nature: { otype: 'adFeedDarwinTag', tag_name: '品牌预约' },
+      extend_info: { ...normal.extend_info, ad_nature: { ad_nature: 'true' } } };
+    const unknown = { ...sponsored, ad_tag_nature: { otype: 'other' } };
+    const input = { items: [{ ...feed, data: sponsored }, { ...feed, data: unknown }] };
+    const output = run(script, endpoint, input);
+    assert.deepEqual(output.items, [{ ...feed, data: normal }, { ...feed, data: unknown }]);
+    assert.deepEqual(run(script, endpoint, output), output);
+  });
+}
+
 test('日配置仅关闭广告开关并保留原始类型和正常配置', () => {
   const output = run('weibo_main.js', 'push/daily', { ug_adv: {
     screen_ad: { effective: true, url: 'normal' }, feed_ad: { effective: '1' },

@@ -257,6 +257,12 @@ function removeCommonAds(items) {
     const item = items[i];
     const data = item?.data;
     const card_type = Number(data?.card_type);
+    // 发现页「问热搜」使用 22 号图片卡片，按智搜入口来源精确匹配。
+    if (card_type === 22 && typeof data.scheme === 'string'
+      && /^sinaweibo:\/\/messagelist\?(?:[^&#]*&)*send_from=trending_discover_zhisou(?:[&#]|$)/.test(data.scheme)) {
+      items.splice(i, 1);
+      continue;
+    }
     if (data?.ad_marked === true || [118, 247].includes(card_type)
       || data?.mblogtypename === "广告"
       || data?.content_auth_info?.content_auth_title === "广告"
@@ -436,6 +442,12 @@ function filterDetailComments(data) {
 // 参考 WeiboEnhanced 0.1.55：只处理已识别的帖子字段和响应容器。
 function cleanPostInterface(payload, config) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return;
+  // 原生推广可附在普通微博上；仅移除有明确广告标记的入口。
+  const nativeAd = payload.extend_info?.ad_nature?.ad_nature;
+  if (payload.ad_tag_nature?.otype === 'adFeedDarwinTag' && (nativeAd === true || nativeAd === 'true')) {
+    delete payload.ad_tag_nature;
+    delete payload.extend_info.ad_nature;
+  }
   const cells = payload.bottom_bar_dyna?.cell_item;
   if (config.hideFeedAiButton && cells?.ai_search && typeof cells.ai_search === 'object' && !Array.isArray(cells.ai_search)) {
     delete cells.ai_search;
