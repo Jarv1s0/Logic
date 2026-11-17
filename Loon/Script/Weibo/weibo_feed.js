@@ -1,5 +1,5 @@
 /**
- * 首页与发现页兼容入口，沿用 ddgksf2013 微博助手 0.1.59 的响应处理。
+ * 微博统一响应入口，沿用 ddgksf2013 微博助手 0.1.59 的业务与开屏处理。
  * 上游：https://ddgksf2013.top/scripts/weibo_json.js （User-Agent: surge）
  * 上游 SHA-256：5ed91dbb4e764c1feecd8159a039f21a95499d5bffc55986595ba5e55c8f8657
  * 下方 UPSTREAM 区块保持原样；升级时须重新重放真实 HAR。
@@ -45,10 +45,11 @@
   const request = Object.assign({}, $request, {
     url: originalUrl.replace(/^https?:\/\/m?api\.weibo\.c(?:n|om)\//i, 'https://api.weibo.cn/')
   });
-  const isDiscovery = /\/2\/search\/(?:finder|container_timeline|container_discover)(?:[?#]|$)/i.test(request.url);
-  const isHomeFeed = /\/2\/(?:statuses\/(?:container_timeline(?:_hot|_unread)?|container_positive)|guest\/container_timeline_hot)(?:[?#]|$)/i.test(request.url);
+  const responsePath = request.url.match(/^https?:\/\/[^/?#]+([^?#]*)/i)?.[1] || '';
+  const isDiscovery = /^\/2\/search\/(?:finder|container_timeline|container_discover)$/i.test(responsePath);
+  const isHomeFeed = /^\/2\/(?:statuses\/(?:container_timeline(?:_hot|_unread)?|container_positive)|guest\/container_timeline_hot)$/i.test(responsePath);
   function finish(result) {
-    if (result && typeof result.body === 'string') {
+    if ((isHomeFeed || isDiscovery) && result && typeof result.body === 'string') {
       try {
         const data = JSON.parse(result.body);
         const before = JSON.stringify(data);

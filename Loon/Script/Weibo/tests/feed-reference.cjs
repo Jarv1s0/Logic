@@ -6,6 +6,7 @@ const vm = require('node:vm');
 const crypto = require('node:crypto');
 const cp = require('node:child_process');
 const assert = require('node:assert/strict');
+const { isDeepStrictEqual } = require('node:util');
 const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'weibo_feed.js'), 'utf8');
 const upstream = source.split('// BEGIN UPSTREAM 0.1.59\n')[1]?.split('\n// END UPSTREAM 0.1.59')[0];
@@ -20,10 +21,14 @@ const scripts = [...plugin.matchAll(/response if \$\{url\} ~= \/(.+?)\/([a-z]*) 
 const requests = [...plugin.matchAll(/request if \$\{url\} ~= \/(.+?)\/([a-z]*) then /g)]
   .map(m => new RegExp(m[1], m[2]));
 const urlRules = [...plugin.matchAll(/^URL-REGEX,\s*(.+?),\s*REJECT.*$/gm)].map(m => new RegExp(m[1]));
-const endpoints = ['statuses/container_timeline', 'statuses/container_timeline_hot',
-  'statuses/container_timeline_unread', 'statuses/container_positive', 'guest/container_timeline_hot',
-  'guest/push_active', 'search/finder', 'search/container_timeline', 'search/container_discover',
-  '!/was/finder/searchbarchange', 'push/daily', 'push/active', 'push/info'];
+const reference = run(upstream + ';globalThis.referenceRoutes = WeiboCore.ROUTES;',
+  'https://api.weibo.cn/2/search/finder', '{}');
+const endpoints = Array.from(reference.routes).filter(route => route.host === 'api.weibo.cn')
+  .map(route => route.path.replace('/2/', ''));
+assert.equal(/^\[(?:Rule|Rewrite)\]$/m.test(plugin), false, '不能保留旧域名拒绝、请求拒绝或 jq 改写区块');
+assert.equal(requests.length, 0, '业务请求必须正常返回，不提前拒绝');
+assert.equal(scripts.every(rule => ['weibo_feed.js', 'weibo_skin.js', 'weibo_vip.js', 'weibo_intl.js'].includes(rule.file)), true,
+  '业务接口不能再调用旧 main、ads 或 launch 处理器');
 function routed(url) {
   const matches = scripts.filter(rule => rule.re.test(url));
   assert.equal(matches.length, 1, '每个目标请求只能命中一个响应脚本');
@@ -39,17 +44,24 @@ for (const endpoint of endpoints) {
     assert.equal(scripts.some(rule => rule.file === 'weibo_feed.js' && rule.re.test(url.replace('?', '_normal?'))), false);
   }
 }
-for (const endpoint of ['groups/allgroups/v2', 'client/interrupt', '!/client/light_skin',
+for (const route of Array.from(reference.routes).filter(route => route.host !== 'api.weibo.cn')) {
+  routed(`https://${route.host}${route.path}?test=1`);
+  assert.equal(scripts.some(rule => rule.file === 'weibo_feed.js'
+    && rule.re.test(`https://${route.host}${route.path}_normal?test=1`)), false);
+}
+for (const endpoint of ['client/interrupt', '!/client/light_skin',
   'statuses/container_timeline_topic', 'statuses/container_timeline_topicpage']) {
   assert.equal(scripts.some(rule => rule.file === 'weibo_feed.js' && rule.re.test(`https://api.weibo.cn/2/${endpoint}?x=1`)), false);
 }
-console.log('通过：13 类入口单次命中、相邻接口和原有界面入口不受影响');
+assert.equal(scripts.some(rule => rule.re.test('https://api.weibo.cn/2/client/interrupt?test=1')), false,
+  '启动配置必须透传，不硬改默认频道');
+console.log('通过：参考全部业务及开屏入口单次命中；没有请求拒绝、jq 或旧处理器重叠');
 
 function run(code, url, body, stored = {}) {
   let calls = 0, networkCalls = 0, output;
   const writes = [];
   function unexpectedNetwork() { networkCalls++; throw Error('响应重放不能访问网络'); }
-  vm.runInNewContext(code, {
+  const context = {
     $request: { url, method: 'POST', headers: {} },
     $response: { body, status: 200, headers: {} }, $loon: {},
     $persistentStore: {
@@ -59,10 +71,11 @@ function run(code, url, body, stored = {}) {
     $done: value => { calls++; output = value?.body ?? body; },
     $httpClient: { get: unexpectedNetwork, post: unexpectedNetwork },
     console: { log() {} }
-  }, { timeout: 5000 });
+  };
+  vm.runInNewContext(code, context, { timeout: 5000 });
   assert.equal(calls, 1, '脚本必须且只能结束一次');
   assert.equal(networkCalls, 0, '响应处理不能发起额外请求，包括被捕获的失败请求');
-  return { body: output, writes };
+  return { body: output, writes, routes: context.referenceRoutes };
 }
 const normals = [{ category: 'feed', data: { idstr: 'normal', text: '普通微博' } },
   { category: 'feed', data: { idstr: 'reposted', text: '转发微博', retweeted_status: { ad_state: 1, text: '被转发正文' } } }];
@@ -77,8 +90,12 @@ for (const network of ['wifi', '5g']) {
     assert.deepEqual(r.writes, [], '不能更改其他插件的设置');
   }
 }
-for (const body of ['', '<html>error</html>', 'null', '[]', 'true']) {
-  assert.equal(run(source, 'https://api.weibo.cn/2/search/finder?x=1', body).body, body);
+for (const route of Array.from(reference.routes)) {
+  for (const body of ['', '<html>error</html>', 'null', '[]', 'true']) {
+    const result = run(source, `https://${route.host}${route.path}?x=1`, body);
+    assert.equal(result.body, body, '所有入口的异常正文必须透传：' + route.path);
+    assert.deepEqual(result.writes, [], '异常正文不能更改持久配置');
+  }
 }
 console.log('通过：两种网络、四个域名均过滤广告并保留普通微博、转发正文和分页，异常正文安全透传');
 
@@ -115,6 +132,35 @@ delete expectedLegacy.items[1].data.semantic_brand_params;
 assert.deepEqual(legacyOutput, expectedLegacy);
 console.log('通过：旧 status 格式与无 category 帖子继续清理推广并保留图片转换、未知尺寸和转发正文');
 
+const protectedBody = JSON.stringify({ items: [{ category: 'feed', data: {
+  idstr: 'normal-profile-post', ad_state: 1, text: '正常个人页微博', pic_infos: { one: picture }
+} }] });
+for (const shadowPath of ['/2/search/finder', '/2/statuses/container_timeline']) {
+  const url = `https://api.weibo.cn/2/profile/me?from=${shadowPath}`;
+  assert.deepEqual(JSON.parse(run(source, url, protectedBody).body),
+    JSON.parse(run(upstream, url, protectedBody).body), '查询参数里的路径不能改变实际响应的处理范围');
+}
+console.log('通过：只按实际路径限定本地清理，查询参数中的首页或发现路径不影响个人页');
+
+const groups = { defaultPageId: 'recommend', pageDatas: [{ pageId: 'homeFeed', categories: [{ pageDatas: [
+  { title: '全部关注', gid: 'all', uid: 'demo' }, { title: '最新微博', gid: 'latest', uid: 'demo' },
+  { title: '超话社区', gid: '110057182642782' }
+] }] }] };
+const groupsUrl = 'https://api.weibo.cn/2/groups/allgroups/v2';
+const referenceGroups = JSON.parse(run(upstream, groupsUrl, JSON.stringify(groups)).body);
+const actualGroups = JSON.parse(run(source, groupsUrl, JSON.stringify(groups)).body);
+assert.deepEqual(actualGroups, referenceGroups, '顶部分组必须使用参考逻辑，不叠加旧版标签删除');
+const titles = actualGroups.pageDatas.flatMap(page => (page.categories ?? []).flatMap(category => category.pageDatas ?? []))
+  .map(group => group.title);
+assert.ok(titles.includes('全部关注') && titles.includes('超话社区'), '不能硬删普通关注分组和超话入口');
+const bootUrl = 'https://bootrealtime.uve.weibo.com/v3/ad/realtime';
+const boot = { ads: [], normal: { keep: true } };
+assert.deepEqual(JSON.parse(run(source, bootUrl, JSON.stringify(boot)).body),
+  JSON.parse(run(upstream, bootUrl, JSON.stringify(boot)).body));
+assert.deepEqual(JSON.parse(run(source, bootUrl, JSON.stringify(boot)).body).normal, boot.normal,
+  '实时开屏必须处理真实响应并保留正常配置，不能返回空对象');
+console.log('通过：分组与实时开屏使用参考逻辑，保留普通标签及正常配置');
+
 const hotSearch = { category: 'card', data: { card_type: 17, group: [{ word: '正常热搜', itemid: 'normal' }],
   group_unfold: [{ word: '正常热搜', itemid: 'normal' }] } };
 const ask = { category: 'card', data: { card_type: 22,
@@ -140,16 +186,17 @@ if (harPath) {
   assert.ok(settings, '参考包必须带有实际设置，不能猜测配置');
   const actual = JSON.parse(decode(settings.response.content));
   assert.equal(actual.version, '0.1.59');
-  let count = 0;
+  let count = 0, migrated = 0;
   for (const entry of entries) {
     const u = new URL(entry.request.url);
-    if (!['/2/statuses/container_timeline', '/2/search/finder', '/2/search/container_discover'].includes(u.pathname)) continue;
+    if (!scripts.some(rule => rule.file === 'weibo_feed.js' && rule.re.test(entry.request.url))) continue;
     routed(entry.request.url);
     assert.ok(entry.response._loonOriginal?.content?.text, '必须有真实原始响应');
     const raw = decode(entry.response._loonOriginal.content);
     const oracle = run(upstream, entry.request.url, raw,
       { weibo_adblock_config_v3: JSON.stringify(actual.config) });
-    assert.deepEqual(JSON.parse(oracle.body), JSON.parse(decode(entry.response.content)), '上游必须复现参考插件真实输出');
+    assert.equal(isDeepStrictEqual(JSON.parse(oracle.body), JSON.parse(decode(entry.response.content))), true,
+      '上游必须复现参考插件真实输出：' + u.pathname);
     const result = run(source, entry.request.url, raw);
     const data = JSON.parse(result.body), original = JSON.parse(raw);
     const wifi = new URL(entry.request.url); wifi.searchParams.set('networktype', 'wifi');
@@ -176,8 +223,15 @@ if (harPath) {
       assert.deepEqual(data.moreInfo, original.moreInfo);
       assert.deepEqual(data.refreshInfo, original.refreshInfo);
     }
-    count++;
+    if (['/2/statuses/container_timeline', '/2/search/finder', '/2/search/container_discover'].includes(u.pathname)) {
+      count++;
+    } else {
+      assert.equal(isDeepStrictEqual(data, JSON.parse(oracle.body)), true,
+        '新增迁移接口必须完整复现参考结果：' + u.pathname);
+      migrated++;
+    }
   }
   assert.equal(count, 6, '参考样本必须覆盖四次发现、一次刷新和一次首页');
-  console.log('通过：6 份真实响应复现参考输出；兼容入口保留正常内容、分页及网络一致性');
+  assert.equal(migrated, 8, '新增回放必须覆盖分组、个人页、提醒、推送、搜索配置和 Lua 广告配置');
+  console.log('通过：14 份真实响应回放，新增 8 份与参考结果完整一致，首页与发现页保留正常内容及网络一致性');
 }

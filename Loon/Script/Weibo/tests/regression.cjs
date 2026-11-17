@@ -1,4 +1,5 @@
-// 合成响应回归验证，不代表已验证微博客户端的实际响应结构。
+// 兼容层与历史处理器的合成单元验证；历史脚本通过不代表当前插件仍加载它。
+// 当前完整处理链与真实响应验证见 feed-reference.cjs。
 // node Loon/Script/Weibo/tests/regression.cjs
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -220,36 +221,32 @@ test('国际版未知和缺失字段响应保持可用', () => {
   }
 });
 // 从实际插件中提取规则，验证 URL 会进入预期脚本，避免只验证函数而漏接入口。
-test('插件补充入口匹配且不会匹配相邻正常接口', () => {
+test('统一响应入口与独立功能匹配，且不会匹配相邻正常接口', () => {
   const plugin = old ? cp.execFileSync('git', ['show', 'HEAD:Loon/weibo.lpx'], { encoding: 'utf8' })
     : fs.readFileSync(path.join(__dirname, '../../../weibo.lpx'), 'utf8');
   const rules = [...plugin.matchAll(/response if \$\{url\} ~= \/(.+?)\/([a-z]*) then script\("([^"]+)"\)/g)]
     .map(match => ({ re: new RegExp(match[1], match[2]), script: match[3] }));
   const targets = [
-    ['https://api.weibo.cn/2/guest/timeline?x=1', 'weibo_main.js'],
-    ['https://api.weibo.cn/2/guest/cardlist?x=1', 'weibo_main.js'],
-    ['https://api.weibo.cn/2/video/tiny_stream_mid_detail?x=1', 'weibo_main.js'],
-    ['https://api.weibo.cn/2/statuses/unread_topic_timeline?x=1', 'weibo_main.js'],
-    ['https://bootpreload.uve.weibo.com/v1/ad/preload?x=1', 'weibo_launch.js'],
+    ['https://api.weibo.cn/2/cardlist?x=1', 'weibo_feed.js'],
+    ['https://api.weibo.cn/2/searchall?x=1', 'weibo_feed.js'],
+    ['https://api.weibo.cn/2/groups/allgroups/v2?x=1', 'weibo_feed.js'],
+    ['https://bootpreload.uve.weibo.com/v2/ad/preload?x=1', 'weibo_feed.js'],
+    ['https://bootrealtime.uve.weibo.com/v3/ad/realtime?x=1', 'weibo_feed.js'],
+    ['https://api.weibo.cn/2/!/client/light_skin?x=1', 'weibo_skin.js'],
+    ['https://new.vip.weibo.cn/aj/appicon/list?x=1', 'weibo_vip.js'],
     [intlUrl('search_topic'), 'weibo_intl.js']
   ];
   for (const [url, script] of targets) {
     assert.ok(rules.some(rule => rule.re.test(url) && rule.script.includes(script)), url);
-    if (!url.includes('portal.php')) assert.equal(rules.some(rule => rule.re.test(url.replace('?x=1', '_normal?x=1'))), false);
+    if (script === 'weibo_feed.js') assert.equal(rules.some(rule => rule.re.test(url.replace('?x=1', '_normal?x=1'))), false);
   }
   assert.equal(rules.some(rule => rule.re.test(intlUrl('user_center_extra'))), false);
   assert.equal(plugin.includes('DOMAIN-SUFFIX, sdkapp.uve.weibo.com, REJECT'), false);
   assert.equal(plugin.includes('DOMAIN, bootpreload.uve.weibo.com, REJECT'), false);
   const requests = [...plugin.matchAll(/request if \$\{url\} ~= \/(.+?)\/([a-z]*) then /g)]
     .map(match => new RegExp(match[1], match[2]));
-  for (const endpoint of ['account/recommend_interesttags', 'profile/recommend_popuser', 'hot/hours_spotlight']) {
-    assert.ok(requests.some(re => re.test(`https://api.weibo.cn/2/${endpoint}?x=1`)), endpoint);
-    assert.equal(requests.some(re => re.test(`https://api.weibo.cn/2/${endpoint}_normal?x=1`)), false);
-  }
-  assert.equal(requests.some(re => re.test('https://api.weibo.cn/2/cardlist?v_f=123&containerid=normal')), false);
-  assert.ok(requests.some(re => re.test('https://api.weibo.cn/2/cardlist?v_f=123&from=Weibo_intl')));
-  assert.equal(requests.some(re => re.test(intlUrl('get_searching_info'))), false);
-  assert.equal(requests.some(re => re.test('https://bootpreload.uve.weibo.com/v1/ad/preload?x=1')), false);
+  assert.equal(requests.length, 0);
+  assert.equal(rules.some(rule => rule.re.test('https://api.weibo.cn/2/client/interrupt?x=1')), false);
   for (const rule of rules) {
     const filename = rule.script.match(/\/([^/]+\.js)\?/)?.[1];
     assert.ok(filename && fs.existsSync(path.join(__dirname, '..', filename)), rule.script);
@@ -386,8 +383,7 @@ test('增强版规则入口可达，且保留正常 API', () => {
     .map(match => ({ re: new RegExp(match[1], match[2]), action: match[3] }));
   for (const endpoint of ['guest/container_timeline_hot', 'video/flow_stream', 'video/flow_stream_cache', 'client/abserver_list', 'push/daily']) {
     const url = `https://api.weibo.cn/2/${endpoint}?test=1`;
-    const script = ['guest/container_timeline_hot', 'push/daily'].includes(endpoint) ? 'weibo_feed.js' : 'weibo_main.js';
-    assert.ok(rules.some(rule => rule.re.test(url) && rule.action.includes(script)), endpoint);
+    assert.ok(rules.some(rule => rule.re.test(url) && rule.action.includes('weibo_feed.js')), endpoint);
     assert.equal(rules.some(rule => rule.re.test(url) && rule.action.includes('reject')), false, endpoint);
     assert.equal(rules.some(rule => rule.re.test(url.replace('?test=1', '_extra?test=1'))), false, endpoint);
   }
@@ -455,7 +451,7 @@ test('界面净化路由有对应响应脚本且不会拦截相邻 API', () => {
     .map(match => ({ re: new RegExp(match[1], match[2]), action: match[3] }));
   for (const endpoint of ['remind/hometab_dot', 'remind/unread_count']) {
     const url = `https://api.weibo.cn/2/${endpoint}?test=1`;
-    assert.ok(rules.some(rule => rule.re.test(url) && rule.action.includes('weibo_main.js')));
+    assert.ok(rules.some(rule => rule.re.test(url) && rule.action.includes('weibo_feed.js')));
     assert.equal(rules.some(rule => rule.re.test(url) && rule.action.includes('reject')), false);
     assert.equal(rules.some(rule => rule.re.test(url.replace('?test=1', '_other?test=1'))), false);
   }
