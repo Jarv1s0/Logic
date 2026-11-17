@@ -10,7 +10,7 @@ assert.ok(harPath, '必须提供本地 HAR 路径');
 const har = JSON.parse(fs.readFileSync(harPath, 'utf8').replace(/^\uFEFF/, ''));
 const source = baseline
   ? cp.execFileSync('git', ['show', `${baseline}:Loon/Script/Weibo/weibo_ads.js`], { encoding: 'utf8' })
-  : fs.readFileSync(path.join(__dirname, '..', 'weibo_ads.js'), 'utf8');
+  : fs.readFileSync(path.join(__dirname, '..', 'weibo_feed.js'), 'utf8');
 function decode(content) {
   assert.ok(content?.text, 'HAR 必须包含响应正文');
   return JSON.parse(content.encoding === 'base64'
@@ -21,6 +21,7 @@ function replay(url, data) {
   const errors = [];
   vm.runInNewContext(source, {
     $request: { url }, $response: { body: JSON.stringify(data) },
+    $loon: {}, $persistentStore: { read: () => null, write: () => { throw Error('不得写入设置'); } },
     $done: (result) => { output = JSON.parse(result.body); },
     console: { log: (line) => {
       if (typeof line === 'string' && line.includes('脚本运行出现错误')) errors.push(line);

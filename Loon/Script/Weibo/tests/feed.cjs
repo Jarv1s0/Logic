@@ -1,30 +1,32 @@
-// 读取本地 HAR；不请求网络，不打印 URL 参数、用户 ID 或正文。
-// node Loon/Script/Weibo/tests/feed-reference.cjs [HAR路径] [--baseline]
+// 当前插件完整响应链的合成回归；不访问网络。
+// node Loon/Script/Weibo/tests/feed.cjs
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const crypto = require('node:crypto');
-const cp = require('node:child_process');
 const assert = require('node:assert/strict');
-const { isDeepStrictEqual } = require('node:util');
 const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'weibo_feed.js'), 'utf8');
-const upstream = source.split('// BEGIN UPSTREAM 0.1.59\n')[1]?.split('\n// END UPSTREAM 0.1.59')[0];
-assert.ok(upstream, '必须保留固定上游来源区块');
-assert.equal(crypto.createHash('sha256').update(upstream).digest('hex'),
-  '5ed91dbb4e764c1feecd8159a039f21a95499d5bffc55986595ba5e55c8f8657', '上游代码未经修改');
-const plugin = process.argv.includes('--baseline')
-  ? cp.execFileSync('git', ['show', 'HEAD:Loon/weibo.lpx'], { encoding: 'utf8' })
-  : fs.readFileSync(path.join(root, '../../weibo.lpx'), 'utf8');
+const plugin = fs.readFileSync(path.join(root, '../../weibo.lpx'), 'utf8');
 const scripts = [...plugin.matchAll(/response if \$\{url\} ~= \/(.+?)\/([a-z]*) then script\("([^"]+)"\)/g)]
   .map(m => ({ re: new RegExp(m[1], m[2]), file: path.basename(new URL(m[3]).pathname) }));
 const requests = [...plugin.matchAll(/request if \$\{url\} ~= \/(.+?)\/([a-z]*) then /g)]
   .map(m => new RegExp(m[1], m[2]));
 const urlRules = [...plugin.matchAll(/^URL-REGEX,\s*(.+?),\s*REJECT.*$/gm)].map(m => new RegExp(m[1]));
-const reference = run(upstream + ';globalThis.referenceRoutes = WeiboCore.ROUTES;',
-  'https://api.weibo.cn/2/search/finder', '{}');
-const endpoints = Array.from(reference.routes).filter(route => route.host === 'api.weibo.cn')
-  .map(route => route.path.replace('/2/', ''));
+const endpoints = [
+  'statuses/container_timeline_hot', 'statuses/container_positive', 'guest/container_timeline_hot',
+  'statuses/container_timeline_unread', 'statuses/container_timeline', 'live/media_homelist',
+  'remind/hometab_dot', 'remind/unread_count', 'statuses/container_detail',
+  'statuses/container_detail_comment', 'statuses/container_detail_forward', 'comments/build_comments',
+  'search/finder', 'search/container_timeline', 'search/container_discover', '!/was/finder/searchbarchange',
+  'cardlist', 'flowpage', 'searchall', 'profile/me', 'profile/container_timeline',
+  'video/flow_stream', 'video/flow_stream_cache', 'push/daily', 'push/active', 'push/info',
+  'guest/push_active', 'groups/allgroups/v2', 'client/abserver_list', 'checkin/show',
+  'video/remind_info', 'video/home_channels'
+];
+const routes = [...endpoints.map(endpoint => ({ host: 'api.weibo.cn', path: '/2/' + endpoint })),
+  { host: 'bootpreload.uve.weibo.com', path: '/v2/ad/preload' },
+  { host: 'bootrealtime.uve.weibo.com', path: '/v3/ad/realtime' },
+  { host: 'wbapp.uve.weibo.com', path: '/wbapplua/wbpullad.lua' }];
 assert.equal(/^\[(?:Rule|Rewrite)\]$/m.test(plugin), false, '不能保留旧域名拒绝、请求拒绝或 jq 改写区块');
 assert.equal(requests.length, 0, '业务请求必须正常返回，不提前拒绝');
 assert.equal(scripts.every(rule => ['weibo_feed.js', 'weibo_skin.js', 'weibo_vip.js', 'weibo_intl.js'].includes(rule.file)), true,
@@ -32,7 +34,7 @@ assert.equal(scripts.every(rule => ['weibo_feed.js', 'weibo_skin.js', 'weibo_vip
 function routed(url) {
   const matches = scripts.filter(rule => rule.re.test(url));
   assert.equal(matches.length, 1, '每个目标请求只能命中一个响应脚本');
-  assert.equal(matches[0].file, 'weibo_feed.js', '目标请求必须进入参考兼容入口');
+  assert.equal(matches[0].file, 'weibo_feed.js', '目标请求必须进入本地处理器');
   assert.equal([...requests, ...urlRules].some(re => re.test(url)), false, '目标请求不能先被旧拒绝规则截断');
 }
 for (const endpoint of endpoints) {
@@ -44,7 +46,7 @@ for (const endpoint of endpoints) {
     assert.equal(scripts.some(rule => rule.file === 'weibo_feed.js' && rule.re.test(url.replace('?', '_normal?'))), false);
   }
 }
-for (const route of Array.from(reference.routes).filter(route => route.host !== 'api.weibo.cn')) {
+for (const route of routes.filter(route => route.host !== 'api.weibo.cn')) {
   routed(`https://${route.host}${route.path}?test=1`);
   assert.equal(scripts.some(rule => rule.file === 'weibo_feed.js'
     && rule.re.test(`https://${route.host}${route.path}_normal?test=1`)), false);
@@ -55,7 +57,7 @@ for (const endpoint of ['client/interrupt', '!/client/light_skin',
 }
 assert.equal(scripts.some(rule => rule.re.test('https://api.weibo.cn/2/client/interrupt?test=1')), false,
   '启动配置必须透传，不硬改默认频道');
-console.log('通过：参考全部业务及开屏入口单次命中；没有请求拒绝、jq 或旧处理器重叠');
+console.log('通过：全部业务及开屏入口单次命中；没有请求拒绝、jq 或旧处理器重叠');
 
 function run(code, url, body, stored = {}) {
   let calls = 0, networkCalls = 0, output;
@@ -75,8 +77,31 @@ function run(code, url, body, stored = {}) {
   vm.runInNewContext(code, context, { timeout: 5000 });
   assert.equal(calls, 1, '脚本必须且只能结束一次');
   assert.equal(networkCalls, 0, '响应处理不能发起额外请求，包括被捕获的失败请求');
-  return { body: output, writes, routes: context.referenceRoutes };
+  return { body: output, writes };
 }
+
+// 与真实个人页相同的入口注入条件：必须含完整 profileme_mine 分组。
+const ordinarySettings = { category: 'cell', itemId: 'account_settings', title: { content: '设置' } };
+const profileMine = { itemId: 'profileme_mine', category: 'group', type: 'grid',
+  header: { category: 'mine', type: 'header', itemId: 'profileme_mine_head' },
+  items: [{ itemId: 'album', title: '我的相册' }, ordinarySettings] };
+const pluginSettings = { category: 'cell', type: 'title', itemId: 'weibo_local_settings_v3',
+  title: { content: '墨鱼微博助手' }, click: { scheme: 'https://api.weibo.cn/__qx_weibo_settings__/' } };
+for (const endpoint of ['profile/me', 'profile/container_timeline']) {
+  for (const host of ['api.weibo.cn', 'mapi.weibo.com']) {
+    const url = `https://${host}/2/${endpoint}`;
+    const clean = { items: [profileMine, ordinarySettings], cursor: 'next' };
+    assert.deepEqual(JSON.parse(run(source, url, JSON.stringify(clean)).body), clean,
+      '完整个人页不得新增插件设置入口，普通设置和分页必须保留');
+    const withPlugin = structuredClone(clean);
+    withPlugin.items.push(pluginSettings);
+    withPlugin.items[0].items.push(pluginSettings);
+    assert.deepEqual(JSON.parse(run(source, url, JSON.stringify(withPlugin)).body), clean,
+      '顶层和嵌套的历史插件设置入口都必须移除');
+  }
+}
+console.log('通过：完整个人页不注入插件设置，移除历史入口并保留普通设置、相册和分页');
+
 const normals = [{ category: 'feed', data: { idstr: 'normal', text: '普通微博' } },
   { category: 'feed', data: { idstr: 'reposted', text: '转发微博', retweeted_status: { ad_state: 1, text: '被转发正文' } } }];
 const ad = { category: 'feed', data: { idstr: 'ad', text: '广告', ad_state: 1, is_ad: 1,
@@ -90,7 +115,7 @@ for (const network of ['wifi', '5g']) {
     assert.deepEqual(r.writes, [], '不能更改其他插件的设置');
   }
 }
-for (const route of Array.from(reference.routes)) {
+for (const route of routes) {
   for (const body of ['', '<html>error</html>', 'null', '[]', 'true']) {
     const result = run(source, `https://${route.host}${route.path}?x=1`, body);
     assert.equal(result.body, body, '所有入口的异常正文必须透传：' + route.path);
@@ -106,7 +131,7 @@ for (const endpoint of ['statuses/container_timeline', 'statuses/container_timel
   const result = run(source, `https://api.weibo.cn/2/${endpoint}`, body, { mainConfig: '{broken' });
   assert.deepEqual(JSON.parse(result.body).items, [normals[0], stateOnly], '首页单独的 ad_state 不能作为删帖依据');
 }
-console.log('通过：五类首页信息流使用参考判定，保留只有 ad_state 的帖子，损坏配置不影响过滤');
+console.log('通过：五类首页信息流保留正常帖子，保留只有 ad_state 的帖子，损坏配置不影响过滤');
 
 const sizes = ['largest', 'thumbnail', 'large', 'middleplus', 'mw2000', 'bmiddle'];
 const picture = { original: { url: 'https://wx1.sinaimg.cn/orh1080/picture.jpg' },
@@ -138,7 +163,7 @@ const protectedBody = JSON.stringify({ items: [{ category: 'feed', data: {
 for (const shadowPath of ['/2/search/finder', '/2/statuses/container_timeline']) {
   const url = `https://api.weibo.cn/2/profile/me?from=${shadowPath}`;
   assert.deepEqual(JSON.parse(run(source, url, protectedBody).body),
-    JSON.parse(run(upstream, url, protectedBody).body), '查询参数里的路径不能改变实际响应的处理范围');
+    JSON.parse(protectedBody), '查询参数里的路径不能改变实际响应的处理范围');
 }
 console.log('通过：只按实际路径限定本地清理，查询参数中的首页或发现路径不影响个人页');
 
@@ -147,19 +172,19 @@ const groups = { defaultPageId: 'recommend', pageDatas: [{ pageId: 'homeFeed', c
   { title: '超话社区', gid: '110057182642782' }
 ] }] }] };
 const groupsUrl = 'https://api.weibo.cn/2/groups/allgroups/v2';
-const referenceGroups = JSON.parse(run(upstream, groupsUrl, JSON.stringify(groups)).body);
 const actualGroups = JSON.parse(run(source, groupsUrl, JSON.stringify(groups)).body);
-assert.deepEqual(actualGroups, referenceGroups, '顶部分组必须使用参考逻辑，不叠加旧版标签删除');
+assert.equal(actualGroups.defaultPageId, 'homeFeed');
+assert.deepEqual(actualGroups.pageDatas[0].categories[0].pageDatas.map(group => group.title), ['最新微博', '全部关注', '超话社区']);
 const titles = actualGroups.pageDatas.flatMap(page => (page.categories ?? []).flatMap(category => category.pageDatas ?? []))
   .map(group => group.title);
 assert.ok(titles.includes('全部关注') && titles.includes('超话社区'), '不能硬删普通关注分组和超话入口');
 const bootUrl = 'https://bootrealtime.uve.weibo.com/v3/ad/realtime';
 const boot = { ads: [], normal: { keep: true } };
 assert.deepEqual(JSON.parse(run(source, bootUrl, JSON.stringify(boot)).body),
-  JSON.parse(run(upstream, bootUrl, JSON.stringify(boot)).body));
+  boot);
 assert.deepEqual(JSON.parse(run(source, bootUrl, JSON.stringify(boot)).body).normal, boot.normal,
   '实时开屏必须处理真实响应并保留正常配置，不能返回空对象');
-console.log('通过：分组与实时开屏使用参考逻辑，保留普通标签及正常配置');
+console.log('通过：分组与实时开屏由本地处理，保留普通标签及正常配置');
 
 const hotSearch = { category: 'card', data: { card_type: 17, group: [{ word: '正常热搜', itemid: 'normal' }],
   group_unfold: [{ word: '正常热搜', itemid: 'normal' }] } };
@@ -178,60 +203,55 @@ assert.deepEqual(kept.moreInfo, { next: 'p2' });
 assert.deepEqual(output.header.data.items, [hotSearch]);
 console.log('通过：发现页保留现有及未知频道、正常热搜与普通图片卡片，移除广告和问热搜入口');
 
-const harPath = process.argv.slice(2).find(arg => !arg.startsWith('--'));
-if (harPath) {
-  const entries = JSON.parse(fs.readFileSync(harPath, 'utf8').replace(/^\uFEFF/, '')).log.entries;
-  const decode = c => c.encoding === 'base64' ? Buffer.from(c.text, 'base64').toString('utf8') : c.text;
-  const settings = entries.find(e => new URL(e.request.url).pathname === '/__qx_weibo_settings__/api/config');
-  assert.ok(settings, '参考包必须带有实际设置，不能猜测配置');
-  const actual = JSON.parse(decode(settings.response.content));
-  assert.equal(actual.version, '0.1.59');
-  let count = 0, migrated = 0;
-  for (const entry of entries) {
-    const u = new URL(entry.request.url);
-    if (!scripts.some(rule => rule.file === 'weibo_feed.js' && rule.re.test(entry.request.url))) continue;
-    routed(entry.request.url);
-    assert.ok(entry.response._loonOriginal?.content?.text, '必须有真实原始响应');
-    const raw = decode(entry.response._loonOriginal.content);
-    const oracle = run(upstream, entry.request.url, raw,
-      { weibo_adblock_config_v3: JSON.stringify(actual.config) });
-    assert.equal(isDeepStrictEqual(JSON.parse(oracle.body), JSON.parse(decode(entry.response.content))), true,
-      '上游必须复现参考插件真实输出：' + u.pathname);
-    const result = run(source, entry.request.url, raw);
-    const data = JSON.parse(result.body), original = JSON.parse(raw);
-    const wifi = new URL(entry.request.url); wifi.searchParams.set('networktype', 'wifi');
-    assert.deepEqual(data, JSON.parse(run(source, wifi.href, raw).body), '相同正文不能因网络标记不同而改变过滤结果');
-    if (u.pathname.endsWith('/finder')) {
-      assert.deepEqual(data.channelInfo.channels.map(c => c.key), original.channelInfo.channels.map(c => c.key));
-      for (const [index, before] of original.channelInfo.channels.entries()) {
-        if (!before.payload) continue;
-        const after = data.channelInfo.channels[index].payload;
-        function normalIds(node, found = []) {
-          if (!node || typeof node !== 'object') return found;
-          if (node.category === 'feed' && node.data?.mblogtypename !== '广告' && node.data?.is_ad !== 1) found.push(node.data.idstr ?? node.data.id);
-          for (const value of Object.values(node)) if (value && typeof value === 'object') normalIds(value, found);
-          return found;
-        }
-        assert.deepEqual(normalIds(after.items), normalIds(before.payload.items), '普通发现微博必须保留');
-        assert.equal(JSON.stringify(after.items).includes('"mblogtypename":"广告"'), false);
-        assert.deepEqual(after.moreInfo, before.payload.moreInfo);
-      }
-    }
-    if (u.pathname.endsWith('/container_timeline')) {
-      const id = item => item.data?.idstr ?? item.data?.id;
-      assert.deepEqual(data.items.map(id), JSON.parse(oracle.body).items.map(id), '首页必须与有效参考保留同一批帖子');
-      assert.deepEqual(data.moreInfo, original.moreInfo);
-      assert.deepEqual(data.refreshInfo, original.refreshInfo);
-    }
-    if (['/2/statuses/container_timeline', '/2/search/finder', '/2/search/container_discover'].includes(u.pathname)) {
-      count++;
-    } else {
-      assert.equal(isDeepStrictEqual(data, JSON.parse(oracle.body)), true,
-        '新增迁移接口必须完整复现参考结果：' + u.pathname);
-      migrated++;
-    }
-  }
-  assert.equal(count, 6, '参考样本必须覆盖四次发现、一次刷新和一次首页');
-  assert.equal(migrated, 8, '新增回放必须覆盖分组、个人页、提醒、推送、搜索配置和 Lua 广告配置');
-  console.log('通过：14 份真实响应回放，新增 8 份与参考结果完整一致，首页与发现页保留正常内容及网络一致性');
+const normalSearchCard = { card_type: 9, mblog: { id: 1, text: '普通搜索结果',
+  retweeted_status: { id: 10, is_ad: 1, text: '转发引用不能删除' } } };
+for (const endpoint of ['cardlist', 'searchall', 'search/container_timeline']) {
+  const input = { cards: [{ card_type: 11, card_group: [normalSearchCard,
+    { card_type: 9, mblog: { id: 2, is_ad: 1, mblogtypename: '广告' } }, { card_type: 118 }] }],
+    moreInfo: { next: 'p3' } };
+  const expected = { cards: [{ card_type: 11, card_group: [normalSearchCard] }], moreInfo: input.moreInfo };
+  assert.deepEqual(JSON.parse(run(source, `https://api.weibo.cn/2/${endpoint}`, JSON.stringify(input)).body), expected,
+    'card_group 中也要过滤广告，保留普通搜索结果和转发引用');
 }
+
+for (const endpoint of ['push/daily', 'push/active', 'push/info', 'guest/push_active']) {
+  const input = { ug_adv: { screen_ad: { effective: true }, feed_ad: { effective: '1' },
+    feed_ad_arr: [{ effective: 1 }, { effective: 'unknown' }],
+    hot_ad: { screen_ad: [{ effective: true }] }, intercept_ad: { switch: 1 } },
+    ug_red_packet_lottie_config: { show_max_num: 2 }, normal: { enabled: true } };
+  const expected = structuredClone(input);
+  expected.ug_adv.screen_ad.effective = false;
+  expected.ug_adv.feed_ad.effective = '0';
+  expected.ug_adv.feed_ad_arr[0].effective = 0;
+  expected.ug_adv.hot_ad.screen_ad[0].effective = false;
+  expected.ug_adv.intercept_ad.switch = 0;
+  assert.deepEqual(JSON.parse(run(source, `https://api.weibo.cn/2/${endpoint}`, JSON.stringify(input)).body), expected);
+}
+for (const route of routes.filter(route => route.host !== 'api.weibo.cn')) {
+  const input = { ads: [{ id: 'ad' }], cached_ad: { ads: [{ id: 'cached' }], keep: true }, normal: { keep: true } };
+  const expected = { ...input, ads: [], cached_ad: { ads: [], keep: true } };
+  if (route.path.endsWith('/preload')) expected.last_ad_show_interval = 86400;
+  assert.deepEqual(JSON.parse(run(source, `https://${route.host}${route.path}`, JSON.stringify(input)).body), expected);
+}
+for (const endpoint of ['cardlist', 'flowpage', 'searchall', '!/was/finder/searchbarchange',
+  'statuses/container_detail', 'statuses/container_detail_comment', 'statuses/container_detail_forward',
+  'comments/build_comments', 'profile/me', 'profile/container_timeline', 'video/flow_stream', 'video/flow_stream_cache']) {
+  const input = { items: [normals[0], ad, normals[1]], moreInfo: { next: 'p2' } };
+  assert.deepEqual(JSON.parse(run(source, `https://api.weibo.cn/2/${endpoint}`, JSON.stringify(input)).body),
+    { items: normals, moreInfo: input.moreInfo }, '当前处理器必须实际过滤广告：' + endpoint);
+}
+const liveInput = { code: 100000, data: [{ id: 'live' }], normal: true };
+assert.deepEqual(JSON.parse(run(source, 'https://api.weibo.cn/2/live/media_homelist', JSON.stringify(liveInput)).body),
+  { ...liveInput, data: [] });
+const unknownLive = { code: 'unknown', data: [{ id: 'normal' }] };
+assert.deepEqual(JSON.parse(run(source, 'https://api.weibo.cn/2/live/media_homelist', JSON.stringify(unknownLive)).body), unknownLive);
+for (const [value, expected] of [[true, false], [1, 0], ['1', '0'], ['unknown', 'unknown']]) {
+  assert.deepEqual(JSON.parse(run(source, 'https://api.weibo.cn/2/checkin/show', JSON.stringify({ show: value, normal: 1 })).body),
+    { show: expected, normal: 1 });
+}
+const reminder = { exist_remind: true, bubble_dismiss_time: 10, image_dismiss_time: 20, image: 'ad.png', other: 1 };
+assert.deepEqual(JSON.parse(run(source, 'https://api.weibo.cn/2/video/remind_info', JSON.stringify(reminder)).body),
+  { exist_remind: false, bubble_dismiss_time: 0, image_dismiss_time: 0, image: '', other: 1 });
+const channels = { channel_list: [{ title: '推荐' }, { title: '未知频道' }], normal: 1 };
+assert.deepEqual(JSON.parse(run(source, 'https://api.weibo.cn/2/video/home_channels', JSON.stringify(channels)).body), channels);
+console.log('通过：当前搜索、详情、个人页、视频处理器过滤广告；开屏与配置只改已识别字段，未知结构保留');

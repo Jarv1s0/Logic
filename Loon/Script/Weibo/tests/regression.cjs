@@ -1,5 +1,5 @@
 // 兼容层与历史处理器的合成单元验证；历史脚本通过不代表当前插件仍加载它。
-// 当前完整处理链与真实响应验证见 feed-reference.cjs。
+// 当前完整处理链验证见 feed.cjs。
 // node Loon/Script/Weibo/tests/regression.cjs
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -8,7 +8,20 @@ const vm = require('node:vm');
 const cp = require('node:child_process');
 const old = process.argv.includes('--baseline');
 
+const pluginSource = old ? cp.execFileSync('git', ['show', 'HEAD:Loon/weibo.lpx'], { encoding: 'utf8' })
+  : fs.readFileSync(path.join(__dirname, '../../../weibo.lpx'), 'utf8');
+const activeScripts = [...pluginSource.matchAll(/response if \$\{url\} ~= \/(.+?)\/([a-z]*) then script\("([^"]+)"\)/g)]
+  .map(match => ({ re: new RegExp(match[1], match[2]), file: path.basename(new URL(match[3]).pathname) }));
+function currentFile(file, endpoint) {
+  const url = endpoint.startsWith('https://') ? endpoint : `https://api.weibo.cn/2/${endpoint}?test=1`;
+  const active = activeScripts.filter(rule => rule.re.test(url));
+  assert.ok(active.length <= 1, '不能重叠加载多个处理器');
+  // 已迁移接口必须测试当前实际加载的脚本；未配置的旧接口仅保留历史单元用例。
+  return active[0]?.file ?? file;
+}
+
 function run(file, endpoint, input) {
+  file = currentFile(file, endpoint);
   const relative = `Loon/Script/Weibo/${file}`;
   const source = old
     ? cp.execFileSync('git', ['show', `HEAD:${relative}`], { encoding: 'utf8' })
@@ -255,6 +268,7 @@ test('统一响应入口与独立功能匹配，且不会匹配相邻正常接�
 
 
 function runRaw(file, endpoint, body, storedConfig = null) {
+  file = currentFile(file, endpoint);
   const source = old
     ? cp.execFileSync('git', ['show', `HEAD:Loon/Script/Weibo/${file}`], { encoding: 'utf8' })
     : fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
@@ -360,11 +374,11 @@ for (const [file, endpoint] of [
     }
   });
 }
-test('处理器中途异常时不返回半处理响应', () => {
+test('当前处理器允许空列表成员，过滤广告并保留未知结构', () => {
   const main = '{ "items": [{"data":{"ad_marked":true}},null] }';
-  assert.equal(runRaw('weibo_main.js', 'statuses/container_timeline', main), main);
+  assert.deepEqual(JSON.parse(runRaw('weibo_feed.js', 'statuses/container_timeline', main)), { items: [null] });
   const ads = '{ "pageHeader": {"normal":true}, "items": [null] }';
-  assert.equal(runRaw('weibo_ads.js', 'flowpage', ads), ads);
+  assert.equal(runRaw('weibo_feed.js', 'flowpage', ads), ads);
 });
 test('损坏的本地配置不会阻断广告过滤', () => {
   const body = JSON.stringify({ items: [{ data: { id: 1 } }, { data: { ad_marked: true } }] });
