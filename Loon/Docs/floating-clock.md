@@ -1,21 +1,13 @@
 # 悬浮时钟去广告
 
-插件文件：[FloatingClock_remove_ads.lpx](../FloatingClock_remove_ads.lpx)。在 Loon 中本地导入并启用，最低要求 Loon `3.5.1(998)`。试验性清空抢购事件需开启 MitM，并安装及信任证书；仅域名拦截不需要 MitM。无配套脚本。
+- 插件：[`FloatingClock_remove_ads.lpx`](../FloatingClock_remove_ads.lpx)，最低要求 Loon `3.5.1(998)`，本地导入并启用。试验性清空抢购事件需启用 MitM，仅域名拦截不需要。
 
 ## 处理范围
 
-依据用户提供的 HAR（399 条请求），拒绝以下广告服务主机：
+拒绝以下广告服务主机：
 
-- `s.tuia.cn`：抓包含 `/ad/request` 广告请求、SDK 初始化与广告跟踪。
-- `tm.sigmob.cn`：抓包含 `/waterfall/v1`、`/strategy/v6` 等广告 SDK 请求。
-- `sdk.1rtb.net`：抓包含 `/sdk/req_ad` 广告请求，原响应为 HTTP 404。
+- `s.tuia.cn`
+- `tm.sigmob.cn`
+- `sdk.1rtb.net`
 
-域名规则对其他 App 使用同一广告服务也生效，可能影响激励广告及依赖广告完成的流程；不伪造广告奖励或会员权益。广告响应含加密文本或二进制数据，因此不猜测其空响应格式。
-
-保留 `hzjuzhi.com`、`config.hzjuzhi.com`、图片域名、反馈及会员商品接口。按用户要求试验性清空 `scheduled/featured/list`：仅在 HTTP 200、业务 `code=0` 且 `data.list` 为数组时，清空列表并重置条数、分页、导航及翻页标记，保留其余字段。此接口混有购物优惠和演出、赛事提醒，全部清空是为了测试首页“抢购事件”入口是否自动隐藏，也会清空共用该接口的热门列表。尚不能确认入口会消失，可能保留空入口；不处理左上角“会员免广告”入口或底部页签。`iOSVersionCtrl.agc`、`timeSource.agc` 在抓包中均返回 304，无正文，未尝试改写其内容。腾讯相关请求仅见 IP 查询、统计及素材，不据此扩大拦截范围。
-
-## 验证边界
-
-已使用 HAR 核对主机命中和业务接口保留范围；未进行 Loon 真机验证，无法确认全部广告消失、广告占位折叠、SDK 失败重试或本地缓存行为。启用后彻底退出并重新打开悬浮时钟，在设备上检查广告与计时、提醒功能。
-
-HAR 仅用于本地分析，不纳入仓库，也不保存其中的账号、请求签名或设备标识。
+域名规则对其他 App 使用同一广告 SDK 也生效。试验性清空 `scheduled/featured/list` 用于测试首页“抢购事件”入口，会一并清空该接口的热门列表。
