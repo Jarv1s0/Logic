@@ -20,7 +20,7 @@ const endpoints = [
   'search/finder', 'search/container_timeline', 'search/container_discover', '!/was/finder/searchbarchange',
   'cardlist', 'flowpage', 'searchall', 'profile/me', 'profile/container_timeline',
   'video/flow_stream', 'video/flow_stream_cache', 'push/daily', 'push/active', 'push/info',
-  'guest/push_active', 'groups/allgroups/v2', 'client/abserver_list', 'checkin/show',
+  'guest/push_active', 'groups/allgroups/v2', 'client/get_grayfeature', 'client/abserver_list', 'checkin/show',
   'video/remind_info', 'video/home_channels'
 ];
 const routes = [...endpoints.map(endpoint => ({ host: 'api.weibo.cn', path: '/2/' + endpoint })),
@@ -321,3 +321,26 @@ const otherHost = meCardsUrl.replace('m.weibo.cn', 'api.weibo.cn');
 assert.equal(scripts.some(rule => rule.re.test(otherHost)), false);
 assert.deepEqual(JSON.parse(run(source, otherHost, JSON.stringify(meCards)).body), meCards);
 console.log('通过：更多功能过滤打开和折叠分组里的推广，保留钱包账户、经常访问和未知功能');
+
+for (const [enabled, disabled] of [['true', 'false'], [true, false], ['unknown', 'unknown']]) {
+  const key = 'p_sg_left_discovery_positive_a_enable';
+  const ab_data = { [key]: enabled, p_feed_detail_dyna_bottom_bar_glass_search_enable: 'true' };
+  assert.deepEqual(process('client/get_grayfeature', { ab_data }), { ab_data: { ...ab_data, [key]: disabled } });
+}
+const postButton = { type: '1', icon: 'https://example.com/post.png', scheme: 'sinaweibo://compose' };
+const taskButton = { type: '1', icon: 'https://example.com/hongbao.png',
+  scheme: 'https://m.weibo.cn/c/checkin?from=home', icon_reverse: 'reversed' };
+const guestButton = { ...taskButton, scheme: 'sinaweibo://login?from=home&ug_guest=1' };
+for (const endpoint of ['push/active', 'guest/push_active']) {
+  for (const button of [taskButton, guestButton]) {
+    const input = { feed_redpacket: button, post_button: postButton };
+    assert.deepEqual(process(endpoint, input), {
+      ...input, feed_redpacket: { ...button, type: '0', icon: '', icon_reverse: '' }
+    });
+  }
+  const other = { feed_redpacket: { ...postButton, icon: taskButton.icon }, post_button: postButton };
+  assert.deepEqual(process(endpoint, other), other);
+}
+const daily = { feed_redpacket: taskButton };
+assert.deepEqual(process('push/daily', daily), daily);
+console.log('通过：首页超话与签到红包入口定向关闭，其他实验、发帖及未知入口保留');

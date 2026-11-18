@@ -28,10 +28,11 @@ const BUSINESS_ROUTES = Object.freeze({
   '/2/video/flow_stream': 'video',
   '/2/video/flow_stream_cache': 'video',
   '/2/push/daily': 'adConfig',
-  '/2/push/active': 'adConfig',
+  '/2/push/active': 'activeAdConfig',
   '/2/push/info': 'adConfig',
-  '/2/guest/push_active': 'adConfig',
+  '/2/guest/push_active': 'activeAdConfig',
   '/2/groups/allgroups/v2': 'groups',
+  '/2/client/get_grayfeature': 'homeSuperTopic',
   '/2/client/abserver_list': 'refresh',
   '/2/checkin/show': 'checkin',
   '/2/video/remind_info': 'reminder',
@@ -117,7 +118,16 @@ const ME_CARD_PROMOTIONS = new Set([
         else if (value === 'true' || value === 'false') data.value[key] = String(config.homeAutoRefresh);
         break;
       }
-      case 'adConfig': {
+      case 'homeSuperTopic': {
+        const key = 'p_sg_left_discovery_positive_a_enable';
+        if (isObject(data.ab_data)) {
+          if (data.ab_data[key] === 'true') data.ab_data[key] = 'false';
+          else if (data.ab_data[key] === true) data.ab_data[key] = false;
+        }
+        break;
+      }
+      case 'activeAdConfig': case 'adConfig': {
+        if (route === 'activeAdConfig') hideHomeTaskButton(data.feed_redpacket);
         const ads = data.ug_adv;
         if (!isObject(ads)) break;
         disableFlag(ads.screen_ad, 'effective'); disableFlag(ads.feed_ad, 'effective');
@@ -157,6 +167,18 @@ const ME_CARD_PROMOTIONS = new Set([
     if (object[key] === true) object[key] = false;
     else if (object[key] === 1) object[key] = 0;
     else if (object[key] === '1') object[key] = '0';
+  }
+  function hideHomeTaskButton(button) {
+    if (!isObject(button) || !['0', '1'].includes(button.type)
+      || typeof button.icon !== 'string' || typeof button.scheme !== 'string') return;
+    const isCheckin = /^https:\/\/m\.weibo\.cn\/c\/checkin(?:[?#]|$)/i.test(button.scheme);
+    const isGuestCheckin = /\/(?:hongbao|redpocket_white)\.png(?:[?#]|$)/i.test(button.icon)
+      && /^sinaweibo:\/\/login\?(?:[^&#]*&)*ug_guest=1(?:[&#]|$)/i.test(button.scheme);
+    if (!isCheckin && !isGuestCheckin) return;
+    button.type = '0';
+    for (const key of ['icon', 'icon_reverse', 'pre_icon', 'pre_icon_reverse', 'finish_icon', 'guide']) {
+      if (typeof button[key] === 'string') button[key] = '';
+    }
   }
   function isAd(post) {
     if (!isObject(post)) return false;
