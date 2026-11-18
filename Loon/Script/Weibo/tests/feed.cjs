@@ -344,3 +344,20 @@ for (const endpoint of ['push/active', 'guest/push_active']) {
 const daily = { feed_redpacket: taskButton };
 assert.deepEqual(process('push/daily', daily), daily);
 console.log('通过：首页超话与签到红包入口定向关闭，其他实验、发帖及未知入口保留');
+
+const promotionUnread = {
+  timeStamp: 123, remind_settings: {}, dm: 3, cmt: 2, mention_status: 1, attitude: 4,
+  notice_unread: [{ group_id: 20989, unread_count: 1 }], activity_above_all_remind_count: 1,
+  ext: { jieqian: 1, RedPackets: 1, card_background: 1, order_gmv: 1, notification: 1, unknown: 5 },
+  ext_new: { jieqian: { count: 1, type: 'all' }, RedPackets: { count: 1 },
+    card_background: { count: 1 }, order_gmv: { count: 1 }, notification: { count: 1 }, unknown: { count: 5 } }
+};
+const expectedUnread = structuredClone(promotionUnread);
+for (const key of ['jieqian', 'RedPackets', 'card_background']) {
+  expectedUnread.ext[key] = 0;
+  expectedUnread.ext_new[key].count = 0;
+}
+assert.deepEqual(process('remind/unread_count', promotionUnread), expectedUnread);
+const malformedPromotion = { ...promotionUnread, ext: { jieqian: '1' }, ext_new: { jieqian: { count: -1 } } };
+assert.deepEqual(process('remind/unread_count', malformedPromotion), malformedPromotion);
+console.log('通过：新旧推广红点计数同步清理，私信、互动、订单、混合动态及未知计数保留');

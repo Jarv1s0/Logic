@@ -47,6 +47,12 @@ const ME_CARD_PROMOTIONS = new Set([
   '100505_-_ewbshopping1', '100505_-_diamond', '100505_-_renwu', '100505_-_jingran2026',
   '100505_-_aibanliao', '100505_-_newlvzhou2', '100505_-_mianliuliang', '100505_-_worldcup'
 ]);
+const PROMOTION_REMINDER_KEYS = [
+  'jieqian', 'jieqian1', 'jieqian2', 'jieqian3', 'licai', 'licai1', 'licai2', 'licai3',
+  'jinrong1', 'jinrong2', 'jinrong3', 'xinyongka1', 'xinyongka2', 'xinyongka3',
+  'fafacredit', 'fenqi', 'creditcard', 'RedPackets', 'productcenter_dot',
+  'card_privilegeone', 'card_privilegetwo', 'card_background'
+];
 
 (function () {
   const original = $response.body;
@@ -107,6 +113,10 @@ const ME_CARD_PROMOTIONS = new Set([
         break;
       case 'unread':
         if (Number.isSafeInteger(data.timeStamp) && isObject(data.remind_settings)) {
+          for (const key of PROMOTION_REMINDER_KEYS) {
+            if (isObject(data.ext)) clearCount(data.ext, key);
+            if (isObject(data.ext_new?.[key])) clearCount(data.ext_new[key], 'count');
+          }
           if (config.hideHomeTabRedDot) for (const key of ['status_home', 'status_hot_home']) clearCount(data, key);
           if (config.hideMessageTabNumber) clearCount(data, 'folder_total_unread');
         }
