@@ -1,5 +1,5 @@
 #!name=微博去广告&净化
-#!desc=移除开屏、信息流、发现页、热搜、评论区与消息动态广告及我的页面推广，清理更多功能中的钱包广告、活动推广及已识别的推广红点；隐藏首页超话、签到红包及发现页「问热搜」、首页头像提示、红点、消息汇总数字、帖子 AI 入口与视频结束动作，默认开启首页自动刷新。
+#!desc=移除开屏、信息流、发现页、热搜、评论区与消息动态广告及我的页面推广，清理更多功能中的钱包广告、活动推广及已识别的推广红点；隐藏首页超话、签到红包、推广浮窗、评论提示占位、AI 话题投票及发现页「问热搜」、首页头像提示、红点、消息汇总数字、帖子 AI 入口与视频结束动作，默认开启首页自动刷新。
 #!author=Jarv1s0[https://github.com/Jarv1s0/Logic]
 #!homepage=https://github.com/Jarv1s0/Logic/tree/master/Loon
 #!icon=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Weibo.png
@@ -8,15 +8,15 @@
 #!system = iOS, iPadOS
 #!system_version =
 #!loon_version =3.5.1(983)
-#!date=2026-11-18 15:49:18
+#!date=2026-11-18 18:16:59
 
 # 业务与开屏响应由本仓库独立净化，不注入设置入口；行为与验证边界见 Docs/weibo.md。
 [Script]
-response if ${url} ~= /^https?:\/\/m?api\.weibo\.c(?:n|om)(?:\/2\/statuses\/container_timeline_hot|\/2\/statuses\/container_positive|\/2\/guest\/container_timeline_hot|\/2\/statuses\/container_timeline_unread|\/2\/statuses\/container_timeline|\/2\/live\/media_homelist|\/2\/remind\/hometab_dot|\/2\/remind\/unread_count|\/2\/messageflow\/notice|\/2\/statuses\/container_detail|\/2\/statuses\/container_detail_comment|\/2\/statuses\/container_detail_forward|\/2\/comments\/build_comments|\/2\/search\/finder|\/2\/search\/container_timeline|\/2\/search\/container_discover|\/2\/!\/was\/finder\/searchbarchange|\/2\/cardlist|\/2\/flowpage|\/2\/searchall|\/2\/profile\/me|\/2\/profile\/container_timeline|\/2\/video\/flow_stream|\/2\/video\/flow_stream_cache|\/2\/push\/daily|\/2\/push\/active|\/2\/push\/info|\/2\/guest\/push_active|\/2\/groups\/allgroups\/v2|\/2\/client\/get_grayfeature|\/2\/client\/abserver_list|\/2\/checkin\/show|\/2\/video\/remind_info|\/2\/video\/home_channels)(?:[?#]|$)/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_feed.js?v=20261118154918") with requires_body=true, timeout=60, tag="微博统一响应净化"
-response if ${url} ~= /^https?:\/\/m\.weibo\.cn\/c\/mecard\/cardv3(?:[?#]|$)/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_feed.js?v=20261118154918") with requires_body=true, timeout=60, tag="微博更多功能净化"
-response if ${url} ~= /^https?:\/\/bootpreload\.uve\.weibo\.com\/v2\/ad\/preload(?:[?#]|$)/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_feed.js?v=20261118154918") with requires_body=true, timeout=60, tag="微博开屏响应净化"
-response if ${url} ~= /^https?:\/\/bootrealtime\.uve\.weibo\.com\/v3\/ad\/realtime(?:[?#]|$)/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_feed.js?v=20261118154918") with requires_body=true, timeout=60, tag="微博开屏响应净化"
-response if ${url} ~= /^https?:\/\/wbapp\.uve\.weibo\.com\/wbapplua\/wbpullad\.lua(?:[?#]|$)/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_feed.js?v=20261118154918") with requires_body=true, timeout=60, tag="微博开屏响应净化"
+response if ${url} ~= /^https?:\/\/m?api\.weibo\.c(?:n|om)(?:\/2\/statuses\/container_timeline_hot|\/2\/statuses\/container_positive|\/2\/guest\/container_timeline_hot|\/2\/statuses\/container_timeline_unread|\/2\/statuses\/container_timeline|\/2\/live\/media_homelist|\/2\/remind\/hometab_dot|\/2\/remind\/unread_count|\/2\/messageflow\/notice|\/2\/statuses\/container_detail|\/2\/statuses\/container_detail_comment|\/2\/statuses\/container_detail_forward|\/2\/comments\/build_comments|\/2\/search\/finder|\/2\/search\/container_timeline|\/2\/search\/container_discover|\/2\/!\/was\/finder\/searchbarchange|\/2\/cardlist|\/2\/flowpage|\/2\/searchall|\/2\/profile\/me|\/2\/profile\/container_timeline|\/2\/video\/flow_stream|\/2\/video\/flow_stream_cache|\/2\/push\/daily|\/2\/push\/active|\/2\/push\/info|\/2\/guest\/push_active|\/2\/groups\/allgroups\/v2|\/2\/client\/get_grayfeature|\/2\/client\/abserver_list|\/2\/checkin\/show|\/2\/video\/remind_info|\/2\/video\/home_channels)(?:[?#]|$)/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_feed.js?v=20261118181659") with requires_body=true, timeout=60, tag="微博统一响应净化"
+response if ${url} ~= /^https?:\/\/m\.weibo\.cn\/c\/mecard\/cardv3(?:[?#]|$)/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_feed.js?v=20261118181659") with requires_body=true, timeout=60, tag="微博更多功能净化"
+response if ${url} ~= /^https?:\/\/bootpreload\.uve\.weibo\.com\/v2\/ad\/preload(?:[?#]|$)/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_feed.js?v=20261118181659") with requires_body=true, timeout=60, tag="微博开屏响应净化"
+response if ${url} ~= /^https?:\/\/bootrealtime\.uve\.weibo\.com\/v3\/ad\/realtime(?:[?#]|$)/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_feed.js?v=20261118181659") with requires_body=true, timeout=60, tag="微博开屏响应净化"
+response if ${url} ~= /^https?:\/\/wbapp\.uve\.weibo\.com\/wbapplua\/wbpullad\.lua(?:[?#]|$)/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_feed.js?v=20261118181659") with requires_body=true, timeout=60, tag="微博开屏响应净化"
 
 # 保留国际版独立响应处理，不配置请求阶段拒绝。
 response if ${url} ~= /^https?:\/\/weibointl\.api\.weibo\.c(n|om)\/portal\.php\?(?:[^&]*&)*a=(?:open_app|get_searching_info|search_topic|get_coopen_ads|trends|user_center)(?:&|$)/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Weibo/weibo_intl.js?v=20261109155737") with requires_body=true, timeout=60, tag="微博国际版净化"

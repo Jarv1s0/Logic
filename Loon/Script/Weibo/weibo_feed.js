@@ -53,6 +53,10 @@ const PROMOTION_REMINDER_KEYS = [
   'fafacredit', 'fenqi', 'creditcard', 'RedPackets', 'productcenter_dot',
   'card_privilegeone', 'card_privilegetwo', 'card_background'
 ];
+const PROMOTION_FLOAT_TYPES = new Set([
+  'ad_launch', 'ad', 'ad_red_packet', 'ad_vision_float_home', 'ad_vision_float',
+  'red_pocket', 'find_red_packet', 'ug_high_priority', 'wb_custom_recommend'
+]);
 
 (function () {
   const original = $response.body;
@@ -122,6 +126,11 @@ const PROMOTION_REMINDER_KEYS = [
         }
         break;
       case 'refresh': {
+        for (const key of ['p_feed_ai_vote_ios_enable', 'p_feed_ruibin_enable_ai_vote',
+          'p_vote_topic_guide_enable', 'p_ad_redPacket_enable']) {
+          if (data.value?.[key] === true) data.value[key] = false;
+          else if (data.value?.[key] === 'true') data.value[key] = 'false';
+        }
         const key = 'p_feed_home_auto_refresh_ea1', value = data.value?.[key];
         if (typeof config.homeAutoRefresh !== 'boolean' || !isObject(data.value)) break;
         if (typeof value === 'boolean') data.value[key] = config.homeAutoRefresh;
@@ -138,6 +147,10 @@ const PROMOTION_REMINDER_KEYS = [
       }
       case 'activeAdConfig': case 'adConfig': {
         if (route === 'activeAdConfig') hideHomeTaskButton(data.feed_redpacket);
+        if (Array.isArray(data.floating_windows)) data.floating_windows = data.floating_windows.filter(window =>
+          window?.type !== 'native' || !PROMOTION_FLOAT_TYPES.has(window.subtype));
+        if (Array.isArray(data.floating_windows_force_show)) data.floating_windows_force_show =
+          data.floating_windows_force_show.filter(type => !PROMOTION_FLOAT_TYPES.has(type));
         const ads = data.ug_adv;
         if (!isObject(ads)) break;
         disableFlag(ads.screen_ad, 'effective'); disableFlag(ads.feed_ad, 'effective');
@@ -206,6 +219,8 @@ const PROMOTION_REMINDER_KEYS = [
     if (route === 'home' && item.category === 'group'
       && ['super_topic_recommend_card', 'recommend_video_card'].includes(item.trend_name)) return true;
     if (route === 'profile' && isProfilePromotion(item)) return true;
+    // 必须移除卡片本身，仅删除 data.tip_msg 会留下背景、关闭按钮和占位高度。
+    if (route === 'detail' && item.category === 'detail' && item.type === 'comment_header_tip') return true;
     if (route === 'detail' && (['广告', '廣告', '相关内容', '相关评论', '推荐', '热推', '推薦', '荐读'].includes(item.data?.adType ?? item.adType)
       || item.type === 'trend' || [true, 1, '1'].includes(item.commentAdType)
       || [6, 236].includes(Number(item.data?.card_type)))) return true;
@@ -257,7 +272,10 @@ const PROMOTION_REMINDER_KEYS = [
       && card.arrayText.contents.some(line => /^\d+(?:\.\d+)?(?:万)?额度$/.test(line?.content)));
   }
   function cleanDetail(data) {
-    if (isObject(data.detailInfo?.extend)) delete data.detailInfo.extend.follow_data;
+    if (isObject(data.detailInfo?.extend)) {
+      delete data.detailInfo.extend.follow_data;
+      delete data.detailInfo.extend.ai_vote_info;
+    }
     const header = data.pageHeader?.data;
     if (!Array.isArray(header?.items)) return;
     header.items = header.items.filter(item => {
@@ -312,6 +330,11 @@ const PROMOTION_REMINDER_KEYS = [
     if (isDiscovery || route === 'search') cleanSearchCard(node);
   }
   function cleanInterface(post) {
+    // 投票可以附着在正常微博及被转发原文上，只删除入口，不过滤整条微博。
+    for (const status of [post, post.retweeted_status]) {
+      if (isObject(status?.extend_info)) delete status.extend_info.ai_vote_info;
+      disableFlag(status?.page_info?.media_info, 'vote_is_show');
+    }
     if (route === 'home' || route === 'detail') {
       cleanPostAdTags(post);
       cleanPostAdTags(post.retweeted_status);

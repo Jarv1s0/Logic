@@ -12,6 +12,8 @@
 - 开屏与推送广告清理
 - 顶部分组保留“全部关注”和“超话社区”，并优先选择“最新微博”
 - 关闭首页左上角超话的入口实验，隐藏首页右上角已识别的签到红包入口；保留发帖按钮和普通分组
+- 移除首页“点击激活”所属的已识别红包、广告和活动浮窗及强制展示配置，保留普通消息、直播与未知浮窗
+- 整张移除详情评论区的提示卡，避免只删提示文字后残留空白条；清理本条和转发微博的 AI 话题投票入口及视频投票显示标记
 
 ## 配置
 
@@ -35,6 +37,11 @@
 node --check Loon/Script/Weibo/weibo_feed.js
 node Loon/Script/Weibo/tests/regression.cjs
 node Loon/Script/Weibo/tests/feed.cjs
+node Loon/Script/Weibo/tests/cleanup.cjs
 # 可选：回放本地 HAR 中的真实发现页响应
 node Loon/Script/Weibo/tests/har-replay.cjs <本地HAR路径>
+# 可选：回放本地 HAR 中的浮窗、评论提示和投票响应
+node Loon/Script/Weibo/tests/cleanup.cjs <本地HAR路径>
 ```
+
+HAR 回放验证响应结构和正常内容保留；手机界面的实际隐藏效果需真机验证。
