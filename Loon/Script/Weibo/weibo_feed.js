@@ -11,6 +11,7 @@ const BUSINESS_ROUTES = Object.freeze({
   '/2/live/media_homelist': 'live',
   '/2/remind/hometab_dot': 'avatar',
   '/2/remind/unread_count': 'unread',
+  '/2/messageflow/notice': 'notice',
   '/2/statuses/container_detail': 'detail',
   '/2/statuses/container_detail_comment': 'detail',
   '/2/statuses/container_detail_forward': 'detail',
@@ -41,6 +42,10 @@ const BOOT_ROUTES = Object.freeze({
   'bootrealtime.uve.weibo.com/v3/ad/realtime': 'boot',
   'wbapp.uve.weibo.com/wbapplua/wbpullad.lua': 'boot'
 });
+const ME_CARD_PROMOTIONS = new Set([
+  '100505_-_ewbshopping1', '100505_-_diamond', '100505_-_renwu', '100505_-_jingran2026',
+  '100505_-_aibanliao', '100505_-_newlvzhou2', '100505_-_mianliuliang', '100505_-_worldcup'
+]);
 
 (function () {
   const original = $response.body;
@@ -80,14 +85,20 @@ const BOOT_ROUTES = Object.freeze({
     if (!match) return null;
     const host = match[1].toLowerCase(), path = (match[2] || '/').toLowerCase();
     if (/^m?api\.weibo\.c(?:n|om)$/.test(host)) return BUSINESS_ROUTES[path] || null;
+    if (host === 'm.weibo.cn' && path === '/c/mecard/cardv3') return 'meCards';
     return BOOT_ROUTES[host + path] || null;
   }
   function processResponse(data) {
     switch (route) {
       case 'home': case 'discovery': case 'search': case 'profile': case 'detail': case 'video':
         cleanContent(data);
-        if (route === 'detail' && isObject(data.detailInfo?.extend)) delete data.detailInfo.extend.follow_data;
+        if (route === 'detail') cleanDetail(data);
         break;
+      case 'notice':
+        if (Array.isArray(data.messages)) data.messages = data.messages.filter(message =>
+          Number(message?.type) !== 47 || !['广告', '廣告', '荐读'].includes(message.msg_card?.ad_tag?.text));
+        break;
+      case 'meCards': cleanMeCards(data); break;
       case 'avatar':
         if (config.hideHomeTabAvatar && data.bubble_type === 0 && data.scene === 0 && data.group_type === 1
           && typeof data.text === 'string' && typeof data.extparams === 'string' && typeof data.image === 'string'
@@ -177,6 +188,8 @@ const BOOT_ROUTES = Object.freeze({
     // 不按“设置”文字匹配，保留微博本身及普通模块的设置按钮。
     if (item.itemId === 'weibo_local_settings_v3') return true;
     if (item.category === 'feed') return false;
+    if (item.category === 'cell' && item.type === 'title' && item.itemId === 'mine_attent_title') return true;
+    if (item.category === 'mine' && item.type === 'mineAttent' && /^100505_-_meattent_-_\d+$/.test(item.itemId)) return true;
     if (['profile_vip_entry', '100505_-_productcenter', '100505_-_promote', '100505_-_newusertask',
       '100505_-_vipkaitong', '100505_-_hongbao2022', '100505_-_adphoto'].includes(item.itemId)) return true;
     if (item.category === 'card' && Number(item.data?.card_type) === 236) return true;
@@ -185,6 +198,48 @@ const BOOT_ROUTES = Object.freeze({
       return isObject(value) && ['content', 'text', 'title'].some(key => matches(value[key]));
     }
     return [item.header?.title, item.title, item.data?.title, item.data?.desc].some(matches);
+  }
+  function cleanMeCards(response) {
+    if (response.ok !== 1 || !isObject(response.data)) return;
+    for (const key of ['opened', 'closed']) {
+      if (!Array.isArray(response.data[key])) continue;
+      response.data[key] = response.data[key].filter(card => {
+        if (ME_CARD_PROMOTIONS.has(card?.itemId) || hasMeCardAd(card)) return false;
+        if (Array.isArray(card?.items)) {
+          card.items = card.items.filter(item => !hasMeCardAd(item)
+            && !(card.itemId === '100505_-_mypay_new' && isWalletOffer(item)));
+        }
+        return true;
+      });
+    }
+  }
+  function hasMeCardAd(card) {
+    const monitors = card?.adData?.promotion?.monitor_url;
+    return Array.isArray(monitors) && monitors.length > 0;
+  }
+  function isWalletOffer(card) {
+    if (card?.category !== 'mine' || card.type !== 'card2') return false;
+    const subtitle = card.content?.content;
+    return subtitle === '可借额度' || (subtitle === '已临时开通'
+      && Array.isArray(card.arrayText?.contents)
+      && card.arrayText.contents.some(line => /^\d+(?:\.\d+)?(?:万)?额度$/.test(line?.content)));
+  }
+  function cleanDetail(data) {
+    if (isObject(data.detailInfo?.extend)) delete data.detailInfo.extend.follow_data;
+    const header = data.pageHeader?.data;
+    if (!Array.isArray(header?.items)) return;
+    header.items = header.items.filter(item => {
+      if (item?.category === 'detail' && item.type === 'share') return false;
+      if (item?.category === 'card' && Number(item.data?.card_type) === 248
+        && item.data.itemid === 'top_searching' && item.data.is_detail === true) return false;
+      if (item?.category === 'group' && Array.isArray(item.items) && item.items.length > 0) {
+        const kept = item.items.filter(child => !(child?.category === 'card'
+          && Number(child.data?.card_type) === 3 && child.data.actionlog?.cardid === 'wbg_goodsadvise'));
+        if (kept.length === 0) return false;
+        item.items = kept;
+      }
+      return true;
+    });
   }
   function cleanContent(node) {
     if (!isObject(node)) return;
@@ -225,6 +280,10 @@ const BOOT_ROUTES = Object.freeze({
     if (isDiscovery || route === 'search') cleanSearchCard(node);
   }
   function cleanInterface(post) {
+    if (route === 'home' || route === 'detail') {
+      cleanPostAdTags(post);
+      cleanPostAdTags(post.retweeted_status);
+    }
     const nativeAd = post.extend_info?.ad_nature?.ad_nature;
     if (post.ad_tag_nature?.otype === 'adFeedDarwinTag' && (nativeAd === true || nativeAd === 'true')) {
       delete post.ad_tag_nature;
@@ -234,6 +293,9 @@ const BOOT_ROUTES = Object.freeze({
     if (config.hideFeedAiButton && isObject(cells?.ai_search)) delete cells.ai_search;
     const media = post.page_info?.media_info;
     if (config.hidePlaybackCompletionActions && Array.isArray(media?.play_completion_actions)) media.play_completion_actions = [];
+  }
+  function cleanPostAdTags(post) {
+    if (Array.isArray(post?.tag_struct)) post.tag_struct = post.tag_struct.filter(tag => tag?.otype !== 'adFeedDarwinTag');
   }
   function cleanSearchCard(card) {
     const type = Number(card.card_type);

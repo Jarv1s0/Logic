@@ -15,7 +15,7 @@ const urlRules = [...plugin.matchAll(/^URL-REGEX,\s*(.+?),\s*REJECT.*$/gm)].map(
 const endpoints = [
   'statuses/container_timeline_hot', 'statuses/container_positive', 'guest/container_timeline_hot',
   'statuses/container_timeline_unread', 'statuses/container_timeline', 'live/media_homelist',
-  'remind/hometab_dot', 'remind/unread_count', 'statuses/container_detail',
+  'remind/hometab_dot', 'remind/unread_count', 'messageflow/notice', 'statuses/container_detail',
   'statuses/container_detail_comment', 'statuses/container_detail_forward', 'comments/build_comments',
   'search/finder', 'search/container_timeline', 'search/container_discover', '!/was/finder/searchbarchange',
   'cardlist', 'flowpage', 'searchall', 'profile/me', 'profile/container_timeline',
@@ -24,6 +24,7 @@ const endpoints = [
   'video/remind_info', 'video/home_channels'
 ];
 const routes = [...endpoints.map(endpoint => ({ host: 'api.weibo.cn', path: '/2/' + endpoint })),
+  { host: 'm.weibo.cn', path: '/c/mecard/cardv3' },
   { host: 'bootpreload.uve.weibo.com', path: '/v2/ad/preload' },
   { host: 'bootrealtime.uve.weibo.com', path: '/v3/ad/realtime' },
   { host: 'wbapp.uve.weibo.com', path: '/wbapplua/wbpullad.lua' }];
@@ -227,7 +228,7 @@ for (const endpoint of ['push/daily', 'push/active', 'push/info', 'guest/push_ac
   expected.ug_adv.intercept_ad.switch = 0;
   assert.deepEqual(JSON.parse(run(source, `https://api.weibo.cn/2/${endpoint}`, JSON.stringify(input)).body), expected);
 }
-for (const route of routes.filter(route => route.host !== 'api.weibo.cn')) {
+for (const route of routes.filter(route => route.host.endsWith('.uve.weibo.com'))) {
   const input = { ads: [{ id: 'ad' }], cached_ad: { ads: [{ id: 'cached' }], keep: true }, normal: { keep: true } };
   const expected = { ...input, ads: [], cached_ad: { ads: [], keep: true } };
   if (route.path.endsWith('/preload')) expected.last_ad_show_interval = 86400;
@@ -255,3 +256,68 @@ assert.deepEqual(JSON.parse(run(source, 'https://api.weibo.cn/2/video/remind_inf
 const channels = { channel_list: [{ title: '推荐' }, { title: '未知频道' }], normal: 1 };
 assert.deepEqual(JSON.parse(run(source, 'https://api.weibo.cn/2/video/home_channels', JSON.stringify(channels)).body), channels);
 console.log('通过：当前搜索、详情、个人页、视频处理器过滤广告；开屏与配置只改已识别字段，未知结构保留');
+
+const vehicleTag = { otype: 'adFeedDarwinTag', tag_name: '预约试驾' };
+const placeTag = { otype: 'place', tag_name: '地点' };
+const taggedPost = { text: '正文', tag_struct: [vehicleTag, placeTag],
+  retweeted_status: { text: '转发原文', tag_struct: [vehicleTag, placeTag] } };
+const cleanPost = { ...taggedPost, tag_struct: [placeTag],
+  retweeted_status: { ...taggedPost.retweeted_status, tag_struct: [placeTag] } };
+const process = (endpoint, input) =>
+  JSON.parse(run(source, 'https://api.weibo.cn/2/' + endpoint, JSON.stringify(input)).body);
+assert.deepEqual(process('statuses/container_timeline', { items: [{ category: 'feed', data: taggedPost }] }),
+  { items: [{ category: 'feed', data: cleanPost }] });
+
+const detailStatus = { category: 'detail', type: 'status' };
+const shopAd = { category: 'card', data: { card_type: 3, actionlog: { cardid: 'wbg_goodsadvise' } } };
+const normalCard = { category: 'card', data: { card_type: 3 } };
+const shopGroup = { category: 'group', type: 'vertical', items: [shopAd] };
+const mixedGroup = { ...shopGroup, items: [normalCard, shopAd] };
+const detail = {
+  pageHeader: { data: { items: [detailStatus,
+    { category: 'card', data: { card_type: 248, itemid: 'top_searching', is_detail: true } },
+    { category: 'detail', type: 'share' }, shopGroup, mixedGroup] } },
+  detailInfo: { status: taggedPost, extend: { comments_count: 3 } },
+  pageTabBar: { items: [{ title: '评论' }] }
+};
+assert.deepEqual(process('statuses/container_detail', detail), {
+  ...detail,
+  pageHeader: { data: { items: [detailStatus, { ...mixedGroup, items: [normalCard] }] } },
+  detailInfo: { ...detail.detailInfo, status: cleanPost }
+});
+
+const profile = { items: [profileMine,
+  { category: 'cell', type: 'title', itemId: 'mine_attent_title' },
+  { category: 'mine', type: 'mineAttent', itemId: '100505_-_meattent_-_123' },
+  ordinarySettings], moreInfo: { next: 'p2' } };
+assert.deepEqual(process('profile/me', profile), { ...profile, items: [profileMine, ordinarySettings] });
+
+const notice = { messages: [{ type: 57, msg_card: { ad_tag: { text: '是 TA 的铁粉' } } },
+  { type: 47, msg_card: { ad_tag: { text: '广告' } } },
+  { type: 47, msg_card: { ad_tag: { text: '荐读' } } },
+  { type: 47, msg_card: { ad_tag: { text: '未知' } } }], next_cursor: 'p2' };
+assert.deepEqual(process('messageflow/notice', notice), { ...notice, messages: [notice.messages[0], notice.messages[3]] });
+console.log('通过：首页与转发车型推广、详情推广模块、动态广告及“我”页推荐均可过滤，普通内容与分页保留');
+
+const meCardsUrl = 'https://m.weibo.cn/c/mecard/cardv3?test=1';
+const walletAccount = { category: 'mine', type: 'card2', content: { content: '金融资产' } };
+const loanCard = { category: 'mine', type: 'card2', content: { content: '可借额度' } };
+const creditCard = { ...loanCard, content: { content: '已临时开通' },
+  arrayText: { contents: [{ content: '1000额度' }] } };
+const rentalCard = { adData: { promotion: { monitor_url: [{ click_monitor_url: 'https://example.com/ad' }] } } };
+const walletCard = { itemId: '100505_-_mypay_new', items: [loanCard, rentalCard, creditCard, walletAccount] };
+const recentCard = { itemId: '100505_-_recentlyuser', items: [loanCard] };
+const meCards = { ok: 1, data: {
+  opened: [{ itemId: '100505_-_aibanliao' }, walletCard],
+  closed: [{ itemId: '100505_-_diamond' }, recentCard, { itemId: 'future_service' }],
+  metadata: { keep: true }
+} };
+const rewrittenCards = JSON.parse(run(source, meCardsUrl, JSON.stringify(meCards)).body);
+assert.deepEqual(rewrittenCards, { ok: 1, data: {
+  ...meCards.data, opened: [{ ...walletCard, items: [walletAccount] }],
+  closed: [recentCard, meCards.data.closed[2]]
+} });
+const otherHost = meCardsUrl.replace('m.weibo.cn', 'api.weibo.cn');
+assert.equal(scripts.some(rule => rule.re.test(otherHost)), false);
+assert.deepEqual(JSON.parse(run(source, otherHost, JSON.stringify(meCards)).body), meCards);
+console.log('通过：更多功能过滤打开和折叠分组里的推广，保留钱包账户、经常访问和未知功能');
