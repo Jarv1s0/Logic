@@ -3,62 +3,67 @@
 # 更新: 2026 年 5 月 26 日
 
 # ==================== 核心配置 ====================
+mixed-port: 7890
+allow-lan: true
+ipv6: true
 mode: rule
-port: 7890
-socks-port: 7891
-redir-port: 7892
-mixed-port: 7893
-tproxy-port: 7895
-ipv6: false
-allow-lan: false
+log-level: info
+bind-address: '*'
 unified-delay: true
 tcp-concurrent: true
-log-level: warning
-bind-address: '*'
-find-process-mode: 'always'
-keep-alive-interval: 15
-keep-alive-idle: 600
-
+keep-alive-interval: 60
+find-process-mode: strict
+external-controller: '127.0.0.1:9090'
+external-ui: ui
+external-ui-url: 'https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip'
 # ==================== TUN 模式 ====================
 tun:
   enable: true
-  stack: gvisor
-  dns-hijack:
-    - "any:53"
-    - "tcp://any:53"
+  stack: mips
   auto-route: true
+  strict-route: true
   auto-redirect: true
   auto-detect-interface: true
-
+  dns-hijack: ['any:53', 'tcp://any:53']
 # ==================== DNS 配置 ====================
+# 国内外 DNS 定义
+chinaDNS: &chinaDNS ['223.5.5.5#DIRECT', '119.29.29.29#DIRECT']
+foreignDNS: &foreignDNS ['https://cloudflare-dns.com/dns-query#Proxy', 'https://dns.google/dns-query#Proxy']
+defaultDNS: &defaultDNS ['114.114.114.114#DIRECT', 'tls://223.5.5.5#DIRECT', 'https://1.12.12.12/dns-query#DIRECT']
+proxyServerDNS: &proxyServerDNS ['114.114.114.114#DIRECT', 'tls://223.5.5.5#DIRECT', 'https://doh.pub/dns-query#DIRECT']
+
 dns:
   enable: true
-  respect-rules: true
-  ipv6: false
+  ipv6: true
+  use-hosts: true
+  cache-algorithm: arc
+  use-system-hosts: true
   enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
+  fake-ip-range: 198.18.0.1/15
+  fake-ip-range6: 2001:2::1/48
+  fake-ip-filter: ['rule-set:private', 'rule-set:fakeip_filter', 'rule-set:china']
+  default-nameserver: *defaultDNS
+  proxy-server-nameserver: *proxyServerDNS
+  nameserver: *foreignDNS
+  nameserver-policy:
+    'rule-set:private': 'system'
+    'rule-set:china': *chinaDNS
+  direct-nameserver: *chinaDNS
+  direct-nameserver-follow-policy: true
 
-  default-nameserver:
-    - 223.5.5.5
-    - 223.6.6.6
+hosts:
+  'doh.pub': ['1.12.12.12', '120.53.53.53']
+  'cloudflare-dns.com': ['1.1.1.1', '1.0.0.1']
+  'dns.google': ['8.8.8.8', '8.8.4.4']
 
-  nameserver:
-    - "https://dns.alidns.com/dns-query"
-    - "https://doh.pub/dns-query"
+  # 解决谷歌商店无法下载的问题
+  'services.googleapis.cn': 'services.googleapis.com'
 
-  direct-nameserver:
-    - "https://dns.alidns.com/dns-query"
-    - "https://doh.pub/dns-query"
-
-  proxy-server-nameserver:
-    - "https://dns.alidns.com/dns-query"
-    - "https://doh.pub/dns-query"
-
-  fake-ip-filter:
-    - rule-set:Direct
-    - rule-set:Private
-    - rule-set:China
-    - rule-set:fakeip-filter
+  # 屏蔽哔哩哔哩PCDN，解决访问视频卡顿/直播问题
+  '+.mcdn.bilivideo.com': ['0.0.0.0']
+  '+.mcdn.bilivideo.cn': ['0.0.0.0']
+  '+.edge.mountaintoys.cn': ['0.0.0.0']
+  '+.h2.smtcdns.net': ['0.0.0.0']
 
 # ==================== 实验性功能 ====================
 experimental:
@@ -124,63 +129,63 @@ BehaviorIP: &BehaviorIP { type: http, behavior: ipcidr, format: mrs, interval: 8
 
 rule-providers:
   # 域名规则
-  Tracking:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Tracking.mrs }
-  Advertising:    { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Advertising.mrs }
-  Direct:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Direct.mrs }
-  Private:        { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Private.mrs }
-  Download:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Download.mrs }
-  fakeip-filter:  { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/fakeip-filter.mrs }
-  AI:             { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AI.mrs }
-  GitHub:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/GitHub.mrs }
-  Telegram:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Telegram.mrs }
-  SteamCN:        { <<: *BehaviorDN, url: https://github.com/Jarv1s0/RuleList/raw/release/rules/SteamCN.mrs }
-  Games:          { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Games.mrs }
-  YouTube:        { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/YouTube.mrs }
-  AppleCN:        { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AppleCN.mrs }
-  Google:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Google.mrs }
-  Microsoft:      { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Microsoft.mrs }
-  GFW:            { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/gfw.mrs }
-  Proxy:          { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Proxy.mrs }
-  China:          { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/China.mrs }
+  tracking:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Tracking.mrs }
+  advertising:    { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Advertising.mrs }
+  direct:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Direct.mrs }
+  private:        { <<: *BehaviorDN, url: https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/private.mrs }
+  download:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Download.mrs }
+  fakeip_filter:  { <<: *BehaviorDN, url: https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/fakeip-filter.mrs }
+  ai:             { <<: *BehaviorDN, url: https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/category-ai-!cn.mrs }
+  github:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/GitHub.mrs }
+  telegram:       { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Telegram.mrs }
+  steamcn:        { <<: *BehaviorDN, url: https://github.com/Jarv1s0/RuleList/raw/release/rules/SteamCN.mrs }
+  games:          { <<: *BehaviorDN, url: https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/category-games@cn.mrs }
+  youtube:        { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/YouTube.mrs }
+  applecn:        { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/AppleCN.mrs }
+  google:         { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Google.mrs }
+  microsoft:      { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Microsoft.mrs }
+  gfw:            { <<: *BehaviorDN, url: https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/gfw.mrs }
+  proxy:          { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/Proxy.mrs }
+  china:          { <<: *BehaviorDN, url: https://github.com/666OS/rules/raw/release/mihomo/domain/China.mrs }
 
   # IP规则
-  PrivateIP:      { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Private.mrs }
-  AIIP:           { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/AI.mrs }
-  TelegramIP:     { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Telegram.mrs }
-  GoogleIP:       { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Google.mrs }
-  ProxyIP:        { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Proxy.mrs }
-  ChinaIP:        { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/China.mrs }
+  privateip:      { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Private.mrs }
+  aiip:           { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/AI.mrs }
+  telegramip:     { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Telegram.mrs }
+  googleip:       { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Google.mrs }
+  proxyip:        { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/Proxy.mrs }
+  chinaip:        { <<: *BehaviorIP, url: https://github.com/666OS/rules/raw/release/mihomo/ip/China.mrs }
 
 # ==================== 规则路由 ====================
 rules:
   # 拦截规则
-  - RULE-SET,Tracking,REJECT
-  - RULE-SET,Advertising,REJECT
+  - RULE-SET,tracking,REJECT
+  - RULE-SET,advertising,REJECT
 
   # 域名规则
-  - RULE-SET,Private,DIRECT
-  - RULE-SET,Direct,DIRECT
-  - RULE-SET,SteamCN,DIRECT
-  - RULE-SET,Download,DIRECT
-  - RULE-SET,AppleCN,DIRECT
-  - RULE-SET,AI,AI
-  - RULE-SET,GitHub,GitHub
-  - RULE-SET,Telegram,Telegram
-  - RULE-SET,Games,Games
-  - RULE-SET,YouTube,YouTube
-  - RULE-SET,Microsoft,DIRECT
-  - RULE-SET,Google,Google
-  - RULE-SET,GFW,Proxy
-  - RULE-SET,Proxy,Proxy
-  - RULE-SET,China,DIRECT
+  - RULE-SET,private,DIRECT
+  - RULE-SET,direct,DIRECT
+  - RULE-SET,steamcn,DIRECT
+  - RULE-SET,download,DIRECT
+  - RULE-SET,applecn,DIRECT
+  - RULE-SET,ai,AI
+  - RULE-SET,github,GitHub
+  - RULE-SET,telegram,Telegram
+  - RULE-SET,games,Games
+  - RULE-SET,youtube,YouTube
+  - RULE-SET,microsoft,DIRECT
+  - RULE-SET,google,Google
+  - RULE-SET,gfw,Proxy
+  - RULE-SET,proxy,Proxy
+  - RULE-SET,china,DIRECT
 
   # IP规则
-  - RULE-SET,PrivateIP,DIRECT,no-resolve
-  - RULE-SET,AIIP,AI,no-resolve
-  - RULE-SET,TelegramIP,Telegram,no-resolve
-  - RULE-SET,GoogleIP,Google,no-resolve
-  - RULE-SET,ProxyIP,Proxy,no-resolve
-  - RULE-SET,ChinaIP,DIRECT,no-resolve
+  - RULE-SET,privateip,DIRECT,no-resolve
+  - RULE-SET,aiip,AI,no-resolve
+  - RULE-SET,telegramip,Telegram,no-resolve
+  - RULE-SET,googleip,Google,no-resolve
+  - RULE-SET,proxyip,Proxy,no-resolve
+  - RULE-SET,chinaip,DIRECT,no-resolve
 
   # 兜底规则
   - MATCH,Proxy
