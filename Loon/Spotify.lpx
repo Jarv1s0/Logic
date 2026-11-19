@@ -1,19 +1,20 @@
 #!name = Spotify
 #!desc = 移除音频广告、首页推广、搜索广告和播放页推广。
 #!openUrl = https://loon-plugins.vercel.app
-#!author = devchristian1337, Jarv1s0
+#!author = app2smile, devchristian1337, Auto-001, Jarv1s0
 #!tag = Spotify, AdBlock, Premium
 #!loon_version = 3.5.1(983)
 #!homepage = https://github.com/Jarv1s0/Logic/tree/master/Loon
 #!icon = https://raw.githubusercontent.com/devchristian1337/loon-plugins/refs/heads/main/App-Icons/spotify.png
-#!date = 2026-11-04 12:17:13
+#!date = 2026-11-19 13:40:26
 
 # 上游来源：https://github.com/devchristian1337/loon-plugins/tree/7ae0a25b2de75746dc602bfa890b9737d3847a9f
-# 六个脚本原样收录到本仓库；原 Spotify.Crack.Dev.js 保留，但不再被本插件调用。
+# 新接口适配来源：https://github.com/Auto-001/QX---/blob/main/spotify-qx.js
+# 广告相关脚本继续沿用；配置处理统一由 spot-proto.js 承接，历史配置脚本保留但不再调用。
 
 [Argument]
-spot-ev3-enable = switch,true,tag=Local config override,desc=使用预置配置覆盖 bootstrap/customize Protobuf（推荐）
-spot-ev1-enable = switch,false,tag=Remote config modification,desc=按规则修改现有 Protobuf 配置；请勿与预置配置覆盖同时启用
+spot-ev3-enable = switch,true,tag=Local config override,desc=按客户端版本选择预置配置，支持旧接口及 remote-config-resolver/nebula（推荐）
+spot-ev1-enable = switch,false,tag=Remote config modification,desc=按规则修改服务端配置，支持新旧接口；请勿与预置配置覆盖同时启用
 
 [Rule]
 AND,((DOMAIN-SUFFIX, spotify.com), (PROTOCOL, QUIC)),REJECT
@@ -28,9 +29,10 @@ request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.c
 request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/sponsoredplaylist\/v1\/sponsored(?:\?.*)?$/ then reject_dict(200)
 request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?\/podcast-ap4p\/leavebehinds\/ads(?:\?.*)?$/ then reject_dict(200)
 request if ${url} ~= /^https:\/\/asia\.adform\.net(?::443)?\/(?:C|adfserve)\/.*$/ then reject(404)
-# 保留本仓库的 iPad 艺人页布局规则。
-request if ${url} ~= /^https:\/\/(?:[a-z0-9]+-spclient|spclient\.wg)\.spotify\.com(?::443)?(\/artistview\/v1\/artist\/.*[?&]platform=)iphone((?:&.*)?$)/ as artist then url.replace("https://spclient.wg.spotify.com${artist.1}ipad${artist.2}")
-request if ${url} ~= /^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/user-customization-service\/v1\/customize/i then request.header.del("if-none-match")
+# 艺人页与专辑页使用 iPad 布局。
+request if ${url} ~= /^https:\/\/(?:[\w-]+-spclient|spclient\.wg)\.spotify\.com(?::443)?(\/(?:artistview\/v1\/artist|album-entity-view\/v2\/album)\/.*[?&]platform=)iphone((?:&.*)?$)/ as view then url.replace("https://spclient.wg.spotify.com${view.1}ipad${view.2}")
+# 新旧配置接口都清理条件缓存头，避免 304 响应绕过修改。
+request if ${url} ~= /^https:\/\/(?:spclient\.wg|[\w-]+-spclient)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize|remote-config-resolver\/v\d+\/configuration|nebula\/v\d+\/configuration\/attributes)(?:\?[^#]*)?$/i then request.header.del("if-none-match")
 request if ${url} ~= /^https:\/\/(spclient\.wg|.*-spclient)\.spotify\.com(:443)?\/pendragon/i then reject_dict(200)
 
 # Hide the discovery feed on the Now Playing screen (personal preference)
@@ -51,5 +53,5 @@ request if ${url} ~= /^https:\/\/(.*-spclient\.spotify\.com(:443)?|spclient\.wg\
 response if ${url} ~= /^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/browsita\/v.\/browse/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-NoSearchAd.js") with requires_body=true, binary_body_mode=true, timeout=10, tag="Spotify search ads"
 response if ${url} ~= /^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/casita\/v.\/home\//i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-NoHomeAd.js") with requires_body=true, binary_body_mode=true, timeout=10, tag="Spotify home ads"
 response if ${url} ~= /^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/scrollsita\/v.\/scroll\/spotify/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-NoScrollAd.js") with requires_body=true, binary_body_mode=true, timeout=10, tag="Spotify scroll ads"
-response if ${url} ~= /^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)(\?.*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-proto-eevee.js") with requires_body=true, binary_body_mode=true, timeout=10, tag="Spotify protobuf (remote)", enable=${spot-ev1-enable}
-response if ${url} ~= /^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)(\?.*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-proto-ev3.js") with requires_body=true, binary_body_mode=true, timeout=10, tag="Spotify protobuf (local)", enable=${spot-ev3-enable}
+response if ${url} ~= /^https:\/\/(?:spclient\.wg|[\w-]+-spclient)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize|remote-config-resolver\/v\d+\/configuration|nebula\/v\d+\/configuration\/attributes)(?:\?[^#]*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-proto.js", "remote") with requires_body=true, binary_body_mode=true, timeout=10, tag="Spotify protobuf (remote)", enable=${spot-ev1-enable}
+response if ${url} ~= /^https:\/\/(?:spclient\.wg|[\w-]+-spclient)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize|remote-config-resolver\/v\d+\/configuration|nebula\/v\d+\/configuration\/attributes)(?:\?[^#]*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-proto.js", "local") with requires_body=true, binary_body_mode=true, timeout=10, tag="Spotify protobuf (local)", enable=${spot-ev3-enable}
