@@ -42,7 +42,6 @@ function run(body, options = {}) {
       headers: options.requestHeaders ?? { "User-Agent": "Spotify/9.1.98 iOS/18.0" },
     },
     $response: { status: options.status ?? 200, body, headers: options.headers ?? {} },
-    $argument: options.mode ?? "local",
     $done(value) { calls.push(value); },
     console: { log(value) { logs.push(value); } },
   });
@@ -100,9 +99,10 @@ test("shipped Loon rules cover four endpoints, query strings and regional hosts"
     assert.ok(match, line);
     return new RegExp(match[1], match[2]);
   });
-  assert.equal(scriptLines.length, 2);
-  assert.match(scriptLines[0], /script\("[^"]+", "remote"\).*enable=\$\{spot-ev1-enable\}/);
-  assert.match(scriptLines[1], /script\("[^"]+", "local"\).*enable=\$\{spot-ev3-enable\}/);
+  assert.equal(scriptLines.length, 1);
+  assert.doesNotMatch(plugin, /\[Argument\]|spot-ev[13]-enable/);
+  assert.match(scriptLines[0], /script\("[^"]+"\) with/);
+  assert.doesNotMatch(scriptLines[0], /enable=/);
   for (const path of ["/bootstrap/v1/bootstrap", "/user-customization-service/v1/customize", configurationPath, attributesPath]) {
     for (const origin of [host, "https://gew1-spclient.spotify.com:443", "https://ap-southeast-1-spclient.spotify.com"]) {
       for (const pattern of patterns) assert.ok(pattern.test(origin + path + "?market=US"));
@@ -134,31 +134,20 @@ test("artist and album rewrites preserve identifiers and query parameters", () =
   }
 });
 
-test("new raw configuration endpoint patches server flags in remote mode", () => {
-  const config = configuration([
-    flag("core-ads", "music_adt_enabled", true),
-    flag("normal-feature", "keep_enabled", true),
-    flag("normal-feature", "integer", -7, "intValue"),
-    flag("normal-feature", "playback_timeout_action", "Stop", "enumValue"),
-  ]);
-  const result = run(encode(configurationType, config), { mode: "remote" });
+test("new raw configuration endpoint automatically applies the versioned snapshot", () => {
+  const result = run(encode(configurationType, configuration()));
   const output = decode(configurationType, result.output.body);
-  assert.equal(output.configurationAssignmentId, "server-assignment");
-  assert.equal(Number(output.fetchTimeMillis), 1000);
-  assert.equal(Number(output.policySnapshotId), 42);
-  assert.equal(findFlag(output, "core-ads", "music_adt_enabled").boolValue.value, false);
-  assert.equal(findFlag(output, "normal-feature", "keep_enabled").boolValue.value, true);
-  assert.equal(findFlag(output, "normal-feature", "integer").intValue.value, -7);
-  assert.equal(findFlag(output, "normal-feature", "playback_timeout_action").enumValue.value, "Nothing");
-  assert.ok(result.logs.some((line) => line.includes("mode=remote") && line.includes("snapshot=server")));
+  assert.match(output.configurationAssignmentId, /^1bf92045/);
+  assert.ok(output.assignedValues.length > 800);
+  assert.ok(result.logs.some((line) => line.includes("snapshot=9.1.76")));
 });
 
 test("new wrapped configuration endpoint retains its ResolveResponse envelope", () => {
   const input = encode(resolveType, { configuration: configuration() });
-  const result = run(input, { mode: "remote" });
+  const result = run(input);
   const output = decode(resolveType, result.output.body).configuration;
-  assert.equal(findFlag(output, "core-ads", "music_adt_enabled").boolValue.value, false);
-  assert.equal(output.configurationAssignmentId, "server-assignment");
+  assert.match(output.configurationAssignmentId, /^1bf92045/);
+  assert.ok(output.assignedValues.length > 800);
 });
 
 for (const [version, expected] of [
@@ -167,7 +156,7 @@ for (const [version, expected] of [
   ["9.1.98", "1bf92045-dc28-0fd6-41b4-f465a2707f7f:2713372"],
   ["10.0.0", "1bf92045-dc28-0fd6-41b4-f465a2707f7f:2713372"],
 ]) {
-  test(`local mode selects the correct snapshot for Spotify ${version}`, () => {
+  test(`automatically selects the correct snapshot for Spotify ${version}`, () => {
     const result = run(encode(configurationType, configuration()), { requestHeaders: { "user-agent": `Spotify/${version}` } });
     const output = decode(configurationType, result.output.body);
     assert.equal(output.configurationAssignmentId, expected);
@@ -183,7 +172,7 @@ test("version detection falls back to spotify-app-version or the modern snapshot
   assert.match(unknown.configurationAssignmentId, /^1bf92045/);
 });
 
-test("local snapshots retain live assignments and discard unrelated server flags", () => {
+test("snapshots retain live assignments and discard unrelated server flags", () => {
   const input = configuration([
     flag("ios-campfire-properties-impl", "campfire_feature_enabled", false),
     flag("ios-feature-sidedrawer-platform", "is_list_page_enabled", true),
@@ -221,31 +210,27 @@ test("server download, quality and Jam attributes retain their original values",
     "social-session-free-tier": { boolValue: true }, "jam-social-session": { stringValue: "server-jam" },
   };
   const expected = decode(attributesType, encode(attributesType, attributes(server))).accountAttributes;
-  for (const mode of ["remote", "local"]) {
-    const result = run(encode(attributesType, attributes(server)), { path: attributesPath, mode });
-    const output = decode(attributesType, result.output.body).accountAttributes;
-    for (const key of Object.keys(server)) assert.deepEqual(output[key], expected[key], key);
-    const missing = decode(attributesType, run(encode(attributesType, attributes()), { path: attributesPath, mode }).output.body).accountAttributes;
-    for (const key of Object.keys(server)) assert.equal(missing[key], undefined, `${key} must not be fabricated`);
-  }
+  const result = run(encode(attributesType, attributes(server)), { path: attributesPath });
+  const output = decode(attributesType, result.output.body).accountAttributes;
+  for (const key of Object.keys(server)) assert.deepEqual(output[key], expected[key], key);
+  const missing = decode(attributesType, run(encode(attributesType, attributes()), { path: attributesPath }).output.body).accountAttributes;
+  for (const key of Object.keys(server)) assert.equal(missing[key], undefined, `${key} must not be fabricated`);
 });
 
-for (const mode of ["remote", "local"]) {
-  test(`legacy customize and bootstrap still work in ${mode} mode`, () => {
+test("legacy customize and bootstrap still work without configuration arguments", () => {
     const data = customization();
-    const customize = run(encode(customizeType, data), { path: "/user-customization-service/v1/customize?market=US", mode });
+    const customize = run(encode(customizeType, data), { path: "/user-customization-service/v1/customize?market=US" });
     const patched = decode(customizeType, customize.output.body).success;
     assert.equal(patched.accountAttributesSuccess.accountAttributes.type.stringValue, "premium");
     const bootstrap = {
       ucsResponseV0: { success: { customization: data } },
       trialsFacadeResponseV1: { success: { field1: 1 } },
     };
-    const result = run(encode(bootstrapType, bootstrap), { path: "/bootstrap/v1/bootstrap", mode });
+    const result = run(encode(bootstrapType, bootstrap), { path: "/bootstrap/v1/bootstrap" });
     const output = decode(bootstrapType, result.output.body);
     assert.equal(output.trialsFacadeResponseV1, undefined);
     assert.equal(output.ucsResponseV0.success.customization.success.accountAttributesSuccess.accountAttributes.ads.boolValue, false);
-  });
-}
+});
 
 test("error envelopes and unsupported methods pass through unchanged", () => {
   const error = encode(customizeType, { error: { errorCode: 3, errorMessage: "unavailable" } });
@@ -261,9 +246,7 @@ test("legacy envelopes cannot hide an unrecognized configuration or attribute pa
   const unknownConfig = encode(customizeType, customization({ configurationAssignmentId: "unknown" }));
   const unknownAttributes = encode(customizeType, customization(configuration(), { accountAttributes: {} }));
   for (const body of [unknownConfig, unknownAttributes]) {
-    for (const mode of ["local", "remote"]) {
-      passedThrough(run(body, { path: "/user-customization-service/v1/customize", mode }));
-    }
+    passedThrough(run(body, { path: "/user-customization-service/v1/customize" }));
   }
 });
 
@@ -272,7 +255,6 @@ test("non-200 responses, empty bodies and text bodies pass through unchanged", (
   passedThrough(run(new Uint8Array()));
   passedThrough(run("not protobuf"));
   passedThrough(run(undefined));
-  passedThrough(run(new Uint8Array([0]), { mode: "unsupported" }));
 });
 
 test("malformed or unrelated protobuf cannot be overwritten by a snapshot", () => {
@@ -291,13 +273,13 @@ test("binary body views, ArrayBuffers, arrays and QX bodyBytes retain byte bound
   const backing = new Uint8Array(input.length + 8).fill(0xff);
   backing.set(input, 4);
   for (const body of [backing.subarray(4, 4 + input.length), input.buffer, Array.from(input)]) {
-    const output = run(body, { mode: "remote" }).output;
+    const output = run(body).output;
     assert.ok(output.body instanceof Uint8Array);
-    assert.equal(findFlag(decode(configurationType, output.body), "core-ads", "music_adt_enabled").boolValue.value, false);
+    assert.match(decode(configurationType, output.body).configurationAssignmentId, /^1bf92045/);
   }
-  const qx = run(input.buffer, { mode: "remote", qx: true }).output;
+  const qx = run(input.buffer, { qx: true }).output;
   assert.ok(qx.bodyBytes instanceof ArrayBuffer);
-  assert.equal(findFlag(decode(configurationType, new Uint8Array(qx.bodyBytes)), "core-ads", "music_adt_enabled").boolValue.value, false);
+  assert.match(decode(configurationType, new Uint8Array(qx.bodyBytes)).configurationAssignmentId, /^1bf92045/);
 });
 
 test("rewritten binary responses discard stale length and encoding headers", () => {
@@ -311,32 +293,21 @@ test("unknown config fields and untouched assignment bytes survive patching", ()
   const unknown = Uint8Array.from([0xa2, 0x06, 0x03, 0x66, 0x6f, 0x6f]); // field 100 = "foo"
   const config = encode(configurationType, configuration([flag("normal-feature", "keep_enabled", true)]));
   const input = Uint8Array.from([...config, ...unknown]);
-  for (const mode of ["remote", "local"]) {
-    const output = run(input, { mode }).output.body;
-    assert.ok(Buffer.from(output).includes(unknown), "future root fields must remain intact");
-  }
+  const output = run(input).output.body;
+  assert.ok(Buffer.from(output).includes(unknown), "future root fields must remain intact");
   // policyId = 2^53 + 1, encoded directly because the archived schema has no Long runtime.
   const rawMetadata = [0x12, 0x09, 0x08, 0x81, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x10];
   const entry = Uint8Array.from([
-    ...encode(root.lookupType("AssignedValue"), flag("normal-feature", "keep_enabled", true)), ...rawMetadata,
+    ...encode(root.lookupType("AssignedValue"), flag("ios-campfire-properties-impl", "campfire_feature_enabled", true)), ...rawMetadata,
   ]);
   assert.ok(entry.length < 128);
   const encoded = Uint8Array.from([0x1a, entry.length, ...entry]);
-  const result = run(encoded, { mode: "remote" });
+  const result = run(encoded);
   assert.ok(Buffer.from(result.output.body).includes(entry), "int64 metadata must not lose precision");
 });
 
-test("ad token filtering protects disable, dismissible and skip-button controls", () => {
-  const entries = [
-    flag("cohort-ads", "new_flag_enabled", true),
-    flag("cohort-ads", "disable_ads", true),
-    flag("cohort-ads", "dismissible", true),
-    flag("cohort-ads", "skip_button_enabled", true),
-    flag("normal-feature", "shadow_enabled", true),
-  ];
-  const output = decode(configurationType, run(encode(configurationType, configuration(entries)), { mode: "remote" }).output.body);
-  assert.equal(findFlag(output, "cohort-ads", "new_flag_enabled").boolValue.value, false);
-  for (const entry of entries.slice(1)) {
-    assert.equal(findFlag(output, entry.propertyId.scope, entry.propertyId.name).boolValue.value, true);
-  }
+test("automatically selected snapshots apply ad and upsell rules", () => {
+  const output = decode(configurationType, run(encode(configurationType, configuration())).output.body);
+  assert.equal(findFlag(output, "ios-feature-shuffletoggleupsell", "is_enabled_pt2").boolValue.value, false);
+  assert.equal(findFlag(output, "ios-feature-lyrics", "enable_lyrics_share").boolValue.value, true);
 });

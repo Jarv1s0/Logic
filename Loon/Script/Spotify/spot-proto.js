@@ -4,7 +4,7 @@
  * Adapted from https://raw.githubusercontent.com/Auto-001/QX---/refs/heads/main/spotify-qx.js
  * Retrieved source SHA-256: 25f7bb8f5600fd67552fc3ab5438bb9104aee85f4b978e1ffa76f5b5e2644083
  * Snapshot data and rule tuples below are vendored from that source.
- * $argument: "local" (versioned snapshots, default) or "remote" (patch server configuration).
+ * Automatically selects versioned snapshots; no configuration argument is required.
  */
 
 // Vendored snapshots; keep each snapshot on one line to separate data from logic.
@@ -511,21 +511,18 @@ function applyRules(entries, metrics) {
 function patchConfiguration(data, snapshot, metrics) {
   if (!isConfiguration(data)) throw new Error("Unrecognized configuration response layout");
   const fields = parseMessage(data);
-  let entries = fields.filter((field) => field.number === 3 && field.wireType === 2)
+  const serverEntries = fields.filter((field) => field.number === 3 && field.wireType === 2)
     .map((field) => assignedValue(field.data));
-  metrics.serverValues = entries.length;
-  let retained = fields.filter((field) => field.number !== 3);
-  if (snapshot) {
-    const live = entries.filter((entry) => LIVE_ASSIGNMENT_KEYS[`${entry.scope}.${entry.name}`] === true);
-    entries = snapshot.assignedValues.map(snapshotEntry)
-      .filter((entry) => LIVE_ASSIGNMENT_KEYS[`${entry.scope}.${entry.name}`] !== true)
-      .concat(live);
-    metrics.live = live.length;
-    retained = removeFields(retained, [1, 2, 4]);
-    retained.push(stringField(1, snapshot.configurationAssignmentId));
-    retained.push(makeVarintField(2, Number(snapshot.fetchTimeMillis)));
-    retained.push(makeVarintField(4, Number(snapshot.policySnapshotId)));
-  }
+  metrics.serverValues = serverEntries.length;
+  const live = serverEntries.filter((entry) => LIVE_ASSIGNMENT_KEYS[`${entry.scope}.${entry.name}`] === true);
+  const entries = snapshot.assignedValues.map(snapshotEntry)
+    .filter((entry) => LIVE_ASSIGNMENT_KEYS[`${entry.scope}.${entry.name}`] !== true)
+    .concat(live);
+  metrics.live = live.length;
+  const retained = removeFields(fields, [1, 2, 3, 4]);
+  retained.push(stringField(1, snapshot.configurationAssignmentId));
+  retained.push(makeVarintField(2, Number(snapshot.fetchTimeMillis)));
+  retained.push(makeVarintField(4, Number(snapshot.policySnapshotId)));
   applyRules(entries, metrics);
   metrics.values = entries.length;
   metrics.configuration = true;
@@ -674,10 +671,8 @@ function main() {
   if (Number($response.status ?? $response.statusCode) !== 200) return $done({});
   const input = responseBytes($response);
   if (!input.length) return $done({});
-  const mode = typeof $argument === "undefined" || $argument == null ? "local" : $argument;
-  if (mode !== "local" && mode !== "remote") throw new Error("Unknown Spotify configuration mode");
   const selected = pickSnapshot($request);
-  const snapshot = mode === "remote" ? null : selected.data;
+  const snapshot = selected.data;
   const metrics = { rules: 0, cohort: 0, live: 0, serverValues: 0, values: 0, attributes: 0 };
   let output;
   if (endpoint === "bootstrap") {
@@ -701,7 +696,7 @@ function main() {
     output = patchAttributes(input, metrics);
   }
   if (!metrics.configuration && !metrics.attributesFound) return $done({});
-  console.log(`[Spotify] ${endpoint}: mode=${mode}, snapshot=${snapshot ? selected.name : "server"}, values=${metrics.serverValues}->${metrics.values}, live=${metrics.live}, rules=${metrics.rules}, cohort=${metrics.cohort}, attributes=${metrics.attributes}, bytes=${input.length}->${output.length}`);
+  console.log(`[Spotify] ${endpoint}: snapshot=${selected.name}, values=${metrics.serverValues}->${metrics.values}, live=${metrics.live}, rules=${metrics.rules}, cohort=${metrics.cohort}, attributes=${metrics.attributes}, bytes=${input.length}->${output.length}`);
   const headers = Object.fromEntries(Object.entries($response.headers || {}).filter(([name]) =>
     !["content-length", "content-encoding"].includes(name.toLowerCase()),
   ));

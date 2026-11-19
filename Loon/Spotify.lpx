@@ -6,15 +6,11 @@
 #!loon_version = 3.5.1(983)
 #!homepage = https://github.com/Jarv1s0/Logic/tree/master/Loon
 #!icon = https://raw.githubusercontent.com/devchristian1337/loon-plugins/refs/heads/main/App-Icons/spotify.png
-#!date = 2026-11-19 13:40:26
+#!date = 2026-11-19 15:06:40
 
 # 上游来源：https://github.com/devchristian1337/loon-plugins/tree/7ae0a25b2de75746dc602bfa890b9737d3847a9f
 # 新接口适配来源：https://github.com/Auto-001/QX---/blob/main/spotify-qx.js
 # 广告相关脚本继续沿用；配置处理统一由 spot-proto.js 承接，历史配置脚本保留但不再调用。
-
-[Argument]
-spot-ev3-enable = switch,true,tag=Local config override,desc=按客户端版本选择预置配置，支持旧接口及 remote-config-resolver/nebula（推荐）
-spot-ev1-enable = switch,false,tag=Remote config modification,desc=按规则修改服务端配置，支持新旧接口；请勿与预置配置覆盖同时启用
 
 [Rule]
 AND,((DOMAIN-SUFFIX, spotify.com), (PROTOCOL, QUIC)),REJECT
@@ -53,5 +49,4 @@ request if ${url} ~= /^https:\/\/(.*-spclient\.spotify\.com(:443)?|spclient\.wg\
 response if ${url} ~= /^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/browsita\/v.\/browse/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-NoSearchAd.js") with requires_body=true, binary_body_mode=true, timeout=10, tag="Spotify search ads"
 response if ${url} ~= /^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/casita\/v.\/home\//i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-NoHomeAd.js") with requires_body=true, binary_body_mode=true, timeout=10, tag="Spotify home ads"
 response if ${url} ~= /^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/scrollsita\/v.\/scroll\/spotify/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-NoScrollAd.js") with requires_body=true, binary_body_mode=true, timeout=10, tag="Spotify scroll ads"
-response if ${url} ~= /^https:\/\/(?:spclient\.wg|[\w-]+-spclient)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize|remote-config-resolver\/v\d+\/configuration|nebula\/v\d+\/configuration\/attributes)(?:\?[^#]*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-proto.js", "remote") with requires_body=true, binary_body_mode=true, timeout=10, tag="Spotify protobuf (remote)", enable=${spot-ev1-enable}
-response if ${url} ~= /^https:\/\/(?:spclient\.wg|[\w-]+-spclient)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize|remote-config-resolver\/v\d+\/configuration|nebula\/v\d+\/configuration\/attributes)(?:\?[^#]*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-proto.js", "local") with requires_body=true, binary_body_mode=true, timeout=10, tag="Spotify protobuf (local)", enable=${spot-ev3-enable}
+response if ${url} ~= /^https:\/\/(?:spclient\.wg|[\w-]+-spclient)\.spotify\.com(?::443)?\/(?:bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize|remote-config-resolver\/v\d+\/configuration|nebula\/v\d+\/configuration\/attributes)(?:\?[^#]*)?$/i then script("https://raw.githubusercontent.com/Jarv1s0/Logic/master/Loon/Script/Spotify/spot-proto.js") with requires_body=true, binary_body_mode=true, timeout=10, tag="Spotify protobuf"
