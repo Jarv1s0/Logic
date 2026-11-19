@@ -134,12 +134,11 @@ test("artist and album rewrites preserve identifiers and query parameters", () =
   }
 });
 
-test("new raw configuration endpoint automatically applies the versioned snapshot", () => {
+test("new raw configuration endpoint applies the fixed snapshot", () => {
   const result = run(encode(configurationType, configuration()));
   const output = decode(configurationType, result.output.body);
   assert.match(output.configurationAssignmentId, /^1bf92045/);
   assert.ok(output.assignedValues.length > 800);
-  assert.ok(result.logs.some((line) => line.includes("snapshot=9.1.76")));
 });
 
 test("new wrapped configuration endpoint retains its ResolveResponse envelope", () => {
@@ -150,26 +149,12 @@ test("new wrapped configuration endpoint retains its ResolveResponse envelope", 
   assert.ok(output.assignedValues.length > 800);
 });
 
-for (const [version, expected] of [
-  ["9.1.75", "eda1a5ae-8ec3-5c5a-3e99-f63210f8c698:2719148"],
-  ["9.1.76", "1bf92045-dc28-0fd6-41b4-f465a2707f7f:2713372"],
-  ["9.1.98", "1bf92045-dc28-0fd6-41b4-f465a2707f7f:2713372"],
-  ["10.0.0", "1bf92045-dc28-0fd6-41b4-f465a2707f7f:2713372"],
-]) {
-  test(`automatically selects the correct snapshot for Spotify ${version}`, () => {
-    const result = run(encode(configurationType, configuration()), { requestHeaders: { "user-agent": `Spotify/${version}` } });
-    const output = decode(configurationType, result.output.body);
-    assert.equal(output.configurationAssignmentId, expected);
-    assert.ok(output.assignedValues.length > 800);
-  });
-}
-
-test("version detection falls back to spotify-app-version or the modern snapshot", () => {
+test("fixed snapshot does not require client version headers", () => {
   const body = encode(configurationType, configuration());
-  const old = decode(configurationType, run(body, { requestHeaders: { "Spotify-App-Version": "9.1.75" } }).output.body);
-  assert.match(old.configurationAssignmentId, /^eda1a5ae/);
   const unknown = decode(configurationType, run(body, { requestHeaders: {} }).output.body);
-  assert.match(unknown.configurationAssignmentId, /^1bf92045/);
+  const identified = decode(configurationType, run(body).output.body);
+  assert.deepEqual(unknown, identified);
+  assert.equal(unknown.configurationAssignmentId, "1bf92045-dc28-0fd6-41b4-f465a2707f7f:2713372");
 });
 
 test("snapshots retain live assignments and discard unrelated server flags", () => {
@@ -306,7 +291,7 @@ test("unknown config fields and untouched assignment bytes survive patching", ()
   assert.ok(Buffer.from(result.output.body).includes(entry), "int64 metadata must not lose precision");
 });
 
-test("automatically selected snapshots apply ad and upsell rules", () => {
+test("fixed snapshot applies ad and upsell rules", () => {
   const output = decode(configurationType, run(encode(configurationType, configuration())).output.body);
   assert.equal(findFlag(output, "ios-feature-shuffletoggleupsell", "is_enabled_pt2").boolValue.value, false);
   assert.equal(findFlag(output, "ios-feature-lyrics", "enable_lyrics_share").boolValue.value, true);

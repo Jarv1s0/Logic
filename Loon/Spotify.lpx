@@ -1,12 +1,12 @@
 #!name = Spotify
-#!desc = 移除音频广告、首页推广、搜索广告和播放页推广。
+#!desc = 适配 Spotify 9.1.98+，移除音频广告、首页推广、搜索广告和播放页推广。未完成真机验证。
 #!openUrl = https://loon-plugins.vercel.app
 #!author = app2smile, devchristian1337, Auto-001, Jarv1s0
 #!tag = Spotify, AdBlock, Premium
 #!loon_version = 3.5.1(983)
 #!homepage = https://github.com/Jarv1s0/Logic/tree/master/Loon
 #!icon = https://raw.githubusercontent.com/devchristian1337/loon-plugins/refs/heads/main/App-Icons/spotify.png
-#!date = 2026-11-19 15:06:40
+#!date = 2026-11-19 16:07:28
 
 # 上游来源：https://github.com/devchristian1337/loon-plugins/tree/7ae0a25b2de75746dc602bfa890b9737d3847a9f
 # 新接口适配来源：https://github.com/Auto-001/QX---/blob/main/spotify-qx.js
