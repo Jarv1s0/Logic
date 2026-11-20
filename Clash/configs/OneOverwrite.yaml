@@ -26,7 +26,7 @@ tun:
   auto-detect-interface: true
   dns-hijack: ['any:53', 'tcp://any:53']
 # ==================== DNS 配置 ====================
-dns:
+dns!:
   # 启用内置 DNS。
   enable: true
   # DNS 上游连接遵循分流规则；需要同时配置 proxy-server-nameserver。
