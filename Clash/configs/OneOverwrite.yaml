@@ -27,28 +27,35 @@ tun:
   dns-hijack: ['any:53', 'tcp://any:53']
 # ==================== DNS 配置 ====================
 dns:
+  # 启用内置 DNS。
   enable: true
+  # DNS 上游连接遵循分流规则；需要同时配置 proxy-server-nameserver。
   respect-rules: true
+  # 不返回 IPv6 地址，保持当前 IPv4 配置。
   ipv6: false
+  # 默认返回 Fake-IP，由内核在连接时识别域名并分流。
   enhanced-mode: fake-ip
+  # 分配给 Fake-IP 的 IPv4 地址池。
   fake-ip-range: 198.18.0.1/16
 
+  # 引导 DNS：解析 dns.alidns.com、doh.pub 等 DNS 上游自身的域名。
+  # 纯 IP 写法默认使用 UDP 53，不是网站域名的主要解析入口。
   default-nameserver:
     - 223.5.5.5
     - 223.6.6.6
 
+  # 默认域名解析：使用阿里和腾讯 DoH；连接走向由分流规则决定。
   nameserver:
     - "https://dns.alidns.com/dns-query"
     - "https://doh.pub/dns-query"
 
-  direct-nameserver:
-    - "https://dns.alidns.com/dns-query"
-    - "https://doh.pub/dns-query"
-
+  # 专门解析代理节点服务器的域名，避免节点解析依赖尚未建立的代理。
   proxy-server-nameserver:
     - "https://dns.alidns.com/dns-query"
     - "https://doh.pub/dns-query"
 
+  # 以下规则集命中的域名返回真实 IP，不分配 Fake-IP。
+  # 此处仅控制 DNS 应答形式，是否直连仍由 rules 决定。
   fake-ip-filter:
     - rule-set:direct
     - rule-set:private
