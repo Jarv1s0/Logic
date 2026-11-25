@@ -134,6 +134,21 @@ for (const endpoint of ['statuses/container_timeline', 'statuses/container_timel
 }
 console.log('通过：五类首页信息流保留正常帖子，保留只有 ad_state 的帖子，损坏配置不影响过滤');
 
+const fanHeadlineAds = [
+  { category: 'feed', data: { mblogtypename: '粉丝头条' } },
+  { category: 'feed', data: { content_auth_info: { content_auth_title: '粉丝头条' } } },
+  { category: 'feed', data: { tag_struct: [{ tag_name: '粉丝头条' }] } },
+  { category: 'feed', data: { tag_struct: [{ otype: 'fans_headline' }] } }
+];
+const fanHeadlineNormal = { category: 'feed', data: { text: '这条正文提到了粉丝头条' } };
+for (const endpoint of ['statuses/container_timeline', 'statuses/container_timeline_hot',
+  'statuses/container_timeline_unread', 'statuses/container_positive', 'guest/container_timeline_hot']) {
+  const input = { items: [fanHeadlineNormal, ...fanHeadlineAds], moreInfo: { next: 'page2' } };
+  assert.deepEqual(JSON.parse(run(source, `https://api.weibo.cn/2/${endpoint}`, JSON.stringify(input)).body),
+    { items: [fanHeadlineNormal], moreInfo: input.moreInfo }, '粉丝头条整条过滤，正文提及需保留');
+}
+console.log('通过：五类动态入口过滤粉丝头条标记，保留正文仅提及该词的微博');
+
 const sizes = ['largest', 'thumbnail', 'large', 'middleplus', 'mw2000', 'bmiddle'];
 const picture = { original: { url: 'https://wx1.sinaimg.cn/orh1080/picture.jpg' },
   ...Object.fromEntries(sizes.map(size => [size, { url: `https://wx1.sinaimg.cn/${size}/picture.jpg`, width: 100 }])) };
@@ -273,16 +288,30 @@ const shopAd = { category: 'card', data: { card_type: 3, actionlog: { cardid: 'w
 const normalCard = { category: 'card', data: { card_type: 3 } };
 const shopGroup = { category: 'group', type: 'vertical', items: [shopAd] };
 const mixedGroup = { ...shopGroup, items: [normalCard, shopAd] };
+const detailRecommendationAd = { category: 'group', type: 'vertical', header: { title: '相关推荐' }, items: [
+  { category: 'card', data: { card_type: 143, height: 1 } },
+  { category: 'card', data: { card_type: 22, card_ad_style: 1, is_detail: true,
+    scheme: 'alipays://platformapi/startapp?source=weibo_new' } }
+] };
+const followRecommendationGroup = { category: 'group', type: 'vertical', items: [
+  { category: 'card', data: { card_type: 4, desc: '关注推荐', is_detail: true } },
+  { category: 'card', data: { card_type: 86, is_detail: true } }
+] };
+const genericRecommendationCard = { category: 'card', data: { card_type: 227, desc: '热门推荐' } };
+const normalDetailGroup = { category: 'group', type: 'vertical', items: [
+  { category: 'card', data: { card_type: 22, is_detail: true } }
+] };
 const detail = {
   pageHeader: { data: { items: [detailStatus,
     { category: 'card', data: { card_type: 248, itemid: 'top_searching', is_detail: true } },
-    { category: 'detail', type: 'share' }, shopGroup, mixedGroup] } },
+    { category: 'detail', type: 'share' }, shopGroup, mixedGroup, detailRecommendationAd,
+    followRecommendationGroup, genericRecommendationCard, normalDetailGroup] } },
   detailInfo: { status: taggedPost, extend: { comments_count: 3 } },
   pageTabBar: { items: [{ title: '评论' }] }
 };
 assert.deepEqual(process('statuses/container_detail', detail), {
   ...detail,
-  pageHeader: { data: { items: [detailStatus, { ...mixedGroup, items: [normalCard] }] } },
+  pageHeader: { data: { items: [detailStatus, { ...mixedGroup, items: [normalCard] }, normalDetailGroup] } },
   detailInfo: { ...detail.detailInfo, status: cleanPost }
 });
 

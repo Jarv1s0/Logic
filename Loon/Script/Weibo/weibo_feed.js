@@ -107,7 +107,8 @@ const PROMOTION_FLOAT_TYPES = new Set([
         break;
       case 'notice':
         if (Array.isArray(data.messages)) data.messages = data.messages.filter(message =>
-          Number(message?.type) !== 47 || !['广告', '廣告', '荐读'].includes(message.msg_card?.ad_tag?.text));
+          Number(message?.type) !== 47 || (!['广告', '廣告', '荐读', '粉丝头条'].includes(message.msg_card?.ad_tag?.text)
+            && message.msg_card?.actionlog?.source !== 'ad'));
         break;
       case 'meCards': cleanMeCards(data); break;
       case 'avatar':
@@ -205,7 +206,13 @@ const PROMOTION_FLOAT_TYPES = new Set([
   }
   function isAd(post) {
     if (!isObject(post)) return false;
-    return post.ad_marked === true || Number(post.is_ad) === 1
+    const isFanHeadline = post.mblogtypename === '粉丝头条'
+      || post.content_auth_info?.content_auth_title === '粉丝头条'
+      || (Array.isArray(post.tag_struct) && post.tag_struct.some(tag =>
+        ['粉丝头条', 'fans_headline'].includes(tag?.otype)
+        || ['粉丝头条', 'fans_headline'].includes(tag?.tag_name)
+        || ['粉丝头条', 'fans_headline'].includes(tag?.name)));
+    return isFanHeadline || post.ad_marked === true || Number(post.is_ad) === 1
       || ['广告', '廣告', '热推'].includes(post.mblogtypename)
       || ['广告', '廣告'].includes(post.content_auth_info?.content_auth_title)
       || post.promotion?.type === 'ad' || post.page_info?.actionlog?.source === 'ad'
@@ -214,6 +221,7 @@ const PROMOTION_FLOAT_TYPES = new Set([
   }
   function removeItem(item) {
     if (!isObject(item)) return false;
+    if (route === 'detail' && isDetailRecommendation(item)) return true;
     const post = item.data ?? item.status ?? item.mblog ?? item;
     if (isAd(post)) return true;
     if (route === 'home' && item.category === 'group'
@@ -230,6 +238,17 @@ const PROMOTION_FLOAT_TYPES = new Set([
         && /^sinaweibo:\/\/messagelist\?(?:[^&#]*&)*send_from=trending_discover_zhisou(?:[&#]|$)/.test(post.scheme)) return true;
     }
     return false;
+  }
+  function isDetailRecommendation(item) {
+    if (!isObject(item)) return false;
+    const title = item.header?.title;
+    const titleText = typeof title === 'string' ? title : title?.content;
+    const dataTitle = item.data?.title;
+    const labels = [titleText, item.title, typeof dataTitle === 'string' ? dataTitle : dataTitle?.content,
+      item.data?.desc, item.type];
+    return labels.some(label => typeof label === 'string' && /推荐|荐读|recommend/i.test(label))
+      || Number(item.data?.card_ad_style) === 1
+      || (Array.isArray(item.items) && item.items.some(isDetailRecommendation));
   }
   function isProfilePromotion(item) {
     // 不按“设置”文字匹配，保留微博本身及普通模块的设置按钮。
@@ -282,6 +301,7 @@ const PROMOTION_FLOAT_TYPES = new Set([
       if (item?.category === 'detail' && item.type === 'share') return false;
       if (item?.category === 'card' && Number(item.data?.card_type) === 248
         && item.data.itemid === 'top_searching' && item.data.is_detail === true) return false;
+      if (isDetailRecommendation(item)) return false;
       if (item?.category === 'group' && Array.isArray(item.items) && item.items.length > 0) {
         const kept = item.items.filter(child => !(child?.category === 'card'
           && Number(child.data?.card_type) === 3 && child.data.actionlog?.cardid === 'wbg_goodsadvise'));
@@ -330,6 +350,10 @@ const PROMOTION_FLOAT_TYPES = new Set([
     if (isDiscovery || route === 'search') cleanSearchCard(node);
   }
   function cleanInterface(post) {
+    // 个人资料头部的会员推广不在 items 卡片列表中，保留头像、会员图标及用户信息。
+    if (route === 'profile' && post.category === 'mine' && post.type === 'header'
+      && post.itemId === 'profileme_mine_head'
+      && /^vipcenter_out_\d+_adsystem$/.test(post.vipView?.itemId)) delete post.vipView;
     // 投票可以附着在正常微博及被转发原文上，只删除入口，不过滤整条微博。
     for (const status of [post, post.retweeted_status]) {
       if (isObject(status?.extend_info)) delete status.extend_info.ai_vote_info;

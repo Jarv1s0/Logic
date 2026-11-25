@@ -6,7 +6,7 @@
 
 - 首页、发现页、搜索、视频、详情、评论及个人页的广告与推广清理，保留正常内容和分页
 - 隐藏首页及详情的帖子车型推广标签、详情页的“大家都在搜”、行内分享与赞赏栏及店铺热卖卡
-- 移除“我”页的“为你推荐”，以及消息「动态」里的“广告”和“荐读”卡
+- 移除“我”页的“为你推荐”和资料头部会员促销视图，以及消息「动态」里的广告、“荐读”和“粉丝头条”；双十一会员广告随动态卡移除
 - 清除未读接口中已识别的借款、理财、红包和会员装扮推广红点；保留私信、互动、订单和混合动态计数
 - 清理“更多功能”里的钱包广告、借款额度推广及已识别的活动和购物推广，保留钱包和常用功能
 - 开屏与推送广告清理
@@ -38,10 +38,13 @@ node --check Loon/Script/Weibo/weibo_feed.js
 node Loon/Script/Weibo/tests/regression.cjs
 node Loon/Script/Weibo/tests/feed.cjs
 node Loon/Script/Weibo/tests/cleanup.cjs
+node Loon/Script/Weibo/tests/notice-profile.cjs
 # 可选：回放本地 HAR 中的真实发现页响应
 node Loon/Script/Weibo/tests/har-replay.cjs <本地HAR路径>
 # 可选：回放本地 HAR 中的浮窗、评论提示和投票响应
 node Loon/Script/Weibo/tests/cleanup.cjs <本地HAR路径>
+# 可选：回放本地 HAR 中的动态和个人页广告响应
+node Loon/Script/Weibo/tests/notice-profile.cjs <本地HAR路径>
 ```
 
 HAR 回放验证响应结构和正常内容保留；手机界面的实际隐藏效果需真机验证。
